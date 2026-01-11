@@ -36,25 +36,6 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(message));
     }
 
-//    @ExceptionHandler(HttpMessageNotReadableException.class)
-//    public ResponseEntity<ApiResponse<?>> handleJsonParse(HttpMessageNotReadableException ex) {
-//
-//        String message = "Invalid request body";
-//
-//        Throwable rootCause = ex.getMostSpecificCause();
-//        if (rootCause != null && rootCause.getMessage() != null) {
-//            String rootMsg = rootCause.getMessage();
-//
-//            // Jackson enum parse error usually contains enum class name
-//            if (rootMsg.contains("from String")) {
-//                message = "Invalid enum value in request body";
-//            }
-//        }
-//
-//        return ResponseEntity
-//                .status(HttpStatus.BAD_REQUEST)
-//                .body(ApiResponse.error(message));
-//    }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<?>> handleJsonParse(HttpMessageNotReadableException ex) {
@@ -88,11 +69,19 @@ public class GlobalExceptionHandler {
 
 
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ApiResponse<?>> handleGeneral(Exception ex) {
+//    @ExceptionHandler(Exception.class)
+//    public ResponseEntity<ApiResponse<?>> handleGeneral(Exception ex) {
+//        return ResponseEntity
+//                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+//                .body(ApiResponse.error("Internal server error"));
+//    }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ApiResponse<?>> handleRuntime(RuntimeException ex) {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.error("Internal server error"));
+                .body(ApiResponse.error(ex.getMessage()));
     }
+
 }
 
