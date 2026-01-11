@@ -2,6 +2,7 @@ package com.t2404e.aihealthcoach.controller;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
+import com.t2404e.aihealthcoach.dto.response.HealthProfileResponse;
 import com.t2404e.aihealthcoach.service.HealthProfileService;
 import com.t2404e.aihealthcoach.util.RequestUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,4 +50,20 @@ public class HealthProfileController {
 
         return ResponseEntity.ok(ApiResponse.success("Health profile updated successfully", null));
     }
+
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    public ResponseEntity<ApiResponse<HealthProfileResponse>> getProfile(
+            HttpServletRequest request) {
+
+        Long userId = RequestUtil.getUserId(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Health profile fetched successfully",
+                        service.getByUserId(userId)
+                )
+        );
+    }
+
 }

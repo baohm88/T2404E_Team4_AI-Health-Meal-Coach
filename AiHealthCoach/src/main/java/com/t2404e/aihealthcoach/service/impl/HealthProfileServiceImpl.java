@@ -1,6 +1,7 @@
 package com.t2404e.aihealthcoach.service.impl;
 
 import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
+import com.t2404e.aihealthcoach.dto.response.HealthProfileResponse;
 import com.t2404e.aihealthcoach.entity.HealthProfile;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.repository.HealthProfileRepository;
@@ -54,4 +55,27 @@ public class HealthProfileServiceImpl implements HealthProfileService {
 
         healthProfileRepository.save(profile);
     }
+
+    @Override
+    public HealthProfileResponse getByUserId(Long userId) {
+
+        HealthProfile profile = healthProfileRepository
+                .findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Health profile not found"));
+
+        return HealthProfileResponse.builder()
+                .userId(profile.getUserId())
+                .gender(profile.getGender())
+                .age(profile.getAge())
+                .height(profile.getHeight())
+                .weight(profile.getWeight())
+                .goal(profile.getGoal())
+                .activityLevel(profile.getActivityLevel())
+                .stressLevel(profile.getStressLevel())
+                .sleepDuration(profile.getSleepDuration())
+                .build();
+    }
+
+
 }
