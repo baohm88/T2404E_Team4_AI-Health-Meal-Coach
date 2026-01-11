@@ -1,5 +1,6 @@
 package com.t2404e.aihealthcoach.service.impl;
 
+import com.t2404e.aihealthcoach.config.JwtUtil;
 import com.t2404e.aihealthcoach.dto.request.LoginRequest;
 import com.t2404e.aihealthcoach.dto.request.RegisterRequest;
 import com.t2404e.aihealthcoach.dto.response.AuthResponse;
@@ -17,11 +18,14 @@ public class AuthServiceImpl implements AuthService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final JwtUtil jwtUtil;
 
     public AuthServiceImpl(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+                           PasswordEncoder passwordEncoder,
+                           JwtUtil jwtUtil) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtUtil = jwtUtil;
     }
 
     /**
@@ -73,9 +77,13 @@ public class AuthServiceImpl implements AuthService {
             throw new UnauthorizedException("Invalid email or password");
         }
 
-        // TODO: Replace with real JWT token in next step
-        String fakeToken = "FAKE_JWT_TOKEN_FOR_SPRINT_1";
+        // Generate token and send to FE
+        String token = jwtUtil.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole().name()
+        );
 
-        return new AuthResponse(fakeToken);
+        return new AuthResponse(token);
     }
 }
