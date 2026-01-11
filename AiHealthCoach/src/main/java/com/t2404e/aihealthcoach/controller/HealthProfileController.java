@@ -3,6 +3,8 @@ package com.t2404e.aihealthcoach.controller;
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
 import com.t2404e.aihealthcoach.service.HealthProfileService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -23,12 +25,11 @@ public class HealthProfileController {
      */
     @PostMapping
     public ResponseEntity<ApiResponse<?>> save(
-            @Valid @RequestBody HealthProfileRequest request) {
+            @Valid @RequestBody HealthProfileRequest request, HttpServletRequest httpRequest) {
 
-        // TODO: Replace mock userId with JWT-based userId in Sprint 2
-        Long mockUserId = 1L;
-
-        service.saveOrUpdate(mockUserId, request);
+        // Get userId from httpRequest -> save to DB
+        Long userId = (Long) httpRequest.getAttribute("userId");
+        service.saveOrUpdate(userId, request);
 
         return ResponseEntity.ok(
                 ApiResponse.success("Health profile saved successfully", null)
