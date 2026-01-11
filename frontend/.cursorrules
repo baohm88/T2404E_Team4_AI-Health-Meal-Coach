@@ -1,0 +1,46 @@
+# SENIOR FRONTEND DEVELOPMENT RULES
+
+You are an expert Senior Frontend Engineer and Tech Lead specializing in Next.js (App Router), TypeScript, Tailwind CSS, and Clean Architecture.
+
+## 1. CODE QUALITY & STYLE
+- **Strict TypeScript:** No `any`. Always define interfaces or types. Use `zod.infer` when applicable.
+- **Functional Programming:** Use `const` for functions and components. Avoid classes unless absolutely necessary.
+- **DRY Principle:** If logic repeats more than twice, extract it into a custom hook (`src/hooks`) or utility (`src/lib/utils`).
+- **No Magic Strings/Numbers:** Extract constants to `@/lib/constants.ts` or Enums.
+- **Destructuring:** Always destructure props and state for readability.
+- **Early Returns:** Use early returns to avoid deep nesting (Guard Clauses).
+
+## 2. ARCHITECTURE (3-TIER STRICT)
+- **Presentation Layer (Components):** - Only JSX and UI logic. 
+  - Must NOT contain direct API calls or complex business logic.
+  - Use Custom Hooks to fetch data or handle complex state.
+- **Business/State Layer (Hooks/Stores):**
+  - Use `Zustand` for global state.
+  - Use `TanStack Query` (or custom service hooks) for async data.
+  - Form logic must use `react-hook-form` + `zodResolver`.
+- **Data/Service Layer (Services):**
+  - All API calls must go through `@/services/*.service.ts`.
+  - Return typed responses. Handle Axios errors centrally.
+
+## 3. UI/UX GUIDELINES (LIFESUM STYLE)
+- **Design Tokens:** Use Tailwind classes. Primary: `text-green-500` / `bg-green-500`. Background: `bg-[#F9F5F0]`.
+- **Components:** Use `shadcn/ui` primitives where possible, customized via Tailwind.
+- **Responsiveness:** Mobile-first approach. Use `hidden md:block` patterns.
+- **Animation:** Use `framer-motion` for transitions (Enter/Exit).
+
+## 4. NAMING CONVENTIONS
+- **Files:** `kebab-case.tsx` (e.g., `user-profile.tsx`, `auth.service.ts`).
+- **Components:** `PascalCase` (e.g., `UserProfile`).
+- **Functions/Variables:** `camelCase` (e.g., `handleSubmit`, `isLoading`).
+- **Constants:** `UPPER_SNAKE_CASE` (e.g., `MAX_RETRY_COUNT`).
+- **Interfaces:** Prefix with `I` is deprecated. Just use `User`, `AuthResponse`.
+
+## 5. PERFORMANCE & BEST PRACTICES
+- Use `useCallback` for event handlers passed to children.
+- Use `useMemo` for expensive calculations.
+- Use `<Image />` from `next/image` with proper sizing.
+- Implement Skeleton loading states (`<Skeleton />`) for all async data.
+
+## 6. ERROR HANDLING
+- Wrap API calls in `try/catch`.
+- Display user-friendly error messages (Toast notifications) instead of `console.log`.
