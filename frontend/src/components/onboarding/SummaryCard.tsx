@@ -32,12 +32,6 @@ import {
 import { Goal, ActivityLevel, Gender } from '@/lib/schemas/onboarding.schema';
 
 // ============================================================
-// CONSTANTS
-// ============================================================
-
-const PROCESSING_DELAY_MS = 1000;
-
-// ============================================================
 // COMPONENT
 // ============================================================
 
@@ -49,11 +43,15 @@ export function SummaryCard() {
     // Calculate health metrics
     const metrics = useMemo(() => calculateHealthMetrics(formData), [formData]);
 
-    const handleSubmit = useCallback(async () => {
+    /**
+     * Handle "Hoàn tất" button click
+     * Guest Flow: Redirect to register page instead of saving directly
+     * Data will be saved after registration via useRegisterForm
+     */
+    const handleSubmit = useCallback(() => {
         setIsLoading(true);
-        // Simulate brief processing
-        await new Promise((resolve) => setTimeout(resolve, PROCESSING_DELAY_MS));
-        // Redirect to register page to save results
+        // Redirect to register page - data stays in useOnboardingStore
+        // After registration, useRegisterForm will auto-save the onboarding data
         router.push('/register');
     }, [router]);
 
@@ -135,10 +133,10 @@ export function SummaryCard() {
                     {isLoading ? (
                         <>
                             <Loader2 className="animate-spin w-4 h-4" />
-                            Đang xử lý...
+                            Đang lưu...
                         </>
                     ) : (
-                        'Hoàn tất & Đăng ký'
+                        'Hoàn tất'
                     )}
                 </button>
             </div>

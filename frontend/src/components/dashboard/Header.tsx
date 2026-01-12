@@ -1,24 +1,65 @@
+/**
+ * Dashboard Header Component
+ *
+ * Displays:
+ * - Time-based greeting with emoji
+ * - User name from JWT token
+ * - Search and notification buttons
+ *
+ * @see /lib/auth.ts - JWT decoding utilities
+ */
+
 'use client';
 
-import { useAuthStore } from '@/stores/useAuthStore';
+import { useState, useEffect } from 'react';
 import { Bell, Search, UserCircle2 } from 'lucide-react';
+import { getUserFromToken, TokenUser } from '@/lib/auth';
+
+// ============================================================
+// HELPER FUNCTIONS
+// ============================================================
+
+/**
+ * Get time-based greeting with emoji
+ * @returns Greeting string based on current hour
+ */
+const getGreeting = (): string => {
+    const hour = new Date().getHours();
+
+    if (hour >= 5 && hour < 11) {
+        return 'Chào buổi sáng ☀️';
+    } else if (hour >= 11 && hour < 14) {
+        return 'Chào buổi trưa 🌤️';
+    } else if (hour >= 14 && hour < 18) {
+        return 'Chào buổi chiều 🌥️';
+    } else if (hour >= 18 && hour < 22) {
+        return 'Chào buổi tối 🌙';
+    } else {
+        return 'Xin chào 👋';
+    }
+};
+
+// ============================================================
+// COMPONENT
+// ============================================================
 
 export function Header() {
-    const user = useAuthStore((state) => state.user);
+    const [user, setUser] = useState<TokenUser | null>(null);
+    const [greeting, setGreeting] = useState('Xin chào 👋');
 
-    const getGreeting = () => {
-        const hour = new Date().getHours();
-        if (hour < 12) return 'Chào buổi sáng';
-        if (hour < 18) return 'Chào buổi chiều';
-        return 'Chào buổi tối';
-    };
+    // Get user from JWT token on mount
+    useEffect(() => {
+        const tokenUser = getUserFromToken();
+        setUser(tokenUser);
+        setGreeting(getGreeting());
+    }, []);
 
     return (
         <header className="sticky top-0 z-30 bg-cream/80 backdrop-blur-xl border-b border-slate-100/50">
             <div className="flex items-center justify-between px-6 py-4">
                 {/* Left: Greeting */}
                 <div>
-                    <p className="text-slate-500 text-sm">{getGreeting()} 👋</p>
+                    <p className="text-slate-500 text-sm">{greeting}</p>
                     <h1 className="text-xl font-bold text-slate-800">
                         {user?.fullName || 'Người dùng'}
                     </h1>

@@ -1,4 +1,5 @@
 import { Inter } from 'next/font/google';
+import { Toaster } from 'sonner';
 import './globals.css';
 import { ReactNode } from 'react';
 
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <html lang="vi" className={inter.variable}>
             <body className="font-sans antialiased">
                 {children}
+                <Toaster position="top-right" richColors closeButton />
             </body>
         </html>
     );

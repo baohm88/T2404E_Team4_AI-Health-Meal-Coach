@@ -22,14 +22,15 @@ import {
 
 /**
  * Enum for onboarding steps
+ * Order: Basic Info → Goals → Target (conditional) → Lifestyle → Summary
  * Note: TARGET step is conditional (only shown for WEIGHT_LOSS/MUSCLE_GAIN)
  */
 export enum OnboardingStep {
-    GOAL = 1,
-    TARGET = 2,      // Conditional step
-    INFO = 3,
-    LIFESTYLE = 4,
-    ANALYSIS = 5,    // Previously SUMMARY
+    INFO = 1,        // Basic info: Age, Gender, Height, Weight
+    GOAL = 2,        // Goals: Weight loss, Maintenance, Muscle gain
+    TARGET = 3,      // Conditional: Target weight, Weekly goal
+    LIFESTYLE = 4,   // Activity level, Sleep, Stress
+    ANALYSIS = 5,    // Summary/Analysis
 }
 
 /** Total number of steps (max, including conditional) */

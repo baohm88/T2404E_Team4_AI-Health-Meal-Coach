@@ -75,13 +75,14 @@ type OnboardingStore = OnboardingState & OnboardingActions;
 
 /**
  * Get the next step number considering conditional TARGET step
+ * New order: INFO(1) → GOAL(2) → TARGET(3, conditional) → LIFESTYLE(4) → ANALYSIS(5)
  */
 const getNextStep = (currentStep: number, goal: Goal | undefined): number => {
     const maxStep = TOTAL_ONBOARDING_STEPS;
 
     // If on GOAL step and goal doesn't require target, skip TARGET
     if (currentStep === OnboardingStep.GOAL && !requiresTargetStep(goal)) {
-        return OnboardingStep.INFO; // Skip TARGET (step 2), go to INFO (step 3)
+        return OnboardingStep.LIFESTYLE; // Skip TARGET (step 3), go to LIFESTYLE (step 4)
     }
 
     return Math.min(currentStep + 1, maxStep);
@@ -89,11 +90,12 @@ const getNextStep = (currentStep: number, goal: Goal | undefined): number => {
 
 /**
  * Get the previous step number considering conditional TARGET step
+ * New order: INFO(1) → GOAL(2) → TARGET(3, conditional) → LIFESTYLE(4) → ANALYSIS(5)
  */
 const getPrevStep = (currentStep: number, goal: Goal | undefined): number => {
-    // If on INFO step and goal doesn't require target, skip back to GOAL
-    if (currentStep === OnboardingStep.INFO && !requiresTargetStep(goal)) {
-        return OnboardingStep.GOAL; // Skip TARGET (step 2), go back to GOAL (step 1)
+    // If on LIFESTYLE step and goal doesn't require target, skip back to GOAL
+    if (currentStep === OnboardingStep.LIFESTYLE && !requiresTargetStep(goal)) {
+        return OnboardingStep.GOAL; // Skip TARGET (step 3), go back to GOAL (step 2)
     }
 
     return Math.max(currentStep - 1, FIRST_STEP);
