@@ -19,12 +19,6 @@ public class DashboardController {
         this.service = service;
     }
 
-
-//    @GetMapping("/summary")
-//    public ApiResponse<DashboardResponse> summary() {
-//        return ApiResponse.success("Dashboard loaded", service.getDashboard(1L));
-//    }
-
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @GetMapping("/summary")
     public ResponseEntity<ApiResponse<?>> summary(HttpServletRequest req) {
