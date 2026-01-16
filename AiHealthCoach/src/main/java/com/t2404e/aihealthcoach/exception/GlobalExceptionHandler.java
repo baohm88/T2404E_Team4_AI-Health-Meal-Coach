@@ -74,5 +74,12 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.error(ex.getMessage()));
     }
 
+    @ExceptionHandler(PremiumRequiredException.class)
+    public ResponseEntity<ApiResponse<?>> handlePremium(PremiumRequiredException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
 }
 

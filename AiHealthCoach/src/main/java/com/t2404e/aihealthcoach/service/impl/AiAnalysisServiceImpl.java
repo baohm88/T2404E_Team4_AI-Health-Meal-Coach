@@ -56,8 +56,10 @@ package com.t2404e.aihealthcoach.service.impl;
 
 import com.t2404e.aihealthcoach.dto.request.AiMonthlyPlanRequest;
 import com.t2404e.aihealthcoach.dto.response.AiMonthlyPlanResponse;
+import com.t2404e.aihealthcoach.entity.HealthAnalysis;
 import com.t2404e.aihealthcoach.entity.MonthlyPlan;
 import com.t2404e.aihealthcoach.enums.HealthStatus;
+import com.t2404e.aihealthcoach.repository.HealthAnalysisRepository;
 import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
 import com.t2404e.aihealthcoach.service.AiAnalysisService;
 import org.springframework.stereotype.Service;
@@ -69,9 +71,11 @@ import java.util.List;
 public class AiAnalysisServiceImpl implements AiAnalysisService {
 
     private final MonthlyPlanRepository monthlyPlanRepository;
+    private final HealthAnalysisRepository healthAnalysisRepository;
 
-    public AiAnalysisServiceImpl(MonthlyPlanRepository monthlyPlanRepository) {
+    public AiAnalysisServiceImpl(MonthlyPlanRepository monthlyPlanRepository, HealthAnalysisRepository healthAnalysisRepository) {
         this.monthlyPlanRepository = monthlyPlanRepository;
+        this.healthAnalysisRepository = healthAnalysisRepository;
     }
 
     /**
@@ -109,6 +113,26 @@ public class AiAnalysisServiceImpl implements AiAnalysisService {
 
             monthlyPlanRepository.save(plan);
         }
+
+        // ===============================
+        // 4. SAVE HEALTH ANALYSIS (MVP)
+        // ===============================
+        healthAnalysisRepository.deleteByUserId(userId);
+
+        AiMonthlyPlanResponse.HealthAnalysisDto ha = response.getHealthAnalysis();
+
+        HealthAnalysis analysis = HealthAnalysis.builder()
+                .userId(userId)
+                .bmi(ha.getBmi())
+                .bmr(ha.getBmr())
+                .tdee(ha.getTdee())
+                .energyScore(ha.getEnergyScore())
+                .healthStatus(ha.getHealthStatus())
+                .bodyState(ha.getBodyState())
+                .build();
+
+        healthAnalysisRepository.save(analysis);
+
 
         // ===============================
         // 4. RETURN RESPONSE FOR UI

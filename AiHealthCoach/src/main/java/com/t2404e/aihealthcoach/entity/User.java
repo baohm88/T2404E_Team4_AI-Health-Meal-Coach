@@ -42,6 +42,9 @@ public class User {
     @Column(nullable = false)
     private Integer status = 1;
 
+    @Column(name = "is_premium", nullable = false)
+    private Boolean isPremium = false;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
