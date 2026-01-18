@@ -1,17 +1,11 @@
 package com.t2404e.aihealthcoach.service.impl;
 
 import com.t2404e.aihealthcoach.dto.response.MealResponse;
-import com.t2404e.aihealthcoach.entity.DailyPlan;
-import com.t2404e.aihealthcoach.entity.Meal;
-import com.t2404e.aihealthcoach.entity.MonthlyPlan;
-import com.t2404e.aihealthcoach.entity.WeeklyPlan;
+import com.t2404e.aihealthcoach.entity.*;
 import com.t2404e.aihealthcoach.enums.MealTimeSlot;
 import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
-import com.t2404e.aihealthcoach.repository.DailyPlanRepository;
-import com.t2404e.aihealthcoach.repository.MealRepository;
-import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
-import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
+import com.t2404e.aihealthcoach.repository.*;
 import com.t2404e.aihealthcoach.service.MealService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,15 +21,17 @@ public class MealServiceImpl implements MealService {
     private final MealRepository mealRepository;
     private final MonthlyPlanRepository monthlyPlanRepository;
     private final WeeklyPlanRepository weeklyPlanRepository;
+    private final UserRepository userRepository;
 
     public MealServiceImpl(
             DailyPlanRepository dailyPlanRepository,
-            MealRepository mealRepository, MonthlyPlanRepository monthlyPlanRepository, WeeklyPlanRepository weeklyPlanRepository
-    ) {
+            MealRepository mealRepository, MonthlyPlanRepository monthlyPlanRepository, WeeklyPlanRepository weeklyPlanRepository,
+            UserRepository userRepository) {
         this.dailyPlanRepository = dailyPlanRepository;
         this.mealRepository = mealRepository;
         this.monthlyPlanRepository = monthlyPlanRepository;
         this.weeklyPlanRepository = weeklyPlanRepository;
+        this.userRepository = userRepository;
     }
 
 
@@ -44,6 +40,8 @@ public class MealServiceImpl implements MealService {
     public List<MealResponse> generateMeals(Long dailyPlanId, Long userId) {
 
         validateDailyPlanOwnership(dailyPlanId, userId);
+
+        requirePremium(userId);
 
         DailyPlan dailyPlan = dailyPlanRepository.findById(dailyPlanId).get();
 
@@ -94,6 +92,8 @@ public class MealServiceImpl implements MealService {
 
         validateDailyPlanOwnership(dailyPlanId, userId);
 
+        requirePremium(userId);
+
         return mealRepository
                 .findByDailyPlanIdOrderByTimeSlotAsc(dailyPlanId)
                 .stream()
@@ -123,6 +123,16 @@ public class MealServiceImpl implements MealService {
 
         if (!monthlyPlan.getUserId().equals(userId)) {
             throw new ForbiddenException("You are not allowed to access this resource");
+        }
+    }
+
+    private void requirePremium(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!Boolean.TRUE.equals(user.getIsPremium())) {
+            throw new ForbiddenException("Upgrade to Premium to access this feature");
         }
     }
 

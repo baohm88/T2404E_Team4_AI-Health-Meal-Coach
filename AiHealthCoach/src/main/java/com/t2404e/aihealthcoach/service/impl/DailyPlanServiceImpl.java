@@ -3,11 +3,13 @@ package com.t2404e.aihealthcoach.service.impl;
 import com.t2404e.aihealthcoach.dto.response.DailyPlanResponse;
 import com.t2404e.aihealthcoach.entity.DailyPlan;
 import com.t2404e.aihealthcoach.entity.MonthlyPlan;
+import com.t2404e.aihealthcoach.entity.User;
 import com.t2404e.aihealthcoach.entity.WeeklyPlan;
 import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.repository.DailyPlanRepository;
 import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
+import com.t2404e.aihealthcoach.repository.UserRepository;
 import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
 import com.t2404e.aihealthcoach.service.DailyPlanService;
 import org.springframework.stereotype.Service;
@@ -22,14 +24,16 @@ public class DailyPlanServiceImpl implements DailyPlanService {
     private final WeeklyPlanRepository weeklyPlanRepository;
     private final DailyPlanRepository dailyPlanRepository;
     private final MonthlyPlanRepository monthlyPlanRepository;
+    private final UserRepository userRepository;
 
     public DailyPlanServiceImpl(
             WeeklyPlanRepository weeklyPlanRepository,
-            DailyPlanRepository dailyPlanRepository, MonthlyPlanRepository monthlyPlanRepository
-    ) {
+            DailyPlanRepository dailyPlanRepository, MonthlyPlanRepository monthlyPlanRepository,
+            UserRepository userRepository) {
         this.weeklyPlanRepository = weeklyPlanRepository;
         this.dailyPlanRepository = dailyPlanRepository;
         this.monthlyPlanRepository = monthlyPlanRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -68,6 +72,8 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
         validateWeeklyPlanOwnership(weeklyPlanId, userId);
 
+        requirePremium(userId);
+
         return dailyPlanRepository
                 .findByWeeklyPlanIdOrderByDayIndexAsc(weeklyPlanId)
                 .stream()
@@ -96,4 +102,14 @@ public class DailyPlanServiceImpl implements DailyPlanService {
         }
     }
 
+
+    private void requirePremium(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!Boolean.TRUE.equals(user.getIsPremium())) {
+            throw new ForbiddenException("Upgrade to Premium to access this feature");
+        }
+    }
 }
