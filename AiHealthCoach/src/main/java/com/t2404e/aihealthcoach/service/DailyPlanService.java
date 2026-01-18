@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface DailyPlanService {
 
-    List<DailyPlanResponse> generateDailyPlans(Long weeklyPlanId);
+    List<DailyPlanResponse> generateDailyPlans(Long weeklyPlanId, Long userId);
 
-    List<DailyPlanResponse> getDailyPlans(Long weeklyPlanId);
+    List<DailyPlanResponse> getDailyPlans(Long weeklyPlanId, Long userId);
 }
