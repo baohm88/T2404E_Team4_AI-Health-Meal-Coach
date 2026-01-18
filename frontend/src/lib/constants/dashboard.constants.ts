@@ -3,7 +3,7 @@
  * Centralized configuration for dashboard module
  */
 
-import { Home, BookOpen, Utensils, Bot, User, LucideIcon } from 'lucide-react';
+import { Home, CalendarDays, BookOpen, Utensils, Bot, User, LucideIcon } from 'lucide-react';
 
 // ============================================================
 // NAVIGATION
@@ -12,6 +12,7 @@ import { Home, BookOpen, Utensils, Bot, User, LucideIcon } from 'lucide-react';
 /** Dashboard route paths */
 export const DASHBOARD_ROUTES = {
     HOME: '/dashboard',
+    SCHEDULE: '/dashboard/schedule',
     DIARY: '/dashboard/diary',
     FOODS: '/dashboard/foods',
     AI_COACH: '/dashboard/ai-coach',
@@ -28,6 +29,7 @@ export interface MenuItem {
 /** Dashboard navigation menu items */
 export const DASHBOARD_MENU_ITEMS: MenuItem[] = [
     { href: DASHBOARD_ROUTES.HOME, icon: Home, label: 'Tổng quan' },
+    { href: DASHBOARD_ROUTES.SCHEDULE, icon: CalendarDays, label: 'Lịch ăn' },
     { href: DASHBOARD_ROUTES.DIARY, icon: BookOpen, label: 'Nhật ký' },
     { href: DASHBOARD_ROUTES.FOODS, icon: Utensils, label: 'Món ăn' },
     { href: DASHBOARD_ROUTES.AI_COACH, icon: Bot, label: 'AI Coach' },
