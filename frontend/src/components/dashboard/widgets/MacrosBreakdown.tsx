@@ -1,14 +1,30 @@
 'use client';
 
-import { MOCK_STATS } from '@/lib/mock-data';
+import { MacroNutrient } from '@/types/api';
 
-export function MacrosBreakdown() {
-    const { macros } = MOCK_STATS;
+// ============================================================
+// TYPES
+// ============================================================
 
+interface MacrosBreakdownProps {
+    protein?: MacroNutrient;
+    carbs?: MacroNutrient;
+    fat?: MacroNutrient;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
+export function MacrosBreakdown({
+    protein = { current: 0, goal: 150 },
+    carbs = { current: 0, goal: 250 },
+    fat = { current: 0, goal: 65 },
+}: MacrosBreakdownProps) {
     const macroData = [
-        { name: 'Protein', ...macros.protein, color: 'var(--color-protein)' },
-        { name: 'Carbs', ...macros.carbs, color: 'var(--color-carbs)' },
-        { name: 'Fat', ...macros.fat, color: 'var(--color-fat)' },
+        { name: 'Protein', ...protein, unit: 'g', color: 'var(--color-protein)' },
+        { name: 'Carbs', ...carbs, unit: 'g', color: 'var(--color-carbs)' },
+        { name: 'Fat', ...fat, unit: 'g', color: 'var(--color-fat)' },
     ];
 
     return (
@@ -19,7 +35,9 @@ export function MacrosBreakdown() {
 
             <div className="space-y-4">
                 {macroData.map((macro) => {
-                    const percentage = Math.round((macro.current / macro.goal) * 100);
+                    const percentage = macro.goal > 0
+                        ? Math.round((macro.current / macro.goal) * 100)
+                        : 0;
                     return (
                         <div key={macro.name}>
                             <div className="flex items-center justify-between mb-1.5">

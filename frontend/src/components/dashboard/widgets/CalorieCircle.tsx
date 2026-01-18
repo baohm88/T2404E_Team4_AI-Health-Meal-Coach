@@ -1,14 +1,29 @@
 'use client';
 
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { MOCK_STATS } from '@/lib/mock-data';
 
-export function CalorieCircle() {
-    const { caloriesIn, caloriesGoal, caloriesRemaining } = MOCK_STATS;
+// ============================================================
+// TYPES
+// ============================================================
 
+interface CalorieCircleProps {
+    eaten?: number;
+    goal?: number;
+    remaining?: number;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
+export function CalorieCircle({
+    eaten = 0,
+    goal = 2000,
+    remaining = 2000
+}: CalorieCircleProps) {
     const data = [
-        { name: 'Eaten', value: caloriesIn, color: 'var(--color-success)' },
-        { name: 'Remaining', value: caloriesRemaining, color: 'var(--color-remaining)' },
+        { name: 'Eaten', value: eaten, color: 'var(--color-success)' },
+        { name: 'Remaining', value: remaining, color: 'var(--color-remaining)' },
     ];
 
     return (
@@ -40,8 +55,8 @@ export function CalorieCircle() {
 
                 {/* Center Text */}
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-3xl font-bold text-slate-800">{caloriesIn}</span>
-                    <span className="text-sm text-slate-500">/ {caloriesGoal} kcal</span>
+                    <span className="text-3xl font-bold text-slate-800">{eaten}</span>
+                    <span className="text-sm text-slate-500">/ {goal} kcal</span>
                 </div>
             </div>
 
