@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface WeeklyPlanService {
 
-    List<WeeklyPlanResponse> generateWeeklyPlans(Long monthlyPlanId);
+    List<WeeklyPlanResponse> generateWeeklyPlans(Long monthlyPlanId, Long userId);
 
-    List<WeeklyPlanResponse> getWeeklyPlans(Long monthlyPlanId);
+    List<WeeklyPlanResponse> getWeeklyPlans(Long monthlyPlanId, Long userId);
 }
