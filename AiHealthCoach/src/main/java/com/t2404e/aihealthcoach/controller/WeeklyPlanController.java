@@ -2,6 +2,8 @@ package com.t2404e.aihealthcoach.controller;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.service.WeeklyPlanService;
+import com.t2404e.aihealthcoach.util.RequestUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +21,15 @@ public class WeeklyPlanController {
     @PreAuthorize("hasRole('USER')")
     @PostMapping("/generate/{monthlyPlanId}")
     public ResponseEntity<ApiResponse<?>> generate(
-            @PathVariable Long monthlyPlanId
+            @PathVariable Long monthlyPlanId,
+            HttpServletRequest request
     ) {
+        Long userId = RequestUtil.getUserId(request);
+
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Weekly plans generated",
-                        service.generateWeeklyPlans(monthlyPlanId)
+                        service.generateWeeklyPlans(monthlyPlanId, userId)
                 )
         );
     }
@@ -32,12 +37,14 @@ public class WeeklyPlanController {
     @PreAuthorize("hasRole('USER')")
     @GetMapping("/{monthlyPlanId}")
     public ResponseEntity<ApiResponse<?>> get(
-            @PathVariable Long monthlyPlanId
+            @PathVariable Long monthlyPlanId,
+            HttpServletRequest request
     ) {
+        Long userId = RequestUtil.getUserId(request);
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Weekly plans loaded",
-                        service.getWeeklyPlans(monthlyPlanId)
+                        service.getWeeklyPlans(monthlyPlanId, userId)
                 )
         );
     }

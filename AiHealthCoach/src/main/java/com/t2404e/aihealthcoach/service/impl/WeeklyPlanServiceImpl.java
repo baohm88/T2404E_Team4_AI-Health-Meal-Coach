@@ -3,6 +3,7 @@ package com.t2404e.aihealthcoach.service.impl;
 import com.t2404e.aihealthcoach.dto.response.WeeklyPlanResponse;
 import com.t2404e.aihealthcoach.entity.MonthlyPlan;
 import com.t2404e.aihealthcoach.entity.WeeklyPlan;
+import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
 import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
@@ -28,7 +29,8 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
 
     @Override
     @Transactional
-    public List<WeeklyPlanResponse> generateWeeklyPlans(Long monthlyPlanId) {
+    public List<WeeklyPlanResponse> generateWeeklyPlans(Long monthlyPlanId,  Long userId) {
+        validateMonthlyPlanOwnership(monthlyPlanId, userId);
 
         MonthlyPlan monthlyPlan = monthlyPlanRepository.findById(monthlyPlanId)
                 .orElseThrow(() ->
@@ -54,11 +56,12 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
             weeklyPlanRepository.save(wp);
         }
 
-        return getWeeklyPlans(monthlyPlanId);
+        return getWeeklyPlans(monthlyPlanId,  userId);
     }
 
     @Override
-    public List<WeeklyPlanResponse> getWeeklyPlans(Long monthlyPlanId) {
+    public List<WeeklyPlanResponse> getWeeklyPlans(Long monthlyPlanId,  Long userId) {
+        validateMonthlyPlanOwnership(monthlyPlanId, userId);
 
         return weeklyPlanRepository
                 .findByMonthlyPlanIdOrderByWeekIndexAsc(monthlyPlanId)
@@ -72,4 +75,16 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
                 )
                 .toList();
     }
+
+    private void validateMonthlyPlanOwnership(Long monthlyPlanId, Long userId) {
+
+        MonthlyPlan monthlyPlan = monthlyPlanRepository.findById(monthlyPlanId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Monthly plan not found"));
+
+        if (!monthlyPlan.getUserId().equals(userId)) {
+            throw new ForbiddenException("You are not allowed to access this resource");
+        }
+    }
+
 }
