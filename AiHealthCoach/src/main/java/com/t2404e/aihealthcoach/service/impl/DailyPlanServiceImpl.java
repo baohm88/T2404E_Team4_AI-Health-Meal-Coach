@@ -2,9 +2,12 @@ package com.t2404e.aihealthcoach.service.impl;
 
 import com.t2404e.aihealthcoach.dto.response.DailyPlanResponse;
 import com.t2404e.aihealthcoach.entity.DailyPlan;
+import com.t2404e.aihealthcoach.entity.MonthlyPlan;
 import com.t2404e.aihealthcoach.entity.WeeklyPlan;
+import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.repository.DailyPlanRepository;
+import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
 import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
 import com.t2404e.aihealthcoach.service.DailyPlanService;
 import org.springframework.stereotype.Service;
@@ -18,18 +21,22 @@ public class DailyPlanServiceImpl implements DailyPlanService {
 
     private final WeeklyPlanRepository weeklyPlanRepository;
     private final DailyPlanRepository dailyPlanRepository;
+    private final MonthlyPlanRepository monthlyPlanRepository;
 
     public DailyPlanServiceImpl(
             WeeklyPlanRepository weeklyPlanRepository,
-            DailyPlanRepository dailyPlanRepository
+            DailyPlanRepository dailyPlanRepository, MonthlyPlanRepository monthlyPlanRepository
     ) {
         this.weeklyPlanRepository = weeklyPlanRepository;
         this.dailyPlanRepository = dailyPlanRepository;
+        this.monthlyPlanRepository = monthlyPlanRepository;
     }
 
     @Override
     @Transactional
-    public List<DailyPlanResponse> generateDailyPlans(Long weeklyPlanId) {
+    public List<DailyPlanResponse> generateDailyPlans(Long weeklyPlanId, Long userId) {
+
+        validateWeeklyPlanOwnership(weeklyPlanId, userId);
 
         WeeklyPlan weeklyPlan = weeklyPlanRepository.findById(weeklyPlanId)
                 .orElseThrow(() ->
@@ -53,11 +60,13 @@ public class DailyPlanServiceImpl implements DailyPlanService {
             dailyPlanRepository.save(dp);
         }
 
-        return getDailyPlans(weeklyPlanId);
+        return getDailyPlans(weeklyPlanId, userId);
     }
 
     @Override
-    public List<DailyPlanResponse> getDailyPlans(Long weeklyPlanId) {
+    public List<DailyPlanResponse> getDailyPlans(Long weeklyPlanId, Long userId) {
+
+        validateWeeklyPlanOwnership(weeklyPlanId, userId);
 
         return dailyPlanRepository
                 .findByWeeklyPlanIdOrderByDayIndexAsc(weeklyPlanId)
@@ -71,4 +80,20 @@ public class DailyPlanServiceImpl implements DailyPlanService {
                 )
                 .toList();
     }
+
+    private void validateWeeklyPlanOwnership(Long weeklyPlanId, Long userId) {
+
+        WeeklyPlan weeklyPlan = weeklyPlanRepository.findById(weeklyPlanId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Weekly plan not found"));
+
+        MonthlyPlan monthlyPlan = monthlyPlanRepository.findById(weeklyPlan.getMonthlyPlanId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Monthly plan not found"));
+
+        if (!monthlyPlan.getUserId().equals(userId)) {
+            throw new ForbiddenException("You are not allowed to access this resource");
+        }
+    }
+
 }
