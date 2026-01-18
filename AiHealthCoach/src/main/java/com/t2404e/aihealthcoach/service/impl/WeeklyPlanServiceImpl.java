@@ -5,11 +5,13 @@ import com.t2404e.aihealthcoach.dto.response.WeeklyAdjustmentResponse;
 import com.t2404e.aihealthcoach.dto.response.WeeklyPlanResponse;
 import com.t2404e.aihealthcoach.entity.DailyPlan;
 import com.t2404e.aihealthcoach.entity.MonthlyPlan;
+import com.t2404e.aihealthcoach.entity.User;
 import com.t2404e.aihealthcoach.entity.WeeklyPlan;
 import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.repository.DailyPlanRepository;
 import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
+import com.t2404e.aihealthcoach.repository.UserRepository;
 import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
 import com.t2404e.aihealthcoach.service.WeeklyPlanService;
 import org.springframework.stereotype.Service;
@@ -23,14 +25,16 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
     private final MonthlyPlanRepository monthlyPlanRepository;
     private final WeeklyPlanRepository weeklyPlanRepository;
     private final DailyPlanRepository dailyPlanRepository;
+    private final UserRepository userRepository;
 
     public WeeklyPlanServiceImpl(
             MonthlyPlanRepository monthlyPlanRepository,
-            WeeklyPlanRepository weeklyPlanRepository, DailyPlanRepository dailyPlanRepository
-    ) {
+            WeeklyPlanRepository weeklyPlanRepository, DailyPlanRepository dailyPlanRepository,
+            UserRepository userRepository) {
         this.monthlyPlanRepository = monthlyPlanRepository;
         this.weeklyPlanRepository = weeklyPlanRepository;
         this.dailyPlanRepository = dailyPlanRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -62,12 +66,14 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
             weeklyPlanRepository.save(wp);
         }
 
-        return getWeeklyPlans(monthlyPlanId,  userId);
+        return getWeeklyPlans(monthlyPlanId, userId);
     }
 
     @Override
     public List<WeeklyPlanResponse> getWeeklyPlans(Long monthlyPlanId,  Long userId) {
         validateMonthlyPlanOwnership(monthlyPlanId, userId);
+
+        requirePremium(userId);
 
         return weeklyPlanRepository
                 .findByMonthlyPlanIdOrderByWeekIndexAsc(monthlyPlanId)
@@ -102,6 +108,8 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
         if (!monthlyPlan.getUserId().equals(userId)) {
             throw new ForbiddenException("You are not allowed to adjust this plan");
         }
+
+        requirePremium(userId);
 
         int oldCalories = weeklyPlan.getDailyCalories();
         int adherence = request.getAdherenceScore();
@@ -159,4 +167,13 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
         }
     }
 
+    private void requirePremium(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("User not found"));
+
+        if (!Boolean.TRUE.equals(user.getIsPremium())) {
+            throw new ForbiddenException("Upgrade to Premium to access this feature");
+        }
+    }
 }
