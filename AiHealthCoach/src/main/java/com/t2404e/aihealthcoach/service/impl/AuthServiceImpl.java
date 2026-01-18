@@ -32,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
      * Register new user
      * - Check email uniqueness
      * - Hash password
+     * - Set default isPremium = false
      * - Set default role = USER
      */
     @Override
@@ -46,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
+                .isPremium(false)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.USER) // default role
                 .status(1)           // active

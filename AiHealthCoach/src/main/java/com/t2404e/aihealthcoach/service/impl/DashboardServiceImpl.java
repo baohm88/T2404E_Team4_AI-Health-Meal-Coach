@@ -25,12 +25,48 @@ public class DashboardServiceImpl implements DashboardService {
     /**
      * Get dashboard summary for user
      */
+//    @Override
+//    public DashboardResponse getDashboard(Long userId) {
+//
+//        HealthProfile profile = healthProfileRepository.findById(userId)
+//                .orElseThrow(() ->
+//                        new ResourceNotFoundException("Health profile not found"));
+//
+//        double bmi = calculationService.calculateBMI(
+//                profile.getHeight(),
+//                profile.getWeight()
+//        );
+//
+//        double bmr = calculationService.calculateBMR(
+//                profile.getGender(),
+//                profile.getAge(),
+//                profile.getHeight(),
+//                profile.getWeight()
+//        );
+//
+//        double tdee = calculationService.calculateTDEE(
+//                bmr,
+//                profile.getActivityLevel()
+//        );
+//
+//        int energyScore = calculationService.calculateEnergyScore(
+//                profile.getStressLevel(),
+//                profile.getSleepDuration()
+//        );
+//
+//        return DashboardResponse.builder()
+//                .bmi(bmi)
+//                .bmr(bmr)
+//                .tdee(tdee)
+//                .energyScore(energyScore)
+//                .build();
+//    }
+
     @Override
     public DashboardResponse getDashboard(Long userId) {
 
         HealthProfile profile = healthProfileRepository.findById(userId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Health profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Health profile not found"));
 
         double bmi = calculationService.calculateBMI(
                 profile.getHeight(),
@@ -54,11 +90,19 @@ public class DashboardServiceImpl implements DashboardService {
                 profile.getSleepDuration()
         );
 
+        var healthStatus = calculationService.determineHealthStatus(bmi);
+
+        int recommendedCalories =
+                calculationService.calculateRecommendedCalories(tdee, profile.getGoal());
+
         return DashboardResponse.builder()
                 .bmi(bmi)
                 .bmr(bmr)
                 .tdee(tdee)
                 .energyScore(energyScore)
+                .healthStatus(healthStatus)
+                .recommendedCalories(recommendedCalories)
                 .build();
     }
+
 }

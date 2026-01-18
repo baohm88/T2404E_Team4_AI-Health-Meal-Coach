@@ -1,9 +1,6 @@
 package com.t2404e.aihealthcoach.service.impl;
 
-import com.t2404e.aihealthcoach.enums.ActivityLevel;
-import com.t2404e.aihealthcoach.enums.Gender;
-import com.t2404e.aihealthcoach.enums.StressLevel;
-import com.t2404e.aihealthcoach.enums.SleepDuration;
+import com.t2404e.aihealthcoach.enums.*;
 import com.t2404e.aihealthcoach.service.HealthCalculationService;
 import org.springframework.stereotype.Service;
 
@@ -82,6 +79,39 @@ public class HealthCalculationServiceImpl implements HealthCalculationService {
             case MORE_THAN_NINE -> score -= 5;
         }
 
-        return Math.max(score, 0);
+//        return Math.max(score, 0);
+        return Math.max(0, Math.min(score, 100));
     }
+
+    @Override
+    public HealthStatus determineHealthStatus(double bmi) {
+
+        if (bmi < 18.5) {
+            return HealthStatus.UNDERWEIGHT;
+        } else if (bmi < 25) {
+            return HealthStatus.NORMAL;
+        } else if (bmi < 30) {
+            return HealthStatus.OVERWEIGHT;
+        } else {
+            return HealthStatus.OBESE;
+        }
+    }
+
+    @Override
+    public int calculateRecommendedCalories(double tdee, GoalType goal) {
+
+        double calories;
+
+        switch (goal) {
+            case WEIGHT_LOSS -> calories = tdee - 500;
+            case MUSCLE_GAIN -> calories = tdee + 300;
+            case MAINTENANCE -> calories = tdee;
+            default -> calories = tdee;
+        }
+
+        // Safety clamp
+        return (int) Math.max(calories, 1200);
+    }
+
+
 }
