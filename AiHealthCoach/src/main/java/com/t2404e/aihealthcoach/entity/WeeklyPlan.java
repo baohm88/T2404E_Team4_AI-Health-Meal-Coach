@@ -46,6 +46,10 @@ public class WeeklyPlan {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    private Integer adherenceScore; // 0–100
+    @Column(columnDefinition = "TEXT")
+    private String adjustmentNote;
+
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

@@ -1,10 +1,14 @@
 package com.t2404e.aihealthcoach.service.impl;
 
+import com.t2404e.aihealthcoach.dto.request.WeeklyAdjustmentRequest;
+import com.t2404e.aihealthcoach.dto.response.WeeklyAdjustmentResponse;
 import com.t2404e.aihealthcoach.dto.response.WeeklyPlanResponse;
+import com.t2404e.aihealthcoach.entity.DailyPlan;
 import com.t2404e.aihealthcoach.entity.MonthlyPlan;
 import com.t2404e.aihealthcoach.entity.WeeklyPlan;
 import com.t2404e.aihealthcoach.exception.ForbiddenException;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
+import com.t2404e.aihealthcoach.repository.DailyPlanRepository;
 import com.t2404e.aihealthcoach.repository.MonthlyPlanRepository;
 import com.t2404e.aihealthcoach.repository.WeeklyPlanRepository;
 import com.t2404e.aihealthcoach.service.WeeklyPlanService;
@@ -18,13 +22,15 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
 
     private final MonthlyPlanRepository monthlyPlanRepository;
     private final WeeklyPlanRepository weeklyPlanRepository;
+    private final DailyPlanRepository dailyPlanRepository;
 
     public WeeklyPlanServiceImpl(
             MonthlyPlanRepository monthlyPlanRepository,
-            WeeklyPlanRepository weeklyPlanRepository
+            WeeklyPlanRepository weeklyPlanRepository, DailyPlanRepository dailyPlanRepository
     ) {
         this.monthlyPlanRepository = monthlyPlanRepository;
         this.weeklyPlanRepository = weeklyPlanRepository;
+        this.dailyPlanRepository = dailyPlanRepository;
     }
 
     @Override
@@ -75,6 +81,72 @@ public class WeeklyPlanServiceImpl implements WeeklyPlanService {
                 )
                 .toList();
     }
+
+
+    @Override
+    @Transactional
+    public WeeklyAdjustmentResponse adjustWeeklyPlan(
+            Long weeklyPlanId,
+            Long userId,
+            WeeklyAdjustmentRequest request
+    ) {
+
+        WeeklyPlan weeklyPlan = weeklyPlanRepository.findById(weeklyPlanId)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Weekly plan not found"));
+
+        MonthlyPlan monthlyPlan = monthlyPlanRepository.findById(weeklyPlan.getMonthlyPlanId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Monthly plan not found"));
+
+        if (!monthlyPlan.getUserId().equals(userId)) {
+            throw new ForbiddenException("You are not allowed to adjust this plan");
+        }
+
+        int oldCalories = weeklyPlan.getDailyCalories();
+        int adherence = request.getAdherenceScore();
+
+        double rate;
+        String adjustmentNote;
+
+        if (adherence >= 80) {
+            rate = 0;
+            adjustmentNote = "Plan kept unchanged due to good adherence";
+        } else if (adherence >= 50) {
+            rate = 0.05;
+            adjustmentNote = "Calories slightly increased due to medium adherence";
+        } else {
+            rate = 0.10;
+            adjustmentNote = "Calories increased to reduce pressure due to low adherence";
+        }
+
+        int newCalories = (int) Math.round(oldCalories * (1 + rate));
+
+        // Update weekly plan
+        weeklyPlan.setDailyCalories(newCalories);
+        weeklyPlan.setAdherenceScore(adherence);
+        weeklyPlan.setAdjustmentNote(adjustmentNote);
+        weeklyPlanRepository.save(weeklyPlan);
+
+        // Update all daily plans of this week
+        List<DailyPlan> dailyPlans =
+                dailyPlanRepository.findByWeeklyPlanIdOrderByDayIndexAsc(weeklyPlanId);
+
+        int dailyCalories = newCalories / dailyPlans.size();
+
+        for (DailyPlan daily : dailyPlans) {
+            daily.setTargetCalories(dailyCalories);
+        }
+
+        dailyPlanRepository.saveAll(dailyPlans);
+
+        return WeeklyAdjustmentResponse.builder()
+                .oldTargetCalories(oldCalories)
+                .newTargetCalories(newCalories)
+                .adjustmentNote(adjustmentNote)
+                .build();
+    }
+
 
     private void validateMonthlyPlanOwnership(Long monthlyPlanId, Long userId) {
 
