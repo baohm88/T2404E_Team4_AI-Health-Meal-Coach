@@ -1,61 +1,31 @@
 /**
  * Auth Service
- * 
+ *
  * Handles all authentication API calls.
- * Currently uses mock data - replace with real API in production.
- * 
- * @see /lib/schemas/auth.schema.ts - Validation schemas
- * @see /lib/constants/auth.constants.ts - Configuration
+ * Endpoints: POST /auth/login, POST /auth/register
+ *
+ * @see /lib/http.ts - HTTP client
+ * @see /types/api.ts - Type definitions
  */
 
-import { LoginData, RegisterData } from '@/lib/schemas/auth.schema';
-import { API_DELAY_MS, generateMockToken } from '@/lib/constants/auth.constants';
-import { User } from '@/stores/useAuthStore';
+import http, { saveToken, removeToken } from '@/lib/http';
+import {
+    ApiResponse,
+    LoginRequest,
+    RegisterRequest,
+    AuthData,
+} from '@/types/api';
 
 // ============================================================
 // TYPE DEFINITIONS
 // ============================================================
 
-/** Standard auth API response */
+/** Standard auth API response for hook consumption */
 export interface AuthResponse {
     success: boolean;
     accessToken?: string;
-    user?: User;
     error?: string;
 }
-
-/** Error response for failed requests */
-interface AuthError {
-    success: false;
-    error: string;
-}
-
-// ============================================================
-// HELPER FUNCTIONS
-// ============================================================
-
-/** 
- * Simulate API delay (remove in production)
- */
-const delay = (ms: number): Promise<void> =>
-    new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Create successful auth response
- */
-const createSuccessResponse = (user: User): AuthResponse => ({
-    success: true,
-    accessToken: generateMockToken(),
-    user,
-});
-
-/**
- * Create error response
- */
-const createErrorResponse = (error: string): AuthError => ({
-    success: false,
-    error,
-});
 
 // ============================================================
 // SERVICE IMPLEMENTATION
@@ -67,21 +37,41 @@ export const authService = {
      * @param data - Login credentials
      * @returns Promise with auth response
      */
-    login: async (data: LoginData): Promise<AuthResponse> => {
-        await delay(API_DELAY_MS);
-
-        // Mock validation - accept any credentials for demo
-        // In production: call actual API endpoint
+    login: async (data: LoginRequest): Promise<AuthResponse> => {
         try {
-            const user: User = {
-                id: `user_${Date.now()}`,
-                email: data.email,
-                fullName: data.email.split('@')[0], // Extract name from email
-            };
+            // http.post returns ApiResponse<T> after interceptor unwrapping
+            const response = await http.post('/auth/login', data) as unknown as ApiResponse<AuthData>;
 
-            return createSuccessResponse(user);
-        } catch {
-            return createErrorResponse('Đăng nhập thất bại. Vui lòng thử lại.');
+            console.log('🔐 Login API Response:', response); // Debug log
+
+            if (response.success && response.data?.token) {
+                const { token } = response.data;
+
+                // Save token to localStorage
+                saveToken(token);
+
+                return {
+                    success: true,
+                    accessToken: token,
+                };
+            }
+
+            return {
+                success: false,
+                error: response.message || 'Đăng nhập thất bại',
+            };
+        } catch (error) {
+            console.error('🔐 Login Error:', error); // Debug log
+
+            // Extract error message from API response
+            const axiosError = error as { response?: { data?: ApiResponse<unknown> } };
+            const errorMessage = axiosError.response?.data?.message
+                || 'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
         }
     },
 
@@ -90,39 +80,86 @@ export const authService = {
      * @param data - Registration data
      * @returns Promise with auth response
      */
-    register: async (data: RegisterData): Promise<AuthResponse> => {
-        await delay(API_DELAY_MS);
-
+    register: async (data: RegisterRequest): Promise<AuthResponse> => {
         try {
-            const user: User = {
-                id: `user_${Date.now()}`,
-                email: data.email,
-                fullName: data.fullName,
+            // http.post returns ApiResponse<T> after interceptor unwrapping
+            const response = await http.post('/auth/register', data) as unknown as ApiResponse<AuthData>;
+
+            console.log('📝 Register API Response:', response); // Debug log
+
+            if (response.success && response.data?.token) {
+                const { token } = response.data;
+
+                // Save token to localStorage
+                saveToken(token);
+
+                return {
+                    success: true,
+                    accessToken: token,
+                };
+            }
+
+            return {
+                success: false,
+                error: response.message || 'Đăng ký thất bại',
+            };
+        } catch (error) {
+            console.error('📝 Register Error:', error); // Debug log
+
+            // Extract detailed error info
+            const axiosError = error as {
+                response?: {
+                    status?: number;
+                    data?: ApiResponse<unknown>;
+                };
+                message?: string;
             };
 
-            return createSuccessResponse(user);
-        } catch {
-            return createErrorResponse('Đăng ký thất bại. Vui lòng thử lại.');
+            const status = axiosError.response?.status;
+            const backendMessage = axiosError.response?.data?.message;
+
+            // Show specific error based on status code
+            let errorMessage = 'Đăng ký thất bại.';
+            if (status === 500) {
+                errorMessage = backendMessage || 'Lỗi server (500). Backend đang có vấn đề.';
+            } else if (status === 409 || backendMessage?.toLowerCase().includes('exist')) {
+                errorMessage = 'Email này đã được sử dụng.';
+            } else if (status === 400) {
+                errorMessage = backendMessage || 'Dữ liệu không hợp lệ.';
+            } else if (backendMessage) {
+                errorMessage = backendMessage;
+            }
+
+            console.error(`📝 Register failed [${status}]: ${errorMessage}`);
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
         }
     },
 
     /**
-     * Logout user (clear session on server)
+     * Logout user (clear session)
      * @returns Promise<void>
      */
     logout: async (): Promise<void> => {
-        await delay(500);
-        // In production: call logout endpoint to invalidate token
+        removeToken();
+        // Optional: Call logout endpoint if backend has one
+        // await http.post('/auth/logout');
     },
 
     /**
      * Verify if token is still valid
-     * @param token - Access token to verify
      * @returns Promise<boolean>
      */
-    verifyToken: async (token: string): Promise<boolean> => {
-        await delay(300);
-        // In production: call token verification endpoint
-        return token.startsWith('mock_token_');
+    verifyToken: async (): Promise<boolean> => {
+        try {
+            // Call a protected endpoint to verify token
+            await http.get('/auth/me');
+            return true;
+        } catch {
+            return false;
+        }
     },
 };

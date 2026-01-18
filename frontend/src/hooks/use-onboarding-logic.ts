@@ -51,19 +51,19 @@ interface UseOnboardingLogicReturn {
 // CONSTANTS
 // ============================================================
 
-/** Step metadata configuration */
+/** Step metadata configuration - Order: INFO → GOAL → TARGET → LIFESTYLE → ANALYSIS */
 const STEP_METADATA: Record<OnboardingStep, StepMeta> = {
+    [OnboardingStep.INFO]: {
+        title: 'Thông tin cơ bản',
+        description: 'Cho chúng tôi biết thông tin để tính toán chính xác.',
+    },
     [OnboardingStep.GOAL]: {
         title: 'Bạn muốn đạt được điều gì?',
-        description: 'Chọn mục tiêu chính của bạn để bắt đầu.',
+        description: 'Chọn mục tiêu chính của bạn.',
     },
     [OnboardingStep.TARGET]: {
         title: 'Chi tiết mục tiêu',
         description: 'Thiết lập cân nặng mong muốn và tốc độ đạt mục tiêu.',
-    },
-    [OnboardingStep.INFO]: {
-        title: 'Thông tin cơ bản',
-        description: 'Cho chúng tôi biết thông tin để tính toán chính xác.',
     },
     [OnboardingStep.LIFESTYLE]: {
         title: 'Lối sống của bạn',
@@ -122,8 +122,8 @@ export const useOnboardingLogic = (): UseOnboardingLogicReturn => {
         return (visualStep / actualTotalSteps) * 100;
     }, [visualStep, actualTotalSteps]);
 
-    // Navigation states
-    const isFirstStep = step === OnboardingStep.GOAL;
+    // Navigation states - INFO is now the first step
+    const isFirstStep = step === OnboardingStep.INFO;
     const isLastStep = step === OnboardingStep.ANALYSIS;
 
     // Callbacks for navigation (stable references)

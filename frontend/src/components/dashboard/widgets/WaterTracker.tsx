@@ -1,17 +1,36 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Droplets, Minus, Plus } from 'lucide-react';
-import { MOCK_STATS } from '@/lib/mock-data';
 
-export function WaterTracker() {
-    const [waterIntake, setWaterIntake] = useState(MOCK_STATS.waterIntake);
-    const { waterGoal } = MOCK_STATS;
+// ============================================================
+// TYPES
+// ============================================================
+
+interface WaterTrackerProps {
+    current?: number;
+    goal?: number;
+}
+
+// ============================================================
+// COMPONENT
+// ============================================================
+
+export function WaterTracker({
+    current = 0,
+    goal = 8,
+}: WaterTrackerProps) {
+    const [waterIntake, setWaterIntake] = useState(current);
+
+    // Sync with props when they change
+    useEffect(() => {
+        setWaterIntake(current);
+    }, [current]);
 
     const addWater = () => setWaterIntake((prev) => Math.min(prev + 1, 12));
     const removeWater = () => setWaterIntake((prev) => Math.max(prev - 1, 0));
 
-    const percentage = (waterIntake / waterGoal) * 100;
+    const percentage = (waterIntake / goal) * 100;
 
     return (
         <div className="bg-white rounded-3xl p-6 shadow-sm">
@@ -32,7 +51,7 @@ export function WaterTracker() {
 
                 <div className="text-center">
                     <span className="text-4xl font-bold text-slate-800">{waterIntake}</span>
-                    <span className="text-lg text-slate-400 ml-1">/ {waterGoal}</span>
+                    <span className="text-lg text-slate-400 ml-1">/ {goal}</span>
                     <p className="text-sm text-slate-500 mt-1">ly nước</p>
                 </div>
 
