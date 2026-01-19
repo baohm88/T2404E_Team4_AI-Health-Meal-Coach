@@ -24,7 +24,6 @@ export default function RegisterPage() {
         serverError,
         showPassword,
         togglePasswordVisibility,
-        hasPendingOnboarding,
     } = useRegisterForm();
 
     return (
@@ -36,16 +35,10 @@ export default function RegisterPage() {
                 </Link>
                 <h1 className="text-2xl font-bold text-slate-800 mt-4">Tạo tài khoản</h1>
                 <p className="text-slate-500 mt-2">
-                    {hasPendingOnboarding ? 'Đăng ký để lưu lộ trình AI của bạn' : 'Bắt đầu hành trình sức khỏe của bạn'}
+                    Bắt đầu hành trình sức khỏe của bạn
                 </p>
             </div>
 
-            {/* Pending Onboarding Notice */}
-            {hasPendingOnboarding && (
-                <div className="mb-6 p-4 rounded-2xl bg-green-50 border border-green-200 text-green-700 text-sm">
-                    ✅ Bài test của bạn đã sẵn sàng. Tạo tài khoản để lưu kết quả!
-                </div>
-            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -127,10 +120,10 @@ export default function RegisterPage() {
                     {isLoading ? (
                         <>
                             <Loader2 className="w-5 h-5 animate-spin" />
-                            {hasPendingOnboarding ? 'Đang lưu lộ trình...' : 'Đang tạo tài khoản...'}
+                            Đang tạo tài khoản...
                         </>
                     ) : (
-                        hasPendingOnboarding ? 'Đăng ký & Lưu lộ trình' : 'Đăng ký'
+                        'Đăng ký'
                     )}
                 </button>
             </form>

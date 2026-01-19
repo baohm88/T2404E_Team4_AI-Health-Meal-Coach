@@ -2,14 +2,14 @@
  * useOnboardingLogic Hook
  *
  * Custom hook for Onboarding page logic.
- * Updated to support 5-step flow with conditional TARGET step.
+ * Simplified to 2-step flow: INFO → LIFESTYLE
  *
  * @returns Step content, metadata, and navigation handlers
  */
 
-import { useEffect, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useOnboardingStore } from '@/stores/useOnboardingStore';
-import { OnboardingStep, requiresTargetStep } from '@/lib/constants/onboarding.constants';
+import { OnboardingStep, FIRST_STEP, LAST_STEP } from '@/lib/constants/onboarding.constants';
 
 // ============================================================
 // TYPES
@@ -23,12 +23,10 @@ interface StepMeta {
 
 /** Return type of useOnboardingLogic hook */
 interface UseOnboardingLogicReturn {
-    /** Current step number (1-5) */
+    /** Current step number (1-2) */
     currentStep: number;
-    /** Actual step count based on goal (4 or 5) */
-    actualTotalSteps: number;
-    /** Visual step for display (adjusted for skipped TARGET) */
-    visualStep: number;
+    /** Total steps (always 2) */
+    totalSteps: number;
     /** Progress percentage (0-100) */
     progress: number;
     /** Metadata for current step */
@@ -43,35 +41,21 @@ interface UseOnboardingLogicReturn {
     isFirstStep: boolean;
     /** Check if on last step */
     isLastStep: boolean;
-    /** Whether TARGET step should be shown */
-    showTargetStep: boolean;
 }
 
 // ============================================================
 // CONSTANTS
 // ============================================================
 
-/** Step metadata configuration - Order: INFO → GOAL → TARGET → LIFESTYLE → ANALYSIS */
+/** Step metadata configuration */
 const STEP_METADATA: Record<OnboardingStep, StepMeta> = {
     [OnboardingStep.INFO]: {
         title: 'Thông tin cơ bản',
-        description: 'Cho chúng tôi biết thông tin để tính toán chính xác.',
-    },
-    [OnboardingStep.GOAL]: {
-        title: 'Bạn muốn đạt được điều gì?',
-        description: 'Chọn mục tiêu chính của bạn.',
-    },
-    [OnboardingStep.TARGET]: {
-        title: 'Chi tiết mục tiêu',
-        description: 'Thiết lập cân nặng mong muốn và tốc độ đạt mục tiêu.',
+        description: 'Cho chúng tôi biết thông tin của bạn để tính toán chính xác.',
     },
     [OnboardingStep.LIFESTYLE]: {
         title: 'Lối sống của bạn',
         description: 'Hoạt động, giấc ngủ và mức độ stress hàng ngày.',
-    },
-    [OnboardingStep.ANALYSIS]: {
-        title: 'Phân tích sức khỏe',
-        description: 'Xem các chỉ số BMI, TDEE và năng lượng của bạn.',
     },
 };
 
@@ -88,43 +72,25 @@ const DEFAULT_META: StepMeta = {
 export const useOnboardingLogic = (): UseOnboardingLogicReturn => {
     const {
         step,
+        totalSteps,
         nextStep,
         prevStep,
         skipStep,
-        reset,
-        getActualStepCount,
-        getVisualStep,
-        formData,
     } = useOnboardingStore();
-
-    // Reset store on mount to ensure fresh start
-    useEffect(() => {
-        reset();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Determine if TARGET step should be shown
-    const showTargetStep = requiresTargetStep(formData.goal);
-
-    // Get actual step count (4 or 5 based on goal)
-    const actualTotalSteps = getActualStepCount();
-
-    // Get visual step (adjusted for skipped TARGET)
-    const visualStep = getVisualStep();
 
     // Memoized step metadata
     const stepMeta = useMemo<StepMeta>(() => {
         return STEP_METADATA[step as OnboardingStep] ?? DEFAULT_META;
     }, [step]);
 
-    // Memoized progress calculation (based on visual step)
+    // Memoized progress calculation
     const progress = useMemo(() => {
-        return (visualStep / actualTotalSteps) * 100;
-    }, [visualStep, actualTotalSteps]);
+        return (step / totalSteps) * 100;
+    }, [step, totalSteps]);
 
-    // Navigation states - INFO is now the first step
-    const isFirstStep = step === OnboardingStep.INFO;
-    const isLastStep = step === OnboardingStep.ANALYSIS;
+    // Navigation states
+    const isFirstStep = step === FIRST_STEP;
+    const isLastStep = step === LAST_STEP;
 
     // Callbacks for navigation (stable references)
     const goNext = useCallback(() => nextStep(), [nextStep]);
@@ -133,8 +99,7 @@ export const useOnboardingLogic = (): UseOnboardingLogicReturn => {
 
     return {
         currentStep: step,
-        actualTotalSteps,
-        visualStep,
+        totalSteps,
         progress,
         stepMeta,
         goNext,
@@ -142,6 +107,5 @@ export const useOnboardingLogic = (): UseOnboardingLogicReturn => {
         skip,
         isFirstStep,
         isLastStep,
-        showTargetStep,
     };
 };

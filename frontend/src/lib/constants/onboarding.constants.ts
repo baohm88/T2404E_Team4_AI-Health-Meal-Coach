@@ -2,7 +2,12 @@
  * Onboarding Constants
  *
  * Contains all default values, labels, and configuration for Onboarding flow.
- * Updated to support 5-step flow with conditional Target step.
+ * 
+ * POST-AUTH ONBOARDING: Only 2 steps
+ * - Step 1: INFO (Age, Gender, Height, Weight)
+ * - Step 2: LIFESTYLE (Activity, Sleep, Stress)
+ * 
+ * Goal/Target is determined by AI analysis after onboarding.
  *
  * @see /lib/schemas/onboarding.schema.ts - Zod schema & types
  */
@@ -21,23 +26,22 @@ import {
 // ============================================================
 
 /**
- * Enum for onboarding steps
- * Order: Basic Info → Goals → Target (conditional) → Lifestyle → Summary
- * Note: TARGET step is conditional (only shown for WEIGHT_LOSS/MUSCLE_GAIN)
+ * Enum for onboarding steps (Post-Auth Flow)
+ * Only 2 steps - AI will analyze and suggest goal/target
  */
 export enum OnboardingStep {
     INFO = 1,        // Basic info: Age, Gender, Height, Weight
-    GOAL = 2,        // Goals: Weight loss, Maintenance, Muscle gain
-    TARGET = 3,      // Conditional: Target weight, Weekly goal
-    LIFESTYLE = 4,   // Activity level, Sleep, Stress
-    ANALYSIS = 5,    // Summary/Analysis
+    LIFESTYLE = 2,   // Activity level, Sleep, Stress
 }
 
-/** Total number of steps (max, including conditional) */
-export const TOTAL_ONBOARDING_STEPS = 5;
+/** Total number of steps */
+export const TOTAL_ONBOARDING_STEPS = 2;
 
-/** Step đầu tiên */
+/** First step */
 export const FIRST_STEP = 1;
+
+/** Last step */
+export const LAST_STEP = 2;
 
 // ============================================================
 // DEFAULT VALUES
@@ -47,16 +51,19 @@ export const FIRST_STEP = 1;
  * Initial form data when user starts onboarding
  * - Required fields: undefined (must select/enter)
  * - Optional fields with sensible defaults
+ * 
+ * Note: goal and targetWeight removed from user input
+ * These will be determined by AI analysis
  */
 export const INITIAL_FORM_DATA: Partial<OnboardingData> = {
-    goal: undefined,
+    goal: undefined,           // Will be set by AI
     height: 170,
     weight: 65,
     age: 25,
     gender: undefined,
     activityLevel: undefined,
-    targetWeight: undefined,
-    weeklyGoal: undefined,
+    targetWeight: undefined,   // Will be set by AI
+    weeklyGoal: undefined,     // Will be set by AI
     stressLevel: undefined,
     sleepRange: undefined,
 } as const;
@@ -72,7 +79,7 @@ export const SKIP_DEFAULT_VALUES: Required<OnboardingData> = {
     weight: 65,
     age: 30,
     activityLevel: ActivityLevel.LIGHT,
-    targetWeight: 65, // Same as current weight for maintenance
+    targetWeight: 65,
     weeklyGoal: WeeklyGoal.NORMAL,
     stressLevel: StressLevel.MEDIUM,
     sleepRange: SleepRange.SEVEN_TO_9,
@@ -158,7 +165,7 @@ export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
 
 /** Get Vietnamese label for goal */
 export const getGoalLabel = (goal: Goal | undefined): string => {
-    return goal ? GOAL_LABELS[goal] : 'Chưa chọn';
+    return goal ? GOAL_LABELS[goal] : 'Chưa xác định';
 };
 
 /** Get Vietnamese label for activity level */
@@ -189,9 +196,4 @@ export const getSleepLabel = (range: SleepRange | undefined): string => {
 /** Get Vietnamese label for weekly goal */
 export const getWeeklyGoalLabel = (goal: WeeklyGoal | undefined): string => {
     return goal ? WEEKLY_GOAL_LABELS[goal] : 'Chưa chọn';
-};
-
-/** Check if goal requires target weight step */
-export const requiresTargetStep = (goal: Goal | undefined): boolean => {
-    return goal === Goal.WEIGHT_LOSS || goal === Goal.MUSCLE_GAIN;
 };

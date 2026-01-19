@@ -2,28 +2,38 @@
  * Onboarding Store
  *
  * Manages state for Onboarding flow using Zustand.
- * Updated to support 5-step flow with conditional TARGET step.
+ * Simplified to 2-step flow: INFO → LIFESTYLE
+ *
+ * GUEST FIRST FLOW: Uses persist middleware to save data to localStorage
+ * so guest users don't lose their data when registering.
  *
  * Architecture:
  * - State types defined clearly (OnboardingState)
- * - Constants separated (onboarding.constants.ts)
- * - Skip logic handled per step with safe defaults
- * - Conditional navigation based on Goal selection
+ * - Actions in separate interface (OnboardingActions)
+ * - Persist middleware for localStorage
+ * - Selector hooks for performance optimization
  *
- * @see /lib/constants/onboarding.constants.ts - Default values
- * @see /lib/schemas/onboarding.schema.ts - Zod schema & types
+ * @see /lib/constants/onboarding.constants.ts - Step configuration
+ * @see /hooks/use-onboarding-logic.ts - Logic hook
  */
 
 import { create } from 'zustand';
-import { OnboardingData, Goal } from '@/lib/schemas/onboarding.schema';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import {
-    OnboardingStep,
+    INITIAL_FORM_DATA,
     TOTAL_ONBOARDING_STEPS,
     FIRST_STEP,
-    INITIAL_FORM_DATA,
+    LAST_STEP,
     SKIP_DEFAULT_VALUES,
-    requiresTargetStep,
+    OnboardingStep,
 } from '@/lib/constants/onboarding.constants';
+import { OnboardingData } from '@/lib/schemas/onboarding.schema';
+
+// ============================================================
+// CONSTANTS
+// ============================================================
+
+const STORAGE_KEY = 'onboarding-data';
 
 // ============================================================
 // TYPE DEFINITIONS
@@ -31,75 +41,36 @@ import {
 
 /**
  * State interface for Onboarding Store
- * Uses Partial<OnboardingData> since user may not complete all fields
  */
 interface OnboardingState {
-    /** Current step (1-5) */
     step: number;
-    /** Total number of steps (max) */
     totalSteps: number;
-    /** Form data (may be incomplete) */
     formData: Partial<OnboardingData>;
+    isCompleted: boolean;
 }
 
 /**
  * Actions interface for Onboarding Store
  */
 interface OnboardingActions {
-    /** Update partial form data */
     setFormData: (data: Partial<OnboardingData>) => void;
-    /** Go to next step (with conditional logic) */
     nextStep: () => void;
-    /** Go to previous step (with conditional logic) */
     prevStep: () => void;
-    /** Set specific step */
     setStep: (step: number) => void;
-    /** Skip current step with defaults */
     skipStep: () => void;
-    /** Reset to initial state */
     reset: () => void;
-    /** Check if form has minimum required data */
+    markCompleted: () => void;
     isComplete: () => boolean;
-    /** Get actual step count based on goal (4 or 5) */
-    getActualStepCount: () => number;
-    /** Get visual step number (adjusted for skipped TARGET) */
-    getVisualStep: () => number;
+    hasPendingData: () => boolean;
+    clearStorage: () => void;
+    /** Get all guest data for syncing to server */
+    getGuestData: () => Partial<OnboardingData> | null;
+    /** Clear guest data after successful sync */
+    clearGuestData: () => void;
 }
 
 /** Combined store type */
 type OnboardingStore = OnboardingState & OnboardingActions;
-
-// ============================================================
-// STEP NAVIGATION HELPERS
-// ============================================================
-
-/**
- * Get the next step number considering conditional TARGET step
- * New order: INFO(1) → GOAL(2) → TARGET(3, conditional) → LIFESTYLE(4) → ANALYSIS(5)
- */
-const getNextStep = (currentStep: number, goal: Goal | undefined): number => {
-    const maxStep = TOTAL_ONBOARDING_STEPS;
-
-    // If on GOAL step and goal doesn't require target, skip TARGET
-    if (currentStep === OnboardingStep.GOAL && !requiresTargetStep(goal)) {
-        return OnboardingStep.LIFESTYLE; // Skip TARGET (step 3), go to LIFESTYLE (step 4)
-    }
-
-    return Math.min(currentStep + 1, maxStep);
-};
-
-/**
- * Get the previous step number considering conditional TARGET step
- * New order: INFO(1) → GOAL(2) → TARGET(3, conditional) → LIFESTYLE(4) → ANALYSIS(5)
- */
-const getPrevStep = (currentStep: number, goal: Goal | undefined): number => {
-    // If on LIFESTYLE step and goal doesn't require target, skip back to GOAL
-    if (currentStep === OnboardingStep.LIFESTYLE && !requiresTargetStep(goal)) {
-        return OnboardingStep.GOAL; // Skip TARGET (step 3), go back to GOAL (step 2)
-    }
-
-    return Math.max(currentStep - 1, FIRST_STEP);
-};
 
 // ============================================================
 // SKIP STEP HANDLERS
@@ -107,133 +78,163 @@ const getPrevStep = (currentStep: number, goal: Goal | undefined): number => {
 
 /**
  * Get default data for skipping a step
- * Returns partial data to merge into formData
  */
-const getSkipDataForStep = (
+function getSkipDataForStep(
     currentStep: number,
     currentData: Partial<OnboardingData>
-): Partial<OnboardingData> => {
+): Partial<OnboardingData> {
     switch (currentStep) {
-        case OnboardingStep.GOAL:
-            // Default to MAINTENANCE (skip TARGET step)
-            return { goal: SKIP_DEFAULT_VALUES.goal };
-
-        case OnboardingStep.TARGET:
-            // Set default target weight and weekly goal
-            return {
-                targetWeight: currentData.weight ?? SKIP_DEFAULT_VALUES.weight,
-                weeklyGoal: SKIP_DEFAULT_VALUES.weeklyGoal,
-            };
-
         case OnboardingStep.INFO:
-            // Fill in missing body stats
             return {
                 gender: currentData.gender ?? SKIP_DEFAULT_VALUES.gender,
                 height: currentData.height ?? SKIP_DEFAULT_VALUES.height,
                 weight: currentData.weight ?? SKIP_DEFAULT_VALUES.weight,
                 age: currentData.age ?? SKIP_DEFAULT_VALUES.age,
             };
-
         case OnboardingStep.LIFESTYLE:
-            // Set default lifestyle values
             return {
                 activityLevel: currentData.activityLevel ?? SKIP_DEFAULT_VALUES.activityLevel,
-                sleepRange: SKIP_DEFAULT_VALUES.sleepRange,
-                stressLevel: SKIP_DEFAULT_VALUES.stressLevel,
+                stressLevel: currentData.stressLevel ?? SKIP_DEFAULT_VALUES.stressLevel,
+                sleepRange: currentData.sleepRange ?? SKIP_DEFAULT_VALUES.sleepRange,
             };
-
         default:
-            // ANALYSIS step: no skip data needed
             return {};
     }
-};
+}
 
 // ============================================================
-// STORE IMPLEMENTATION
+// STORE IMPLEMENTATION WITH PERSIST
 // ============================================================
 
-export const useOnboardingStore = create<OnboardingStore>((set, get) => ({
-    // -------------------- STATE --------------------
-    step: FIRST_STEP,
-    totalSteps: TOTAL_ONBOARDING_STEPS,
-    formData: { ...INITIAL_FORM_DATA },
-
-    // -------------------- ACTIONS --------------------
-
-    setFormData: (data) => {
-        set((state) => ({
-            formData: { ...state.formData, ...data },
-        }));
-    },
-
-    nextStep: () => {
-        const { step, formData } = get();
-        const nextStep = getNextStep(step, formData.goal);
-        set({ step: nextStep });
-    },
-
-    prevStep: () => {
-        const { step, formData } = get();
-        const prevStep = getPrevStep(step, formData.goal);
-        set({ step: prevStep });
-    },
-
-    setStep: (step) => {
-        const validStep = Math.max(FIRST_STEP, Math.min(step, TOTAL_ONBOARDING_STEPS));
-        set({ step: validStep });
-    },
-
-    skipStep: () => {
-        const { step, formData, totalSteps } = get();
-
-        // Get default data for current step
-        const skipData = getSkipDataForStep(step, formData);
-        const updatedFormData = { ...formData, ...skipData };
-
-        // Calculate next step (considering conditional logic)
-        const nextStep = getNextStep(step, updatedFormData.goal);
-
-        set({
-            formData: updatedFormData,
-            step: Math.min(nextStep, totalSteps),
-        });
-    },
-
-    reset: () => {
-        set({
+export const useOnboardingStore = create<OnboardingStore>()(
+    persist(
+        (set, get) => ({
+            // -------------------- STATE --------------------
             step: FIRST_STEP,
+            totalSteps: TOTAL_ONBOARDING_STEPS,
             formData: { ...INITIAL_FORM_DATA },
-        });
-    },
+            isCompleted: false,
 
-    isComplete: () => {
-        const { formData } = get();
-        // Minimum required fields for health calculation
-        return !!(
-            formData.goal &&
-            formData.gender &&
-            formData.height &&
-            formData.weight &&
-            formData.age &&
-            formData.activityLevel
-        );
-    },
+            // -------------------- ACTIONS --------------------
 
-    getActualStepCount: () => {
-        const { formData } = get();
-        // If MAINTENANCE, TARGET step is skipped (4 steps instead of 5)
-        return requiresTargetStep(formData.goal) ? 5 : 4;
-    },
+            setFormData: (data) =>
+                set((state) => ({
+                    formData: { ...state.formData, ...data },
+                })),
 
-    getVisualStep: () => {
-        const { step, formData } = get();
-        // If MAINTENANCE and past GOAL, subtract 1 from step number
-        if (!requiresTargetStep(formData.goal) && step > OnboardingStep.GOAL) {
-            return step - 1;
+            nextStep: () => {
+                const { step } = get();
+                if (step < LAST_STEP) {
+                    set({ step: step + 1 });
+                }
+            },
+
+            prevStep: () => {
+                const { step } = get();
+                if (step > FIRST_STEP) {
+                    set({ step: step - 1 });
+                }
+            },
+
+            setStep: (step) => {
+                if (step >= FIRST_STEP && step <= LAST_STEP) {
+                    set({ step });
+                }
+            },
+
+            skipStep: () => {
+                const { step, formData } = get();
+                const skipData = getSkipDataForStep(step, formData);
+
+                set((state) => ({
+                    formData: { ...state.formData, ...skipData },
+                    step: Math.min(step + 1, LAST_STEP),
+                }));
+            },
+
+            reset: () =>
+                set({
+                    step: FIRST_STEP,
+                    formData: { ...INITIAL_FORM_DATA },
+                    isCompleted: false,
+                }),
+
+            markCompleted: () => set({ isCompleted: true }),
+
+            isComplete: () => {
+                const { formData } = get();
+                // Check required fields for both steps
+                return !!(
+                    formData.gender &&
+                    formData.height &&
+                    formData.weight &&
+                    formData.age &&
+                    formData.activityLevel &&
+                    formData.stressLevel &&
+                    formData.sleepRange
+                );
+            },
+
+            /**
+             * Check if there's pending guest onboarding data that needs to be saved
+             */
+            hasPendingData: () => {
+                const { isComplete, isCompleted } = get();
+                // Has complete data but not yet saved to backend
+                return isComplete() && !isCompleted;
+            },
+
+            /**
+             * Clear localStorage after successful save
+             */
+            clearStorage: () => {
+                set({
+                    step: FIRST_STEP,
+                    formData: { ...INITIAL_FORM_DATA },
+                    isCompleted: false,
+                });
+                // Also clear localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            },
+
+            /**
+             * Get guest data for syncing to server after registration
+             * Returns null if data is incomplete
+             */
+            getGuestData: () => {
+                const { formData, isComplete } = get();
+                if (!isComplete()) return null;
+                return formData;
+            },
+
+            /**
+             * Clear guest data after successful sync to server
+             */
+            clearGuestData: () => {
+                set({
+                    step: FIRST_STEP,
+                    formData: { ...INITIAL_FORM_DATA },
+                    isCompleted: true, // Mark as completed so hasPendingData returns false
+                });
+                // Clear localStorage
+                if (typeof window !== 'undefined') {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
+            },
+        }),
+        {
+            name: STORAGE_KEY,
+            storage: createJSONStorage(() => localStorage),
+            // Only persist formData and isCompleted, not step
+            partialize: (state) => ({
+                formData: state.formData,
+                isCompleted: state.isCompleted,
+            }),
         }
-        return step;
-    },
-}));
+    )
+);
 
 // ============================================================
 // SELECTOR HOOKS (Performance optimization)
@@ -245,14 +246,18 @@ export const useCurrentStep = () => useOnboardingStore((state) => state.step);
 /** Selector: Get form data only */
 export const useFormData = () => useOnboardingStore((state) => state.formData);
 
-/** Selector: Progress percentage (0-100), adjusted for actual step count */
+/** Selector: Progress percentage (0-100) */
 export const useProgress = () =>
-    useOnboardingStore((state) => {
-        const actualSteps = state.getActualStepCount();
-        const visualStep = state.getVisualStep();
-        return (visualStep / actualSteps) * 100;
-    });
+    useOnboardingStore((state) => (state.step / state.totalSteps) * 100);
 
-/** Selector: Check if TARGET step should be shown */
-export const useShowTargetStep = () =>
-    useOnboardingStore((state) => requiresTargetStep(state.formData.goal));
+/** Selector: Check if on first step */
+export const useIsFirstStep = () =>
+    useOnboardingStore((state) => state.step === FIRST_STEP);
+
+/** Selector: Check if on last step */
+export const useIsLastStep = () =>
+    useOnboardingStore((state) => state.step === LAST_STEP);
+
+/** Selector: Check for pending onboarding data */
+export const useHasPendingOnboarding = () =>
+    useOnboardingStore((state) => state.hasPendingData());
