@@ -47,7 +47,7 @@ export function StepWrapper({
             <div className="max-w-3xl w-full grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* LEFT: Visual panel */}
                 <div className="hidden md:flex flex-col justify-center items-center rounded-3xl overflow-hidden shadow-2xl bg-gradient-to-b from-white to-[var(--color-cream-pink)] p-8">
-                    <div className="w-full h-12 flex items-center justify-between">
+                    <div className="w-full h-12 flex items-center">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center text-primary font-bold">
                                 AI
@@ -56,9 +56,6 @@ export function StepWrapper({
                                 <div className="text-sm font-semibold text-slate-800">AI Health Coach</div>
                                 <div className="text-xs text-slate-500">Onboarding</div>
                             </div>
-                        </div>
-                        <div className="text-xs text-slate-400">
-                            Bước <span>{displayStep}</span>/{displayTotal}
                         </div>
                     </div>
 
