@@ -2,21 +2,23 @@
  * Login Page
  * 
  * UI-only component - all logic in useLoginForm hook.
+ * Wrapped in Suspense for useSearchParams support.
  * 
  * @see /hooks/use-auth-form.ts
  */
 
 'use client';
 
+import { Suspense } from 'react';
 import Link from 'next/link';
 import { Loader2, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { useLoginForm } from '@/hooks/use-auth-form';
 
 // ============================================================
-// COMPONENT
+// LOGIN FORM CONTENT
 // ============================================================
 
-export default function LoginPage() {
+function LoginContent() {
     const {
         form: { register, handleSubmit, formState: { errors } },
         onSubmit,
@@ -24,7 +26,6 @@ export default function LoginPage() {
         serverError,
         showPassword,
         togglePasswordVisibility,
-        hasPendingOnboarding,
     } = useLoginForm();
 
     return (
@@ -38,12 +39,6 @@ export default function LoginPage() {
                 <p className="text-slate-500 mt-2">Chào mừng bạn quay trở lại!</p>
             </div>
 
-            {/* Pending Onboarding Notice */}
-            {hasPendingOnboarding && (
-                <div className="mb-6 p-4 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 text-sm">
-                    📋 Bạn đã hoàn thành bài test. Đăng nhập để lưu kết quả vào tài khoản.
-                </div>
-            )}
 
             {/* Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
@@ -171,3 +166,26 @@ const SocialButton = ({ provider }: SocialButtonProps) => {
         </button>
     );
 };
+
+// ============================================================
+// PAGE COMPONENT (with Suspense wrapper)
+// ============================================================
+
+function LoginFallback() {
+    return (
+        <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 md:p-10 border border-white/50 animate-pulse">
+            <div className="text-center">
+                <div className="h-8 bg-slate-200 rounded w-1/2 mx-auto mb-4" />
+                <div className="h-4 bg-slate-100 rounded w-3/4 mx-auto" />
+            </div>
+        </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<LoginFallback />}>
+            <LoginContent />
+        </Suspense>
+    );
+}

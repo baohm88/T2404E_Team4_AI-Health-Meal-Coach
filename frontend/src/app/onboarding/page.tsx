@@ -2,14 +2,12 @@
  * Onboarding Page
  *
  * Entry point for the onboarding flow.
- * Supports 5-step flow with conditional TARGET step.
+ * Simplified to 2-step flow: INFO → LIFESTYLE
  *
  * Flow:
- * 1. GOAL → Choose objective
- * 2. TARGET → (conditional) Weight goal details
- * 3. INFO → Body measurements
- * 4. LIFESTYLE → Activity, sleep, stress
- * 5. ANALYSIS → Health metrics dashboard
+ * 1. INFO → Body measurements (Age, Gender, Height, Weight)
+ * 2. LIFESTYLE → Activity, sleep, stress
+ * 3. Submit → Save profile → Redirect to /onboarding/plan-proposal
  *
  * @see /hooks/use-onboarding-logic.ts
  */
@@ -18,11 +16,8 @@
 
 import { useOnboardingLogic } from '@/hooks/use-onboarding-logic';
 import { StepWrapper } from '@/components/onboarding/StepWrapper';
-import { StepGoal } from '@/components/onboarding/StepGoal';
-import { StepTarget } from '@/components/onboarding/StepTarget';
 import { StepInfo } from '@/components/onboarding/StepInfo';
 import { StepLifestyle } from '@/components/onboarding/StepLifestyle';
-import { SummaryCard } from '@/components/onboarding/SummaryCard';
 import { OnboardingStep } from '@/lib/constants/onboarding.constants';
 
 // ============================================================
@@ -31,14 +26,11 @@ import { OnboardingStep } from '@/lib/constants/onboarding.constants';
 
 /**
  * Map of step number to component
- * Using Record for type safety instead of switch statement
+ * Only 2 steps: INFO and LIFESTYLE
  */
 const STEP_COMPONENTS: Record<OnboardingStep, React.ReactNode> = {
-    [OnboardingStep.GOAL]: <StepGoal />,
-    [OnboardingStep.TARGET]: <StepTarget />,
     [OnboardingStep.INFO]: <StepInfo />,
     [OnboardingStep.LIFESTYLE]: <StepLifestyle />,
-    [OnboardingStep.ANALYSIS]: <SummaryCard />,
 };
 
 // ============================================================
@@ -47,17 +39,17 @@ const STEP_COMPONENTS: Record<OnboardingStep, React.ReactNode> = {
 
 export default function OnboardingPage() {
     // All logic extracted to custom hook
-    const { currentStep, stepMeta, actualTotalSteps, visualStep } = useOnboardingLogic();
+    const { currentStep, stepMeta, totalSteps } = useOnboardingLogic();
 
-    // Get step content from map (fallback to Goal if invalid step)
-    const stepContent = STEP_COMPONENTS[currentStep as OnboardingStep] ?? <StepGoal />;
+    // Get step content from map (fallback to Info if invalid step)
+    const stepContent = STEP_COMPONENTS[currentStep as OnboardingStep] ?? <StepInfo />;
 
     return (
         <StepWrapper
             title={stepMeta.title}
             description={stepMeta.description}
-            visualStep={visualStep}
-            totalSteps={actualTotalSteps}
+            visualStep={currentStep}
+            totalSteps={totalSteps}
         >
             {stepContent}
         </StepWrapper>

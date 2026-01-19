@@ -1,19 +1,22 @@
 /**
  * StepLifestyle Component
  *
- * Merged lifestyle step containing:
- * - Activity Level selection
- * - Sleep Range selection with Lucide icons
- * - Stress Level selection with Lucide icons
+ * Final step of the onboarding flow containing:
+ * - Activity Level selection (Grid 2x2 with descriptions)
+ * - Sleep Range selection (Compact horizontal pills)
+ * - Stress Level selection (Compact horizontal pills)
  *
- * Used for TDEE and Energy Score calculations.
+ * Optimized for compact layout - fits without scrolling.
+ * On submit: Saves profile and redirects to /onboarding/plan-proposal
  */
 
 'use client';
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useOnboardingStore } from '@/stores/useOnboardingStore';
-import { ActivityLevel, SleepRange, StressLevel } from '@/lib/schemas/onboarding.schema';
+import { profileService } from '@/services/profile.service';
+import { ActivityLevel, SleepRange, StressLevel, OnboardingData } from '@/lib/schemas/onboarding.schema';
 import {
     ACTIVITY_LABELS,
     ACTIVITY_DESCRIPTIONS,
@@ -25,14 +28,7 @@ import {
     Activity,
     Moon,
     Brain,
-    BatteryLow,
-    BatteryMedium,
-    BatteryFull,
-    CloudMoon,
-    Smile,
-    Zap,
-    Flame,
-    type LucideIcon,
+    Loader2,
 } from 'lucide-react';
 
 // ============================================================
@@ -46,24 +42,20 @@ const ACTIVITY_OPTIONS = [
     { id: ActivityLevel.VERY_ACTIVE, label: ACTIVITY_LABELS[ActivityLevel.VERY_ACTIVE], desc: ACTIVITY_DESCRIPTIONS[ActivityLevel.VERY_ACTIVE] },
 ];
 
-interface IconOption<T> {
-    id: T;
-    label: string;
-    Icon: LucideIcon;
-}
-
-const SLEEP_OPTIONS: IconOption<SleepRange>[] = [
-    { id: SleepRange.LESS_THAN_5, label: SLEEP_LABELS[SleepRange.LESS_THAN_5], Icon: BatteryLow },
-    { id: SleepRange.FIVE_TO_7, label: SLEEP_LABELS[SleepRange.FIVE_TO_7], Icon: BatteryMedium },
-    { id: SleepRange.SEVEN_TO_9, label: SLEEP_LABELS[SleepRange.SEVEN_TO_9], Icon: BatteryFull },
-    { id: SleepRange.MORE_THAN_9, label: SLEEP_LABELS[SleepRange.MORE_THAN_9], Icon: CloudMoon },
+// Compact options for Sleep (no descriptions, no icons)
+const SLEEP_OPTIONS = [
+    { id: SleepRange.LESS_THAN_5, label: SLEEP_LABELS[SleepRange.LESS_THAN_5] },
+    { id: SleepRange.FIVE_TO_7, label: SLEEP_LABELS[SleepRange.FIVE_TO_7] },
+    { id: SleepRange.SEVEN_TO_9, label: SLEEP_LABELS[SleepRange.SEVEN_TO_9] },
+    { id: SleepRange.MORE_THAN_9, label: SLEEP_LABELS[SleepRange.MORE_THAN_9] },
 ];
 
-const STRESS_OPTIONS: IconOption<StressLevel>[] = [
-    { id: StressLevel.LOW, label: STRESS_LABELS[StressLevel.LOW], Icon: Smile },
-    { id: StressLevel.MEDIUM, label: STRESS_LABELS[StressLevel.MEDIUM], Icon: Activity },
-    { id: StressLevel.HIGH, label: STRESS_LABELS[StressLevel.HIGH], Icon: Zap },
-    { id: StressLevel.VERY_HIGH, label: STRESS_LABELS[StressLevel.VERY_HIGH], Icon: Flame },
+// Compact options for Stress (no descriptions, no icons)
+const STRESS_OPTIONS = [
+    { id: StressLevel.LOW, label: STRESS_LABELS[StressLevel.LOW] },
+    { id: StressLevel.MEDIUM, label: STRESS_LABELS[StressLevel.MEDIUM] },
+    { id: StressLevel.HIGH, label: STRESS_LABELS[StressLevel.HIGH] },
+    { id: StressLevel.VERY_HIGH, label: STRESS_LABELS[StressLevel.VERY_HIGH] },
 ];
 
 // ============================================================
@@ -71,15 +63,43 @@ const STRESS_OPTIONS: IconOption<StressLevel>[] = [
 // ============================================================
 
 export function StepLifestyle() {
-    const { formData, setFormData, nextStep, skipStep } = useOnboardingStore();
+    const router = useRouter();
+    const { formData, setFormData, skipStep } = useOnboardingStore();
+
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const isValid = formData.activityLevel && formData.sleepRange && formData.stressLevel;
 
+    /**
+     * GUEST FIRST FLOW: Just redirect to result page
+     * Profile will be saved after user registers
+     */
+    const handleSubmit = useCallback(() => {
+        if (!isValid) return;
+
+        setIsSubmitting(true);
+        setError(null);
+
+        try {
+            console.log('📝 Onboarding complete, redirecting to result page');
+            console.log('Form data:', formData);
+
+            // Data is already persisted in localStorage via Zustand persist
+            // Navigate to result page (public, no auth required)
+            router.push('/onboarding/result');
+        } catch (err) {
+            console.error('❌ Error:', err);
+            setError('Có lỗi xảy ra. Vui lòng thử lại.');
+            setIsSubmitting(false);
+        }
+    }, [formData, isValid, router]);
+
     return (
         <div className="flex flex-col h-full">
-            {/* Activity Level Section */}
-            <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
+            {/* Activity Level Section - Grid 2x2 with descriptions */}
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
                     <Activity className="w-4 h-4 text-slate-500" strokeWidth={1.5} />
                     <span className="text-sm text-slate-600 font-medium">Mức độ hoạt động</span>
                 </div>
@@ -90,11 +110,13 @@ export function StepLifestyle() {
                             <button
                                 key={item.id}
                                 onClick={() => setFormData({ activityLevel: item.id })}
+                                disabled={isSubmitting}
                                 className={clsx(
-                                    'p-3 rounded-xl border-2 transition-all text-left',
+                                    'p-2.5 rounded-xl border-2 transition-all text-left',
                                     isSelected
                                         ? 'border-primary ring-2 ring-primary ring-inset bg-primary/5'
-                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white',
+                                    isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
                                 <div className={clsx(
@@ -110,34 +132,28 @@ export function StepLifestyle() {
                 </div>
             </div>
 
-            {/* Sleep Range Section */}
-            <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
+            {/* Sleep Range Section - Compact horizontal pills */}
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
                     <Moon className="w-4 h-4 text-slate-500" strokeWidth={1.5} />
-                    <span className="text-sm text-slate-600 font-medium">Giờ ngủ trung bình/ngày</span>
+                    <span className="text-sm text-slate-600 font-medium">Giờ ngủ/ngày</span>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                     {SLEEP_OPTIONS.map((item) => {
                         const isSelected = formData.sleepRange === item.id;
-                        const IconComponent = item.Icon;
                         return (
                             <button
                                 key={item.id}
                                 onClick={() => setFormData({ sleepRange: item.id })}
+                                disabled={isSubmitting}
                                 className={clsx(
-                                    'p-3 rounded-xl border-2 transition-all text-center',
+                                    'py-2.5 px-2 rounded-lg border-2 transition-all text-center',
                                     isSelected
-                                        ? 'border-primary ring-2 ring-primary ring-inset bg-primary/5'
-                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white'
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white text-slate-600',
+                                    isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
-                                <IconComponent
-                                    className={clsx(
-                                        'w-6 h-6 mx-auto mb-1',
-                                        isSelected ? 'text-primary' : 'text-slate-400'
-                                    )}
-                                    strokeWidth={1.5}
-                                />
                                 <div className={clsx(
                                     'text-xs font-medium',
                                     isSelected ? 'text-primary' : 'text-slate-600'
@@ -150,34 +166,28 @@ export function StepLifestyle() {
                 </div>
             </div>
 
-            {/* Stress Level Section */}
-            <div className="mb-5">
-                <div className="flex items-center gap-2 mb-3">
+            {/* Stress Level Section - Compact horizontal pills */}
+            <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
                     <Brain className="w-4 h-4 text-slate-500" strokeWidth={1.5} />
                     <span className="text-sm text-slate-600 font-medium">Mức độ stress</span>
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-4 gap-1.5">
                     {STRESS_OPTIONS.map((item) => {
                         const isSelected = formData.stressLevel === item.id;
-                        const IconComponent = item.Icon;
                         return (
                             <button
                                 key={item.id}
                                 onClick={() => setFormData({ stressLevel: item.id })}
+                                disabled={isSubmitting}
                                 className={clsx(
-                                    'p-3 rounded-xl border-2 transition-all text-center',
+                                    'py-2.5 px-2 rounded-lg border-2 transition-all text-center',
                                     isSelected
-                                        ? 'border-primary ring-2 ring-primary ring-inset bg-primary/5'
-                                        : 'border-slate-200 hover:border-slate-300 hover:shadow-sm bg-white'
+                                        ? 'border-primary bg-primary/10 text-primary'
+                                        : 'border-slate-200 hover:border-slate-300 bg-white text-slate-600',
+                                    isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
-                                <IconComponent
-                                    className={clsx(
-                                        'w-6 h-6 mx-auto mb-1',
-                                        isSelected ? 'text-primary' : 'text-slate-400'
-                                    )}
-                                    strokeWidth={1.5}
-                                />
                                 <div className={clsx(
                                     'text-xs font-medium',
                                     isSelected ? 'text-primary' : 'text-slate-600'
@@ -190,26 +200,41 @@ export function StepLifestyle() {
                 </div>
             </div>
 
-            {/* Navigation Buttons - No back button (using header back arrow) */}
-            <div className="mt-auto pt-4 flex items-center justify-end">
+            {/* Error Message */}
+            {error && (
+                <div className="mb-3 p-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+                    {error}
+                </div>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="mt-auto pt-3 flex items-center justify-end">
                 <div className="flex items-center gap-3">
                     <button
                         onClick={skipStep}
-                        className="text-sm text-slate-500 hover:underline"
+                        disabled={isSubmitting}
+                        className="text-sm text-slate-500 hover:underline disabled:opacity-50"
                     >
                         Bỏ qua
                     </button>
                     <button
-                        onClick={nextStep}
-                        disabled={!isValid}
+                        onClick={handleSubmit}
+                        disabled={!isValid || isSubmitting}
                         className={clsx(
-                            'px-6 py-3 rounded-2xl font-semibold shadow-md transition-all',
-                            isValid
+                            'px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all flex items-center gap-2',
+                            isValid && !isSubmitting
                                 ? 'bg-primary text-white hover:shadow-lg'
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                         )}
                     >
-                        Tiếp theo
+                        {isSubmitting ? (
+                            <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Đang lưu...
+                            </>
+                        ) : (
+                            'Hoàn tất'
+                        )}
                     </button>
                 </div>
             </div>
