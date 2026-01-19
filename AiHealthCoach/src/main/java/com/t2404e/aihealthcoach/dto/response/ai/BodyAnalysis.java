@@ -1,9 +1,13 @@
 package com.t2404e.aihealthcoach.dto.response.ai;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Getter;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class BodyAnalysis {
 

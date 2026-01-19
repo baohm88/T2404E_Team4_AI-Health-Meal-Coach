@@ -1,11 +1,12 @@
 package com.t2404e.aihealthcoach.dto.response.ai;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 import java.util.List;
 
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class ThreeMonthPlan {
 
