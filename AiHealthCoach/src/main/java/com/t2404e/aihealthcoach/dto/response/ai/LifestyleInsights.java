@@ -1,9 +1,10 @@
 package com.t2404e.aihealthcoach.dto.response.ai;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
-@Getter
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class LifestyleInsights {
 
