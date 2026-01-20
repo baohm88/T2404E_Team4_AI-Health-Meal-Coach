@@ -1,7 +1,7 @@
 package com.t2404e.aihealthcoach.controller;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
-import com.t2404e.aihealthcoach.dto.request.AiHealthAnalysisRequest;
+import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
 import com.t2404e.aihealthcoach.service.AiHealthAnalysisService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +17,7 @@ public class AiController {
     }
 
     @PostMapping("/health-analysis")
-    public ApiResponse<?> analyze(@Valid @RequestBody AiHealthAnalysisRequest request) {
+    public ApiResponse<?> analyze(@Valid @RequestBody HealthProfileRequest request) {
         return ApiResponse.success(
                 "Health analysis completed",
                 service.analyze(request)
