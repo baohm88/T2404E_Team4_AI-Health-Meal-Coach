@@ -36,7 +36,7 @@ public class AuthServiceImpl implements AuthService {
      * - Set default role = USER
      */
     @Override
-    public void register(RegisterRequest request) {
+    public Long register(RegisterRequest request) {
 
         // Check email already exists
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -53,7 +53,9 @@ public class AuthServiceImpl implements AuthService {
                 .status(1)           // active
                 .build();
 
-        userRepository.save(user);
+        User savedUSer = userRepository.save(user);
+
+        return savedUSer.getId(); // Get userId from DB
     }
 
     /**
