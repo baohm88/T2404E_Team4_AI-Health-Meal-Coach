@@ -1,6 +1,6 @@
 package com.t2404e.aihealthcoach.service.impl;
 
-import com.t2404e.aihealthcoach.dto.request.AiHealthAnalysisRequest;
+import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
 import com.t2404e.aihealthcoach.dto.response.ai.AiHealthAnalysisResponse;
 import com.t2404e.aihealthcoach.service.AiHealthAnalysisService;
 import org.springframework.ai.chat.client.ChatClient;
@@ -16,7 +16,7 @@ public class AiHealthAnalysisServiceImpl implements AiHealthAnalysisService {
     }
 
     @Override
-    public AiHealthAnalysisResponse analyze(AiHealthAnalysisRequest request) {
+    public AiHealthAnalysisResponse analyze(HealthProfileRequest request) {
 
         String systemPrompt = """
                 Bạn là chuyên gia dinh dưỡng và huấn luyện sức khỏe người Việt.
@@ -91,8 +91,8 @@ public class AiHealthAnalysisServiceImpl implements AiHealthAnalysisService {
                         """,
                 request.getAge(),
                 request.getGender().name(),
-                request.getHeightCm(),
-                request.getWeightKg(),
+                request.getHeight(),
+                request.getWeight(),
                 request.getActivityLevel().name(),
                 request.getSleepDuration().name(),
                 request.getStressLevel().name()

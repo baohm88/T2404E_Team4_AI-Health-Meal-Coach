@@ -48,7 +48,6 @@ public class HealthProfileServiceImpl implements HealthProfileService {
         profile.setAge(request.getAge());
         profile.setHeight(request.getHeight());
         profile.setWeight(request.getWeight());
-        profile.setGoal(request.getGoal());
         profile.setActivityLevel(request.getActivityLevel());
         profile.setStressLevel(request.getStressLevel());
         profile.setSleepDuration(request.getSleepDuration());
