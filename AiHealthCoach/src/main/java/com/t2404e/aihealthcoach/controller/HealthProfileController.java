@@ -21,9 +21,6 @@ public class HealthProfileController {
         this.service = service;
     }
 
-    /**
-     * Create health profile (or upsert) for current user
-     */
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<ApiResponse<?>> create(
@@ -36,9 +33,6 @@ public class HealthProfileController {
         return ResponseEntity.ok(ApiResponse.success("Health profile saved successfully", null));
     }
 
-    /**
-     * Update health profile for current user (recommended RESTful endpoint)
-     */
     @PutMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
     public ResponseEntity<ApiResponse<?>> update(
