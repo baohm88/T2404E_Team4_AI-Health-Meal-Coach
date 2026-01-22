@@ -1,8 +1,17 @@
-package com.t2404e.aihealthcoach.service;
+//package com.t2404e.aihealthcoach.service;
+//
+//import com.t2404e.aihealthcoach.dto.response.HealthAnalysisResponse;
+//
+//public interface HealthAnalysisService {
+//
+//    HealthAnalysisResponse getLatestAnalysis(Long userId);
+//}
 
-import com.t2404e.aihealthcoach.dto.response.HealthAnalysisResponse;
+package com.t2404e.aihealthcoach.service;
 
 public interface HealthAnalysisService {
 
-    HealthAnalysisResponse getLatestAnalysis(Long userId);
+    void saveOrUpdate(Long userId, String analysisJson);
+
+    String getByUserId(Long userId);
 }
