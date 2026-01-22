@@ -33,57 +33,12 @@ export const dashboardService = {
      * @returns Promise with dashboard summary
      */
     getSummary: async (): Promise<DashboardServiceResponse> => {
-        try {
-            // http.get returns ApiResponse<T> after interceptor unwrapping
-            const response = await http.get('/dashboard/summary') as unknown as ApiResponse<DashboardSummary | null>;
-
-            // Handle empty or null data from backend
-            const data = response.data ?? DEFAULT_DASHBOARD_SUMMARY;
-
-            // Merge with defaults to ensure all fields exist
-            const mergedData: DashboardSummary = {
-                calories: {
-                    ...DEFAULT_DASHBOARD_SUMMARY.calories,
-                    ...data.calories,
-                },
-                water: {
-                    ...DEFAULT_DASHBOARD_SUMMARY.water,
-                    ...data.water,
-                },
-                macros: {
-                    protein: {
-                        ...DEFAULT_DASHBOARD_SUMMARY.macros.protein,
-                        ...data.macros?.protein,
-                    },
-                    carbs: {
-                        ...DEFAULT_DASHBOARD_SUMMARY.macros.carbs,
-                        ...data.macros?.carbs,
-                    },
-                    fat: {
-                        ...DEFAULT_DASHBOARD_SUMMARY.macros.fat,
-                        ...data.macros?.fat,
-                    },
-                },
-            };
-
-            return {
-                success: response.success,
-                message: response.message,
-                data: mergedData,
-            };
-        } catch (error) {
-            const axiosError = error as { response?: { data?: ApiResponse<unknown> } };
-            const errorMessage =
-                axiosError.response?.data?.message ||
-                'Không thể tải dữ liệu dashboard.';
-
-            // Return default data on error so UI can still render
-            return {
-                success: false,
-                message: errorMessage,
-                data: DEFAULT_DASHBOARD_SUMMARY,
-            };
-        }
+        // Return default data directly without making an API call
+        return {
+            success: true,
+            message: 'Dashboard data (Default)',
+            data: DEFAULT_DASHBOARD_SUMMARY,
+        };
     },
 
     /**

@@ -1,160 +1,132 @@
 /**
  * Roadmap View Component
  *
- * Displays the long-term goal roadmap (3 months / phases).
- * Shows progress through phases with visual timeline.
+ * Displays AI-powered health analysis and 3-month nutrition plan.
+ * Features glassmorphism design with real AI data.
  *
- * @see /types/meal-schedule.ts - GoalRoadmap, Phase types
+ * @see /services/ai.service.ts - AIAnalysisResponse type
  */
 
 'use client';
 
-import { useMemo } from 'react';
-import { GoalRoadmap, Phase } from '@/types/meal-schedule';
-import { CheckCircle2, Circle, Lock, Target, TrendingDown, Award } from 'lucide-react';
+import { Scale, Activity, TrendingUp, Footprints, Moon, Zap, Sparkles, Info } from 'lucide-react';
+import { AIAnalysisResponse, MonthPlan } from '@/services/ai.service';
 
 // ============================================================
-// MOCK DATA
+// TYPES
 // ============================================================
 
-/**
- * Mock roadmap data - will be replaced with API call
- */
-const MOCK_ROADMAP: GoalRoadmap = {
-    id: 'rm_01',
-    userId: 'current_user',
-    goal: 'Giảm 7kg trong 3 tháng',
-    startWeight: 72,
-    targetWeight: 65,
-    startDate: '2026-01-01',
-    endDate: '2026-03-31',
-    currentPhase: 1,
-    phases: [
-        {
-            phaseNumber: 1,
-            name: 'Tháng 1: Khởi động',
-            targetWeightLoss: 2,
-            targetCaloriesPerDay: 2400,
-            startDate: '2026-01-01',
-            endDate: '2026-01-31',
-            status: 'active',
-            focus: 'Làm quen thâm hụt calo & Cardio nhẹ',
-        },
-        {
-            phaseNumber: 2,
-            name: 'Tháng 2: Tăng tốc',
-            targetWeightLoss: 2.5,
-            targetCaloriesPerDay: 2200,
-            startDate: '2026-02-01',
-            endDate: '2026-02-28',
-            status: 'upcoming',
-            focus: 'Tăng cường Protein & Tập kháng lực',
-        },
-        {
-            phaseNumber: 3,
-            name: 'Tháng 3: Về đích',
-            targetWeightLoss: 2.5,
-            targetCaloriesPerDay: 2000,
-            startDate: '2026-03-01',
-            endDate: '2026-03-31',
-            status: 'upcoming',
-            focus: 'Duy trì cân nặng & Siết cơ',
-        },
-    ],
-    createdAt: '2026-01-01T00:00:00Z',
-    updatedAt: '2026-01-14T00:00:00Z',
-};
+interface RoadmapViewProps {
+    data: AIAnalysisResponse | null;
+    loading?: boolean;
+    error?: string | null;
+}
 
 // ============================================================
 // COMPONENT
 // ============================================================
 
-export const RoadmapView = () => {
-    const roadmap = MOCK_ROADMAP; // TODO: Replace with useQuery
+export const RoadmapView = ({ data, loading, error }: RoadmapViewProps) => {
+    if (loading) {
+        return <LoadingSkeleton />;
+    }
 
-    // Calculate overall progress percentage
-    const overallProgress = useMemo(() => {
-        const completedPhases = roadmap.phases.filter(p => p.status === 'completed').length;
-        const activePhaseProgress = 0.5; // Assume 50% through active phase
-        const totalProgress = (completedPhases + (roadmap.phases.some(p => p.status === 'active') ? activePhaseProgress : 0)) / roadmap.phases.length;
-        return Math.round(totalProgress * 100);
-    }, [roadmap]);
+    if (error) {
+        return <ErrorState error={error} />;
+    }
 
-    // Calculate weight lost so far (mock)
-    const weightLost = useMemo(() => {
-        const completedPhases = roadmap.phases.filter(p => p.status === 'completed');
-        return completedPhases.reduce((sum, p) => sum + p.targetWeightLoss, 0);
-    }, [roadmap]);
+    if (!data) {
+        return <EmptyState />;
+    }
+
+    const { analysis, lifestyleInsights, threeMonthPlan } = data;
 
     return (
         <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-green-500 p-5 text-white">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white/20 rounded-xl">
-                            <Target className="w-5 h-5" />
-                        </div>
-                        <div>
-                            <h2 className="font-bold text-lg">Lộ trình mục tiêu</h2>
-                            <p className="text-sm text-white/80">{roadmap.goal}</p>
-                        </div>
+            {/* Header Section with Gradient */}
+            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6 text-white">
+                <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+                        <Sparkles className="w-5 h-5" />
                     </div>
-                    <div className="text-right">
-                        <span className="inline-block px-3 py-1 bg-white/20 rounded-full text-sm font-semibold">
-                            Giai đoạn {roadmap.currentPhase}/3
-                        </span>
+                    <div>
+                        <h2 className="font-bold text-lg">Lộ trình dinh dưỡng AI</h2>
+                        <p className="text-sm text-white/80">Phân tích sức khỏe và kế hoạch 3 tháng</p>
                     </div>
                 </div>
 
-                {/* Progress Stats */}
-                <div className="grid grid-cols-3 gap-4 mt-4">
-                    <div className="bg-white/10 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-bold">{roadmap.startWeight}kg</p>
-                        <p className="text-xs text-white/70">Ban đầu</p>
-                    </div>
-                    <div className="bg-white/10 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-bold">{roadmap.startWeight - weightLost}kg</p>
-                        <p className="text-xs text-white/70">Hiện tại</p>
-                    </div>
-                    <div className="bg-white/10 rounded-xl p-3 text-center">
-                        <p className="text-2xl font-bold">{roadmap.targetWeight}kg</p>
-                        <p className="text-xs text-white/70">Mục tiêu</p>
+                {/* AI Summary - Highlighted Section */}
+                <div className="bg-white/15 backdrop-blur-md rounded-xl p-4 mb-4 border border-white/20">
+                    <div className="flex items-start gap-2">
+                        <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm leading-relaxed line-clamp-3">
+                            {analysis.summary}
+                        </p>
                     </div>
                 </div>
 
-                {/* Overall Progress Bar */}
-                <div className="mt-4">
-                    <div className="flex justify-between text-xs mb-1">
-                        <span>Tiến độ tổng thể</span>
-                        <span>{overallProgress}%</span>
-                    </div>
-                    <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                        <div
-                            className="h-full bg-white rounded-full transition-all duration-500"
-                            style={{ width: `${overallProgress}%` }}
-                        />
-                    </div>
+                {/* Metrics Grid - Glassmorphism Cards */}
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    <MetricCard
+                        icon={<Scale className="w-4 h-4" />}
+                        label="BMI"
+                        value={analysis.bmi.toFixed(1)}
+                        subtitle={getHealthStatusLabel(analysis.healthStatus)}
+                    />
+                    <MetricCard
+                        icon={<TrendingUp className="w-4 h-4" />}
+                        label="TDEE"
+                        value={`${analysis.tdee}`}
+                        subtitle="kcal/ngày"
+                    />
+                    <MetricCard
+                        icon={<Activity className="w-4 h-4" />}
+                        label="BMR"
+                        value={`${analysis.bmr}`}
+                        subtitle="kcal nền"
+                    />
+                </div>
+
+                {/* Lifestyle Insights Row */}
+                <div className="grid grid-cols-3 gap-2">
+                    <InsightPill
+                        icon={<Footprints className="w-3.5 h-3.5" />}
+                        text={getShortenedText(lifestyleInsights.activity, 30)}
+                        title={lifestyleInsights.activity}
+                    />
+                    <InsightPill
+                        icon={<Moon className="w-3.5 h-3.5" />}
+                        text={getShortenedText(lifestyleInsights.sleep, 30)}
+                        title={lifestyleInsights.sleep}
+                    />
+                    <InsightPill
+                        icon={<Zap className="w-3.5 h-3.5" />}
+                        text={getShortenedText(lifestyleInsights.stress, 30)}
+                        title={lifestyleInsights.stress}
+                    />
                 </div>
             </div>
 
-            {/* Phase Timeline */}
+            {/* 3-Month Plan Timeline */}
             <div className="p-5">
+                <h3 className="text-sm font-semibold text-slate-700 mb-4">Kế hoạch 3 tháng</h3>
                 <div className="relative flex justify-between">
                     {/* Connection Line (Background) */}
                     <div className="absolute top-4 left-[16.67%] right-[16.67%] h-1 bg-slate-100 -z-0 rounded-full" />
 
                     {/* Connection Line (Progress) */}
                     <div
-                        className="absolute top-4 left-[16.67%] h-1 bg-primary -z-0 rounded-full transition-all duration-500"
-                        style={{
-                            width: `${((roadmap.currentPhase - 1) / (roadmap.phases.length - 1)) * 66.67}%`,
-                        }}
+                        className="absolute top-4 left-[16.67%] h-1 bg-emerald-500 -z-0 rounded-full transition-all duration-500"
+                        style={{ width: '0%' }} // Can be dynamic based on current month
                     />
 
-                    {/* Phase Cards */}
-                    {roadmap.phases.map((phase) => (
-                        <PhaseCard key={phase.phaseNumber} phase={phase} />
+                    {/* Month Cards */}
+                    {threeMonthPlan.months.map((month, index) => (
+                        <MonthCard
+                            key={month.month}
+                            month={month}
+                            isActive={index === 0} // First month is active by default
+                        />
                     ))}
                 </div>
             </div>
@@ -163,85 +135,166 @@ export const RoadmapView = () => {
 };
 
 // ============================================================
-// PHASE CARD COMPONENT
+// SUB-COMPONENTS
 // ============================================================
 
-interface PhaseCardProps {
-    phase: Phase;
+interface MetricCardProps {
+    icon: React.ReactNode;
+    label: string;
+    value: string;
+    subtitle: string;
 }
 
-const PhaseCard = ({ phase }: PhaseCardProps) => {
-    const getStatusStyles = () => {
-        switch (phase.status) {
-            case 'completed':
-                return {
-                    iconBg: 'border-green-500 text-green-500 bg-green-50',
-                    textColor: 'text-green-700',
-                    tagBg: 'bg-green-100 text-green-700',
-                };
-            case 'active':
-                return {
-                    iconBg: 'border-primary text-primary bg-primary/10 ring-4 ring-primary/20',
-                    textColor: 'text-primary',
-                    tagBg: 'bg-primary/10 text-primary',
-                };
-            default:
-                return {
-                    iconBg: 'border-slate-300 text-slate-300 bg-slate-50',
-                    textColor: 'text-slate-400',
-                    tagBg: 'bg-slate-100 text-slate-400',
-                };
-        }
-    };
-
-    const styles = getStatusStyles();
-
-    const StatusIcon = () => {
-        switch (phase.status) {
-            case 'completed':
-                return <CheckCircle2 className="w-4 h-4" />;
-            case 'active':
-                return <Circle className="w-4 h-4" fill="currentColor" />;
-            default:
-                return <Lock className="w-3.5 h-3.5" />;
-        }
-    };
-
+const MetricCard = ({ icon, label, value, subtitle }: MetricCardProps) => {
     return (
-        <div className="flex flex-col items-center relative z-10 w-1/3">
+        <div className="bg-white/20 backdrop-blur-md rounded-xl p-3 text-center border border-white/30">
+            <div className="flex justify-center mb-1">{icon}</div>
+            <p className="text-xs text-white/70 mb-1">{label}</p>
+            <p className="text-xl font-bold">{value}</p>
+            <p className="text-[10px] text-white/60">{subtitle}</p>
+        </div>
+    );
+};
+
+interface InsightPillProps {
+    icon: React.ReactNode;
+    text: string;
+    title: string;
+}
+
+const InsightPill = ({ icon, text, title }: InsightPillProps) => {
+    return (
+        <div
+            className="bg-white/10 backdrop-blur-sm rounded-lg px-2 py-1.5 flex items-center gap-1.5 cursor-help"
+            title={title}
+        >
+            <div className="flex-shrink-0">{icon}</div>
+            <span className="text-[10px] text-white/90 truncate">{text}</span>
+        </div>
+    );
+};
+
+interface MonthCardProps {
+    month: MonthPlan;
+    isActive: boolean;
+}
+
+const MonthCard = ({ month, isActive }: MonthCardProps) => {
+    return (
+        <div className="flex flex-col items-center relative z-10 w-1/3 group">
             {/* Status Icon */}
             <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 mb-3 transition-all ${styles.iconBg}`}
+                className={`w-8 h-8 rounded-full flex items-center justify-center border-2 mb-3 transition-all ${isActive
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-500 ring-4 ring-emerald-100'
+                        : 'border-slate-300 bg-slate-50 text-slate-400'
+                    }`}
             >
-                <StatusIcon />
+                <span className="text-xs font-bold">{month.month}</span>
             </div>
 
-            {/* Phase Info */}
+            {/* Month Info */}
             <div className="text-center px-2">
-                <p className={`text-sm font-bold ${styles.textColor}`}>
-                    {phase.name}
+                <p className={`text-sm font-bold ${isActive ? 'text-emerald-600' : 'text-slate-500'}`}>
+                    {month.title}
                 </p>
-                <div className="flex items-center justify-center gap-1 mt-1">
-                    <TrendingDown className={`w-3 h-3 ${phase.status === 'upcoming' ? 'text-slate-400' : 'text-green-500'}`} />
-                    <span className={`text-xs ${phase.status === 'upcoming' ? 'text-slate-400' : 'text-slate-600'}`}>
-                        -{phase.targetWeightLoss}kg
+
+                {/* Calories Badge */}
+                <div className="mt-2">
+                    <span
+                        className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${isActive
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                    >
+                        {month.dailyCalories} kcal
                     </span>
                 </div>
 
-                {/* Focus Tag */}
-                {phase.status !== 'upcoming' && (
-                    <span className={`inline-block mt-2 px-2 py-0.5 text-[10px] rounded-full font-medium ${styles.tagBg}`}>
-                        {phase.focus}
-                    </span>
-                )}
-
-                {/* Calories Target */}
-                <p className="text-[10px] text-slate-400 mt-1">
-                    {phase.targetCaloriesPerDay} kcal/ngày
-                </p>
+                {/* Note on Hover */}
+                <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <p className="text-[10px] text-slate-500 line-clamp-2">{month.note}</p>
+                </div>
             </div>
         </div>
     );
+};
+
+// ============================================================
+// STATE COMPONENTS
+// ============================================================
+
+const LoadingSkeleton = () => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden animate-pulse">
+            <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6">
+                <div className="h-6 bg-white/20 rounded w-1/3 mb-4"></div>
+                <div className="h-20 bg-white/15 rounded-xl mb-4"></div>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                    <div className="h-24 bg-white/20 rounded-xl"></div>
+                    <div className="h-24 bg-white/20 rounded-xl"></div>
+                    <div className="h-24 bg-white/20 rounded-xl"></div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                    <div className="h-8 bg-white/10 rounded-lg"></div>
+                    <div className="h-8 bg-white/10 rounded-lg"></div>
+                    <div className="h-8 bg-white/10 rounded-lg"></div>
+                </div>
+            </div>
+            <div className="p-5">
+                <div className="h-4 bg-slate-200 rounded w-1/4 mb-4"></div>
+                <div className="flex justify-between">
+                    <div className="w-1/3 h-32 bg-slate-100 rounded"></div>
+                    <div className="w-1/3 h-32 bg-slate-100 rounded"></div>
+                    <div className="w-1/3 h-32 bg-slate-100 rounded"></div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const ErrorState = ({ error }: { error: string }) => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 mb-3">
+                <Info className="w-6 h-6 text-red-500" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-1">Không thể tải dữ liệu</h3>
+            <p className="text-sm text-slate-500">{error}</p>
+        </div>
+    );
+};
+
+const EmptyState = () => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm p-6 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-50 mb-3">
+                <Sparkles className="w-6 h-6 text-slate-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-slate-800 mb-1">Chưa có phân tích</h3>
+            <p className="text-sm text-slate-500">
+                Hoàn thành quá trình onboarding để nhận phân tích AI
+            </p>
+        </div>
+    );
+};
+
+// ============================================================
+// HELPERS
+// ============================================================
+
+const getHealthStatusLabel = (status: string): string => {
+    const statusMap: Record<string, string> = {
+        UNDERWEIGHT: 'Thiếu cân',
+        NORMAL: 'Bình thường',
+        OVERWEIGHT: 'Thừa cân',
+        OBESE: 'Béo phì',
+    };
+    return statusMap[status] || status;
+};
+
+const getShortenedText = (text: string, maxLength: number): string => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
 };
 
 export default RoadmapView;

@@ -80,20 +80,32 @@ http.interceptors.response.use(
 // ============================================================
 
 /**
- * Save token to localStorage
+ * Save token to localStorage and cookie
+ * Cookie is required for Next.js middleware (server-side auth check)
  */
 export const saveToken = (token: string): void => {
     if (typeof window !== 'undefined') {
+        // 1. Save to localStorage for client-side API calls
         localStorage.setItem(TOKEN_KEY, token);
+
+        // 2. Save to cookie for middleware (server-side)
+        // Set path to / so it's available on all routes
+        // Set secure=true if on https
+        const isSecure = window.location.protocol === 'https:';
+        document.cookie = `access_token=${token}; path=/; max-age=${30 * 24 * 60 * 60}; ${isSecure ? 'Secure;' : ''} SameSite=Lax`;
     }
 };
 
 /**
- * Remove token from localStorage
+ * Remove token from localStorage and cookie
  */
 export const removeToken = (): void => {
     if (typeof window !== 'undefined') {
+        // 1. Remove from localStorage
         localStorage.removeItem(TOKEN_KEY);
+
+        // 2. Remove from cookie by setting expiry to past
+        document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
     }
 };
 

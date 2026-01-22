@@ -68,23 +68,23 @@ export enum ApiGender {
 }
 
 /**
- * Backend Goal enum
- * Note: MAINTENANCE (frontend) → MAINTAIN (backend)
+ * Backend Goal enum (GoalType.java)
+ * Maps 1:1 with frontend Goal enum
  */
 export enum ApiGoal {
     WEIGHT_LOSS = 'WEIGHT_LOSS',
-    MAINTAIN = 'MAINTAIN',
+    MAINTENANCE = 'MAINTENANCE',  // NOT "MAINTAIN"
     MUSCLE_GAIN = 'MUSCLE_GAIN',
 }
 
 /**
- * Backend Activity Level enum
- * Note: Different naming than frontend
+ * Backend Activity Level enum (ActivityLevel.java)
+ * Backend uses simple names: SEDENTARY, LIGHT, MODERATE, VERY_ACTIVE
  */
 export enum ApiActivity {
     SEDENTARY = 'SEDENTARY',
-    LIGHTLY_ACTIVE = 'LIGHTLY_ACTIVE',
-    MODERATELY_ACTIVE = 'MODERATELY_ACTIVE',
+    LIGHT = 'LIGHT',        // NOT "LIGHTLY_ACTIVE"
+    MODERATE = 'MODERATE',  // NOT "MODERATELY_ACTIVE"
     VERY_ACTIVE = 'VERY_ACTIVE',
 }
 
@@ -119,7 +119,8 @@ export interface CreateHealthProfileRequest {
     age: number;
     height: number;
     weight: number;
-    goal: ApiGoal;
+    // NOTE: Backend HealthProfileRequest does NOT have 'goal' field
+    // Goal is handled separately via AI analysis
     activityLevel: ApiActivity;
     stressLevel: ApiStress;
     sleepDuration: ApiSleep;

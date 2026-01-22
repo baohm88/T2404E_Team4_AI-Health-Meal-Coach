@@ -60,7 +60,7 @@ export const MealPlanGenerator = () => {
                 <div className="p-2 bg-primary/10 rounded-xl">
                     <Sparkles className="w-5 h-5 text-primary" />
                 </div>
-                <h3 className="font-semibold text-slate-800">AI Tạo lịch ăn</h3>
+                <h3 className="font-semibold text-slate-800">AI Tạo lộ trình dinh dưỡng</h3>
             </div>
 
             {schedule ? (
@@ -144,8 +144,8 @@ export const MealPlanGenerator = () => {
                                     key={num}
                                     onClick={() => setFormData({ ...formData, mealsPerDay: num })}
                                     className={`flex-1 py-2 rounded-lg font-medium transition-colors ${formData.mealsPerDay === num
-                                            ? 'bg-primary text-white'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        ? 'bg-primary text-white'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     {num}
@@ -189,7 +189,7 @@ export const MealPlanGenerator = () => {
                         className="w-full flex items-center justify-center gap-2 py-3 bg-gradient-to-r from-primary to-green-500 text-white font-medium rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50"
                     >
                         <Sparkles className={`w-4 h-4 ${isGenerating ? 'animate-pulse' : ''}`} />
-                        {isGenerating ? 'AI đang tạo lịch...' : 'Tạo lịch ăn ngay'}
+                        {isGenerating ? 'AI đang tạo lịch...' : 'Tạo lộ trình dinh dưỡng ngay'}
                     </button>
                 </div>
             )}

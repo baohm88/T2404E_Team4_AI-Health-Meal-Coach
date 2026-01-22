@@ -1,22 +1,284 @@
-// AI Service - Mock API for AI Coach chat
+/**
+ * AI Service
+ *
+ * Handles AI-related API calls:
+ * - Health Analysis (BMI, BMR, TDEE, 3-month roadmap)
+ * - AI Coach Chat
+ *
+ * @see /lib/http.ts - HTTP client
+ * @see /lib/utils/data-mapper.ts - Data mapping utilities
+ */
+
+import http from '@/lib/http';
+import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
 import { AI_RESPONSES, ChatMessage } from '@/lib/mock-data';
 
+// ============================================================
+// AI ANALYSIS TYPES
+// ============================================================
+
+export interface AIAnalysis {
+    bmi: number;
+    bmr: number;
+    tdee: number;
+    healthStatus: string;
+    summary: string;
+}
+
+export interface LifestyleInsights {
+    activity: string;
+    sleep: string;
+    stress: string;
+}
+
+export interface MonthPlan {
+    month: number;
+    title: string;
+    dailyCalories: number;
+    note: string;
+}
+
+export interface ThreeMonthPlan {
+    goal: string;
+    totalTargetWeightChangeKg: number;
+    months: MonthPlan[];
+}
+
+export interface AIAnalysisResponse {
+    analysis: AIAnalysis;
+    lifestyleInsights: LifestyleInsights;
+    threeMonthPlan: ThreeMonthPlan;
+}
+
+// ============================================================
+// SERVICE RESULT TYPE
+// ============================================================
+
+interface ServiceResult<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
+
+// ============================================================
+// API RESPONSE TYPE
+// ============================================================
+
+interface ApiResponse<T> {
+    success: boolean;
+    message: string;
+    data: T;
+    timestamp?: string;
+}
+
+// ============================================================
+// CONFIGURATION
+// ============================================================
+
+/**
+ * Toggle mock data mode
+ * true = Use mock data (for development/demo)
+ * false = Call real API (when backend is ready)
+ */
+const USE_MOCK_DATA = true;
+
+// ============================================================
+// MOCK DATA
+// ============================================================
+
+const MOCK_AI_ANALYSIS: AIAnalysisResponse = {
+    analysis: {
+        bmi: 24.8,
+        bmr: 1650,
+        tdee: 2310,
+        healthStatus: 'NORMAL',
+        summary: 'Bạn đang ở mức cân nặng bình thường. Để duy trì sức khỏe, hãy tiếp tục chế độ ăn cân bằng và tập luyện đều đặn 3-4 lần/tuần.',
+    },
+    lifestyleInsights: {
+        activity: 'Mức độ vận động trung bình - phù hợp với công việc văn phòng kết hợp tập gym',
+        sleep: 'Giấc ngủ đủ 7-8 tiếng giúp cơ thể phục hồi tốt',
+        stress: 'Mức stress trung bình - nên thực hành thiền hoặc yoga để giảm căng thẳng',
+    },
+    threeMonthPlan: {
+        goal: 'Giảm 4kg một cách an toàn và bền vững',
+        totalTargetWeightChangeKg: -4,
+        months: [
+            {
+                month: 1,
+                title: 'Tháng 1: Khởi động & Thích nghi',
+                dailyCalories: 1900,
+                note: 'Giảm 500 kcal/ngày, tập trung protein và rau xanh',
+            },
+            {
+                month: 2,
+                title: 'Tháng 2: Tăng cường',
+                dailyCalories: 1850,
+                note: 'Tăng cường cardio, duy trì chế độ ăn',
+            },
+            {
+                month: 3,
+                title: 'Tháng 3: Hoàn thiện',
+                dailyCalories: 1800,
+                note: 'Đạt mục tiêu, chuẩn bị chuyển sang giai đoạn duy trì',
+            },
+        ],
+    },
+};
+
+// Helper: Simulate network delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// ============================================================
+// SERVICE IMPLEMENTATION
+// ============================================================
+
 export const aiService = {
-    // Send message and get AI response
+    /**
+     * Analyze health based on onboarding data
+     * Works in 2 modes:
+     * - Public (no token): Returns JSON for preview, doesn't save to DB
+     * - Authenticated (with token): Saves analysis to DB
+     *
+     * @param data - Onboarding form data
+     * @returns Promise with AI analysis response
+     */
+    analyzeHealth: async (
+        data: Record<string, unknown>
+    ): Promise<ServiceResult<AIAnalysisResponse>> => {
+        try {
+            console.log('🤖 [analyzeHealth] Starting...');
+            console.log('🤖 [analyzeHealth] Input data:', data);
+
+            // Map frontend data → backend format
+            const mappedData = mapFrontendToBackend(data);
+            console.log('🤖 [analyzeHealth] Mapped data:', mappedData);
+
+            // Call API
+            const response = await http.post<ApiResponse<AIAnalysisResponse>>(
+                '/ai/health-analysis',
+                mappedData
+            );
+
+            console.log('🤖 [analyzeHealth] Raw response:', response);
+
+            // http interceptor unwraps .data, so response IS ApiResponse
+            const apiResponse = response as unknown as ApiResponse<AIAnalysisResponse>;
+
+            if (apiResponse?.success && apiResponse?.data) {
+                console.log('✅ [analyzeHealth] Success!');
+                return {
+                    success: true,
+                    data: apiResponse.data,
+                };
+            }
+
+            return {
+                success: false,
+                error: apiResponse?.message || 'Phân tích thất bại',
+            };
+        } catch (error) {
+            console.error('❌ [analyzeHealth] Error:', error);
+
+            const axiosError = error as {
+                response?: {
+                    status?: number;
+                    data?: { message?: string };
+                };
+                message?: string;
+            };
+
+            const errorMessage =
+                axiosError.response?.data?.message ||
+                axiosError.message ||
+                'Không thể kết nối server AI';
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
+        }
+    },
+
+    /**
+     * Get stored health analysis from database
+     * Requires authentication
+     * 
+     * @returns Promise with stored AI analysis response
+     */
+    getStoredAnalysis: async (): Promise<ServiceResult<AIAnalysisResponse>> => {
+        // Mock mode - return fake data
+        if (USE_MOCK_DATA) {
+            console.log('🎭 [MOCK] Fetching stored analysis...');
+            await delay(500); // Simulate network latency
+            return {
+                success: true,
+                data: MOCK_AI_ANALYSIS,
+            };
+        }
+
+        // Real API mode
+        try {
+            console.log('📊 [getStoredAnalysis] Fetching stored analysis...');
+
+            const response = await http.get<ApiResponse<AIAnalysisResponse>>(
+                '/ai/health-analysis'
+            );
+
+            console.log('📊 [getStoredAnalysis] Raw response:', response);
+
+            // http interceptor unwraps .data, so response IS ApiResponse
+            const apiResponse = response as unknown as ApiResponse<AIAnalysisResponse>;
+
+            if (apiResponse?.success && apiResponse?.data) {
+                console.log('✅ [getStoredAnalysis] Success!');
+                return {
+                    success: true,
+                    data: apiResponse.data,
+                };
+            }
+
+            return {
+                success: false,
+                error: apiResponse?.message || 'Không tìm thấy dữ liệu phân tích',
+            };
+        } catch (error) {
+            console.error('❌ [getStoredAnalysis] Error:', error);
+
+            const axiosError = error as {
+                response?: {
+                    data?: ApiResponse<unknown>;
+                };
+                message?: string;
+            };
+
+            const errorMessage =
+                axiosError.response?.data?.message ||
+                axiosError.message ||
+                'Không thể tải dữ liệu phân tích';
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
+        }
+    },
+
+    /**
+     * Send message and get AI Coach response (Mock)
+     * @deprecated Will be replaced with real API
+     */
     sendMessage: async (message: string): Promise<ChatMessage> => {
         return new Promise((resolve) => {
-            // Simulate AI thinking time
             setTimeout(() => {
                 const randomResponse = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
 
-                // Generate contextual response based on keywords
                 let response = randomResponse;
                 if (message.toLowerCase().includes('giảm cân')) {
                     response = 'Để giảm cân hiệu quả, bạn nên tạo calorie deficit (tiêu thụ ít hơn 300-500 kcal so với nhu cầu). Kết hợp với tập luyện 3-4 buổi/tuần và uống đủ 2L nước mỗi ngày.';
                 } else if (message.toLowerCase().includes('protein')) {
-                    response = 'Lượng protein khuyến nghị là 1.6-2.2g/kg cân nặng cho người tập gym. Với cân nặng 70kg, bạn nên ăn 112-154g protein mỗi ngày. Nguồn tốt: ức gà, cá, trứng, đậu phụ.';
+                    response = 'Lượng protein khuyến nghị là 1.6-2.2g/kg cân nặng cho người tập gym. Với cân nặng 70kg, bạn nên ăn 112-154g protein mỗi ngày.';
                 } else if (message.toLowerCase().includes('bữa sáng') || message.toLowerCase().includes('sáng')) {
-                    response = 'Gợi ý bữa sáng healthy:\n🥚 2 trứng luộc (156 kcal)\n🥑 1/2 quả bơ (80 kcal)\n🍞 1 lát bánh mì đen (80 kcal)\n🥛 Sữa không đường (60 kcal)\n\nTổng: ~376 kcal - Giàu protein, giúp no lâu!';
+                    response = 'Gợi ý bữa sáng healthy:\n🥚 2 trứng luộc (156 kcal)\n🥑 1/2 quả bơ (80 kcal)\n🍞 1 lát bánh mì đen (80 kcal)\n🥛 Sữa không đường (60 kcal)\n\nTổng: ~376 kcal';
                 }
 
                 resolve({
@@ -25,7 +287,7 @@ export const aiService = {
                     content: response,
                     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
                 });
-            }, 1500); // 1.5s delay to simulate AI thinking
+            }, 1500);
         });
     },
 };
