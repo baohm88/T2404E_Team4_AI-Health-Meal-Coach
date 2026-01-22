@@ -69,7 +69,6 @@ public class HealthProfileServiceImpl implements HealthProfileService {
                 .age(profile.getAge())
                 .height(profile.getHeight())
                 .weight(profile.getWeight())
-                .goal(profile.getGoal())
                 .activityLevel(profile.getActivityLevel())
                 .stressLevel(profile.getStressLevel())
                 .sleepDuration(profile.getSleepDuration())
