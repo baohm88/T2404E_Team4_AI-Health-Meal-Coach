@@ -33,9 +33,6 @@ public class HealthProfile {
     @Column(nullable = false)
     private Double weight; // kg
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "goal", nullable = false, length = 30)
-    private GoalType goal;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "activity_level", nullable = false, length = 30)
