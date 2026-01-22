@@ -59,7 +59,7 @@ export const useMealSchedule = () => {
                 store.setError(response.message);
             }
         } catch (error) {
-            store.setError('Không thể tải lịch ăn. Vui lòng thử lại.');
+            store.setError('Không thể tải lộ trình dinh dưỡng. Vui lòng thử lại.');
             console.error('Error fetching schedule:', error);
         } finally {
             store.setLoading(false);
@@ -93,7 +93,7 @@ export const useMealSchedule = () => {
                 return { success: false, message: response.message };
             }
         } catch (error) {
-            const message = 'Không thể tạo lịch ăn. Vui lòng thử lại.';
+            const message = 'Không thể tạo lộ trình dinh dưỡng. Vui lòng thử lại.';
             store.setError(message);
             console.error('Error generating schedule:', error);
             return { success: false, message };

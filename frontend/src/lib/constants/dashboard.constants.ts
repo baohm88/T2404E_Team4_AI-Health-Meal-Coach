@@ -12,7 +12,8 @@ import { Home, CalendarDays, BookOpen, Utensils, User, LucideIcon } from 'lucide
 /** Dashboard route paths */
 export const DASHBOARD_ROUTES = {
     HOME: '/dashboard',
-    SCHEDULE: '/dashboard/schedule',
+    SCHEDULE: '/dashboard/schedule',        // Google Calendar style meal schedule
+    PLAN_OVERVIEW: '/dashboard/plan-overview', // Health analysis overview page
     DIARY: '/dashboard/diary',
     FOODS: '/dashboard/foods',
     PROFILE: '/dashboard/profile',
@@ -28,7 +29,7 @@ export interface MenuItem {
 /** Dashboard navigation menu items */
 export const DASHBOARD_MENU_ITEMS: MenuItem[] = [
     { href: DASHBOARD_ROUTES.HOME, icon: Home, label: 'Tổng quan' },
-    { href: DASHBOARD_ROUTES.SCHEDULE, icon: CalendarDays, label: 'Lịch ăn' },
+    { href: DASHBOARD_ROUTES.SCHEDULE, icon: CalendarDays, label: 'Lộ trình dinh dưỡng' },
     { href: DASHBOARD_ROUTES.DIARY, icon: BookOpen, label: 'Nhật ký' },
     { href: DASHBOARD_ROUTES.FOODS, icon: Utensils, label: 'Món ăn' },
     { href: DASHBOARD_ROUTES.PROFILE, icon: User, label: 'Hồ sơ' },

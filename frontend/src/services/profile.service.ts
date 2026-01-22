@@ -44,37 +44,37 @@ const mapGender = (gender: Gender | undefined): ApiGender => {
 
 /**
  * Map frontend Goal to API Goal
- * Note: MAINTENANCE → MAINTAIN
+ * Backend uses MAINTENANCE (same as frontend)
  */
 const mapGoal = (goal: Goal | undefined): ApiGoal => {
     switch (goal) {
         case Goal.WEIGHT_LOSS:
             return ApiGoal.WEIGHT_LOSS;
         case Goal.MAINTENANCE:
-            return ApiGoal.MAINTAIN; // Key difference
+            return ApiGoal.MAINTENANCE;  // Same as frontend
         case Goal.MUSCLE_GAIN:
             return ApiGoal.MUSCLE_GAIN;
         default:
-            return ApiGoal.MAINTAIN; // Default fallback
+            return ApiGoal.MAINTENANCE;
     }
 };
 
 /**
  * Map frontend ActivityLevel to API Activity
- * Note: LIGHT → LIGHTLY_ACTIVE, MODERATE → MODERATELY_ACTIVE
+ * Backend uses: SEDENTARY, LIGHT, MODERATE, VERY_ACTIVE
  */
 const mapActivityLevel = (level: ActivityLevel | undefined): ApiActivity => {
     switch (level) {
         case ActivityLevel.SEDENTARY:
             return ApiActivity.SEDENTARY;
         case ActivityLevel.LIGHT:
-            return ApiActivity.LIGHTLY_ACTIVE;
+            return ApiActivity.LIGHT;     // Simple name
         case ActivityLevel.MODERATE:
-            return ApiActivity.MODERATELY_ACTIVE;
+            return ApiActivity.MODERATE;  // Simple name
         case ActivityLevel.VERY_ACTIVE:
             return ApiActivity.VERY_ACTIVE;
         default:
-            return ApiActivity.LIGHTLY_ACTIVE; // Default fallback
+            return ApiActivity.LIGHT;
     }
 };
 
@@ -129,7 +129,8 @@ const mapOnboardingToApiRequest = (
     age: data.age ?? 25,
     height: data.height ?? 170,
     weight: data.weight ?? 65,
-    goal: mapGoal(data.goal),
+    // NOTE: Backend HealthProfileRequest does NOT have 'goal' field
+    // Goal is handled separately via AI analysis
     activityLevel: mapActivityLevel(data.activityLevel),
     stressLevel: mapStressLevel(data.stressLevel),
     sleepDuration: mapSleepDuration(data.sleepRange),

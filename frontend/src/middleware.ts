@@ -1,13 +1,3 @@
-/**
- * Next.js Middleware
- *
- * Route protection for authenticated routes.
- * GUEST FIRST FLOW: Onboarding is PUBLIC (no auth required)
- *
- * Protected routes: /dashboard/*
- * Public routes: /onboarding/*, /login, /register, /
- */
-
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
@@ -17,12 +7,14 @@ import type { NextRequest } from 'next/server';
 
 const TOKEN_COOKIE = 'access_token';
 
-/** Routes that require authentication */
+/** Routes bắt buộc phải đăng nhập mới xem được */
 const PROTECTED_ROUTES = [
     '/dashboard',
 ];
 
-/** Auth routes - redirect to dashboard if already logged in */
+/** Routes dành cho Guest (Login/Register).
+ * Nếu đã đăng nhập thì sẽ bị đá về Dashboard.
+ */
 const AUTH_ROUTES = [
     '/login',
     '/register',
@@ -34,25 +26,26 @@ const AUTH_ROUTES = [
 
 export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
+    // Lấy token từ cookie (Middleware chạy ở server/edge nên cần lấy từ cookie)
     const token = request.cookies.get(TOKEN_COOKIE)?.value;
     const isAuthenticated = !!token;
 
-    // Check route types
     const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
     const isAuthRoute = AUTH_ROUTES.some(route => pathname.startsWith(route));
 
-    // Protected routes: Redirect to login if not authenticated
+    // 1. Bảo vệ Dashboard: Chưa đăng nhập -> Đá về Login
     if (isProtectedRoute && !isAuthenticated) {
         const loginUrl = new URL('/login', request.url);
         loginUrl.searchParams.set('redirect', pathname);
         return NextResponse.redirect(loginUrl);
     }
 
-    // Auth routes: Redirect to dashboard if already authenticated
+    // 2. Xử lý Auth Routes (Login/Register): Đã đăng nhập -> Đá về Dashboard
     if (isAuthRoute && isAuthenticated) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
+    // 3. Cho phép tất cả các routes khác (/, /onboarding, /onboarding/result, etc.)
     return NextResponse.next();
 }
 
@@ -62,13 +55,6 @@ export function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        /*
-         * Match all request paths except:
-         * - _next/static (static files)
-         * - _next/image (image optimization files)
-         * - favicon.ico (favicon file)
-         * - public files (assets)
-         */
         '/((?!_next/static|_next/image|favicon.ico|assets).*)',
     ],
 };

@@ -232,7 +232,7 @@ export const mealScheduleService = {
 
         return {
             success: true,
-            message: 'Tải lịch ăn thành công',
+            message: 'Tải lLộ trình dinh dưỡng thành công',
             data: currentSchedule,
         };
     },
@@ -250,7 +250,7 @@ export const mealScheduleService = {
 
         return {
             success: true,
-            message: 'Đã tạo lịch ăn 7 ngày thành công!',
+            message: 'Đã tạo Lộ trình dinh dưỡng 7 ngày thành công!',
             data: currentSchedule,
         };
     },
@@ -267,7 +267,7 @@ export const mealScheduleService = {
         if (!currentSchedule) {
             return {
                 success: false,
-                message: 'Không tìm thấy lịch ăn',
+                message: 'Không tìm thấy Lộ trình dinh dưỡng',
             };
         }
 
@@ -330,7 +330,7 @@ export const mealScheduleService = {
         if (!currentSchedule) {
             return {
                 success: false,
-                message: 'Không tìm thấy lịch ăn',
+                message: 'Không tìm thấy Lộ trình dinh dưỡng',
             };
         }
 
@@ -422,7 +422,7 @@ export const mealScheduleService = {
         if (!currentSchedule) {
             return {
                 success: false,
-                message: 'Không tìm thấy lịch ăn',
+                message: 'Không tìm thấy Lộ trình dinh dưỡng',
             };
         }
 
@@ -438,7 +438,7 @@ export const mealScheduleService = {
 
         return {
             success: true,
-            message: 'Đã áp dụng điều chỉnh lịch ăn',
+            message: 'Đã áp dụng điều chỉnh Lộ trình dinh dưỡng',
             data: currentSchedule,
         };
     },
