@@ -206,7 +206,7 @@ export const MealCalendar = () => {
             <div className="bg-white rounded-sm border border-slate-200 p-6 h-[400px] flex items-center justify-center">
                 <div className="flex flex-col items-center gap-3">
                     <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm text-slate-500">Đang tải lịch ăn...</p>
+                    <p className="text-sm text-slate-500">Đang tải lộ trình dinh dưỡng...</p>
                 </div>
             </div>
         );
@@ -218,7 +218,7 @@ export const MealCalendar = () => {
             <div className="bg-white rounded-sm border border-slate-200 p-6 h-[400px] flex items-center justify-center">
                 <div className="text-center">
                     <div className="text-4xl mb-3">📋</div>
-                    <h3 className="text-lg font-semibold text-slate-800 mb-1">Chưa có lịch ăn</h3>
+                    <h3 className="text-lg font-semibold text-slate-800 mb-1">Lộ trình dinh dưỡng</h3>
                     <p className="text-sm text-slate-500">Nhấn &quot;Tạo lịch mới&quot; để bắt đầu</p>
                 </div>
             </div>

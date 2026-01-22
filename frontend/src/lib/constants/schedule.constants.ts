@@ -149,14 +149,14 @@ export const VIETNAMESE_DAYS_SHORT = [
 // ============================================================
 
 export const SCHEDULE_MESSAGES = {
-    GENERATE_SUCCESS: 'Đã tạo lịch ăn 7 ngày thành công!',
-    GENERATE_ERROR: 'Không thể tạo lịch ăn. Vui lòng thử lại.',
+    GENERATE_SUCCESS: 'Đã tạo Lộ trình dinh dưỡng 7 ngày thành công!',
+    GENERATE_ERROR: 'Không thể tạo Lộ trình dinh dưỡng Vui lòng thử lại.',
     CHECKIN_SUCCESS: 'Đã check-in bữa ăn thành công!',
     CHECKIN_ERROR: 'Không thể check-in bữa ăn.',
-    ADJUSTMENT_APPLIED: 'Đã áp dụng điều chỉnh lịch ăn.',
+    ADJUSTMENT_APPLIED: 'Đã áp dụng điều chỉnh Lộ trình dinh dưỡng.',
     DEVIATION_ALERT: 'Bạn đã vượt mức calo cho phép hôm nay!',
-    NO_SCHEDULE: 'Chưa có lịch ăn. Hãy tạo lịch mới!',
-    LOADING: 'Đang tải lịch ăn...',
+    NO_SCHEDULE: 'Chưa có Lộ trình dinh dưỡng. Hãy tạo lịch mới!',
+    LOADING: 'Đang tải Lộ trình dinh dưỡng...',
 } as const;
 
 // ============================================================

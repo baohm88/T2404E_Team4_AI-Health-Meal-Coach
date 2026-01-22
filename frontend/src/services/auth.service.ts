@@ -8,7 +8,7 @@
  * @see /types/api.ts - Type definitions
  */
 
-import http, { saveToken, removeToken } from '@/lib/http';
+import http, { removeToken } from '@/lib/http';
 import {
     ApiResponse,
     LoginRequest,
@@ -47,8 +47,8 @@ export const authService = {
             if (response.success && response.data?.token) {
                 const { token } = response.data;
 
-                // Save token to localStorage
-                saveToken(token);
+                // ⚠️ NOTE: Token is saved in use-auth-form.ts hook, not here
+                // This keeps token management centralized in the UI layer
 
                 return {
                     success: true,
@@ -90,8 +90,8 @@ export const authService = {
             if (response.success && response.data?.token) {
                 const { token } = response.data;
 
-                // Save token to localStorage
-                saveToken(token);
+                // ⚠️ NOTE: Token is saved in use-auth-form.ts hook, not here
+                // This keeps token management centralized in the UI layer
 
                 return {
                     success: true,

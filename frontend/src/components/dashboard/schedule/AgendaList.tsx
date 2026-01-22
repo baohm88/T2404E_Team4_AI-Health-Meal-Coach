@@ -153,7 +153,7 @@ export const AgendaList = ({ weekDays, schedule, onMealClick }: AgendaListProps)
     if (!schedule) {
         return (
             <div className="text-center py-12 text-slate-500">
-                Không có dữ liệu lịch ăn
+                Không có dữ liệu lộ trình dinh dưỡng
             </div>
         );
     }
