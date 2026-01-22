@@ -217,6 +217,57 @@ export default function PlanOverviewPage() {
                 <p className="text-slate-600 leading-relaxed">{analysis.summary}</p>
             </section>
 
+            {/* Lifestyle Insights */}
+            {data.lifestyleInsights && (
+                <section>
+                    <h2 className="text-lg font-semibold text-slate-800 mb-4">🏃 Phân tích lối sống</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        {/* Activity Card */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
+                                    <Activity className="w-5 h-5 text-white" />
+                                </div>
+                                <span className="font-medium text-slate-700">Vận động</span>
+                            </div>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                {data.lifestyleInsights.activity}
+                            </p>
+                        </div>
+
+                        {/* Sleep Card */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                    </svg>
+                                </div>
+                                <span className="font-medium text-slate-700">Giấc ngủ</span>
+                            </div>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                {data.lifestyleInsights.sleep}
+                            </p>
+                        </div>
+
+                        {/* Stress Card */}
+                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3 mb-3">
+                                <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
+                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                    </svg>
+                                </div>
+                                <span className="font-medium text-slate-700">Căng thẳng</span>
+                            </div>
+                            <p className="text-sm text-slate-600 leading-relaxed">
+                                {data.lifestyleInsights.stress}
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* 3-Month Plan Timeline */}
             <section>
                 <div className="flex items-center justify-between mb-4">
