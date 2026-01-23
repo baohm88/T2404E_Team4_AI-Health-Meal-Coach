@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "kill -9 $(lsof -t -i:3000) 2>/dev/null || true; next dev",
+    "dev": "npx kill-port 3000 && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -33,6 +33,7 @@
     "@types/react-dom": "^19.2.3",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "kill-port": "^2.0.1",
     "tailwindcss": "^4",
     "typescript": "^5.9.3"
   }
