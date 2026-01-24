@@ -262,6 +262,42 @@ export default function SchedulePage() {
 
                 {/* Right: Side Panel (1 col) */}
                 <div className="space-y-6">
+                    {/* Current Month Target - Dynamic from AI */}
+                    {analysisData?.threeMonthPlan?.months?.[0] && (
+                        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-2xl border border-emerald-200 p-5">
+                            <div className="flex items-center gap-2 mb-3">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
+                                    <span className="text-white font-bold text-sm">
+                                        {analysisData.threeMonthPlan.months[0].month}
+                                    </span>
+                                </div>
+                                <div>
+                                    <h3 className="font-semibold text-emerald-800 text-sm">Giai đoạn hiện tại</h3>
+                                    <p className="text-xs text-emerald-600">
+                                        {analysisData.threeMonthPlan.months[0].title}
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Daily Calories Target */}
+                            <div className="bg-white rounded-xl p-4 mb-3 border border-emerald-100">
+                                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Mục tiêu Calo/ngày</p>
+                                <p className="text-2xl font-bold text-emerald-600">
+                                    {analysisData.threeMonthPlan.months[0].dailyCalories}
+                                    <span className="text-sm font-normal text-slate-500 ml-1">kcal</span>
+                                </p>
+                            </div>
+
+                            {/* Note */}
+                            <div className="bg-white/50 rounded-lg p-3 border border-emerald-100">
+                                <p className="text-xs text-slate-500 mb-1">📝 Ghi chú</p>
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    {analysisData.threeMonthPlan.months[0].note}
+                                </p>
+                            </div>
+                        </div>
+                    )}
+
                     <MealPlanGenerator />
                     <WeeklySummary />
                 </div>
