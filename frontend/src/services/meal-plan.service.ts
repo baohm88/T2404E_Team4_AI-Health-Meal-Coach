@@ -1,0 +1,52 @@
+import { http } from '@/lib/http';
+import { ApiResponse } from '@/types/api';
+
+export interface Meal {
+    id: number;
+    mealName: string;
+    quantity: string;
+    calories: number;
+    type: string;
+}
+
+export interface DayPlan {
+    day: number;
+    meals: Meal[];
+    totalCalories: number;
+}
+
+export interface MealPlanResponse {
+    startDate: string;
+    totalDays: number;
+    mealPlan: DayPlan[];
+}
+
+export const mealPlanService = {
+    /**
+     * Lấy kế hoạch bữa ăn hiện tại của người dùng
+     */
+    getMealPlan: async (): Promise<ApiResponse<MealPlanResponse>> => {
+        return http.get('/meal-plans');
+    },
+
+    /**
+     * Tạo kế hoạch bữa ăn mới
+     */
+    generateMealPlan: async (): Promise<ApiResponse<MealPlanResponse>> => {
+        return http.post('/meal-plans');
+    },
+
+    /**
+     * Tái tạo kế hoạch bữa ăn
+     */
+    regenerateMealPlan: async (): Promise<ApiResponse<MealPlanResponse>> => {
+        return http.put('/meal-plans');
+    },
+
+    /**
+     * Không còn cần parse phức tạp vì backend đã trả về object chuẩn
+     */
+    parsePlanJson: (data: any): MealPlanResponse => {
+        return data as MealPlanResponse;
+    }
+};
