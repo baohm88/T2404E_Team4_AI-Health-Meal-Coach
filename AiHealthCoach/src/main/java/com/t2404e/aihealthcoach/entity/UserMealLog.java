@@ -22,7 +22,7 @@ public class UserMealLog {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "image_url", nullable = false, length = 500)
+    @Column(name = "image_url", length = 500)
     private String imageUrl;
 
     @Column(name = "food_name")
@@ -30,6 +30,16 @@ public class UserMealLog {
 
     @Column(name = "estimated_calories")
     private Integer estimatedCalories;
+
+    @Column(name = "planned_meal_id")
+    private Long plannedMealId;
+
+    @Column(name = "dish_id")
+    private Long dishId;
+
+    @Builder.Default
+    @Column(name = "is_plan_compliant")
+    private Boolean isPlanCompliant = true;
 
     @Column(columnDefinition = "TEXT")
     private String nutritionDetails;

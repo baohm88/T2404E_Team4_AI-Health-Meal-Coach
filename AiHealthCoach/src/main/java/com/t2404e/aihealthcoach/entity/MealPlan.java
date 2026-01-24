@@ -4,14 +4,16 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.UpdateTimestamp;
 
-
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "meal_plans")
-@Getter @Setter @Builder
-@NoArgsConstructor @AllArgsConstructor
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class MealPlan {
 
     @Id
@@ -26,10 +28,6 @@ public class MealPlan {
 
     @Column(name = "total_days", nullable = false)
     private Integer totalDays; // 90
-
-    @Lob
-    @Column(name = "plan_json", columnDefinition = "LONGTEXT", nullable = false)
-    private String planJson;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;

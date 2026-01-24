@@ -1,9 +1,11 @@
 package com.t2404e.aihealthcoach.service;
 
-import com.t2404e.aihealthcoach.entity.MealPlan;
+import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
 
 public interface MealPlanService {
-    MealPlan generateForUser(Long userId);
-    MealPlan getByUserId(Long userId);
-    MealPlan regenerate(Long userId);
+    MealPlanResponse generateForUser(Long userId);
+
+    MealPlanResponse getByUserId(Long userId);
+
+    MealPlanResponse regenerate(Long userId);
 }
