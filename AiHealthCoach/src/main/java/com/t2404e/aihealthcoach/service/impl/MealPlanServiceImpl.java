@@ -22,52 +22,52 @@ public class MealPlanServiceImpl implements MealPlanService {
     private final HealthProfileRepository profileRepo;
     private final HealthAnalysisRepository analysisRepo;
     private final MealPlanRepository mealPlanRepo;
-
-    // Inject BUILDER, KHÔNG inject ChatClient
     private final ChatClient.Builder chatClientBuilder;
 
     @Override
-    public void generateForUser(Long userId) {
+    public MealPlan generateForUser(Long userId) {
 
-        if (mealPlanRepo.existsByUserId(userId)) {
-            return; // KHÔNG sinh lại
-        }
+        // 1. Nếu đã tồn tại → trả luôn (KHÔNG sinh lại)
+        return mealPlanRepo.findByUserId(userId)
+                .orElseGet(() -> {
 
-        HealthProfile profile = profileRepo.findById(userId)
-                .orElseThrow();
+                    HealthProfile profile = profileRepo.findById(userId)
+                            .orElseThrow(() -> new IllegalStateException("HealthProfile not found"));
 
-        HealthAnalysis analysis = analysisRepo.findByUserId(userId)
-                .orElseThrow();
+                    HealthAnalysis analysis = analysisRepo.findByUserId(userId)
+                            .orElseThrow(() -> new IllegalStateException("HealthAnalysis not found"));
 
-        String prompt = MealPlanPromptBuilder.build(profile, analysis);
+                    String prompt = MealPlanPromptBuilder.build(profile, analysis);
 
-        ChatClient chatClient = chatClientBuilder.build();
+                    ChatClient chatClient = chatClientBuilder.build();
 
-        String planJson = chatClient.prompt()
-                .system(MealPlanPrompt.SYSTEM)
-                .user(prompt)
-                .call()
-                .content();
+                    String planJson = chatClient.prompt()
+                            .system(MealPlanPrompt.SYSTEM)
+                            .user(prompt)
+                            .call()
+                            .content();
 
-        mealPlanRepo.save(
-                MealPlan.builder()
-                        .userId(userId)
-                        .startDate(LocalDate.now())
-                        .totalDays(90)
-                        .planJson(planJson)
-                        .build()
-        );
+                    MealPlan mealPlan = MealPlan.builder()
+                            .userId(userId)
+                            .startDate(LocalDate.now())
+                            .totalDays(90)
+                            .planJson(planJson)
+                            .build();
+
+                    return mealPlanRepo.save(mealPlan);
+                });
     }
 
     @Override
     public MealPlan getByUserId(Long userId) {
         return mealPlanRepo.findByUserId(userId)
-                .orElseThrow();
+                .orElseThrow(() -> new IllegalStateException("MealPlan not found"));
     }
 
     @Override
-    public void regenerate(Long userId) {
+    public MealPlan regenerate(Long userId) {
         mealPlanRepo.deleteByUserId(userId);
-        generateForUser(userId);
+        return generateForUser(userId);
     }
 }
+
