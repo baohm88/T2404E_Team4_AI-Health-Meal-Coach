@@ -11,4 +11,5 @@ public class MealAnalysisResponse {
     private Integer estimatedCalories;
     private String nutritionDetails; // Phân tích chi tiết: protein, carb, fat...
     private String imageUrl;
+    private Long plannedMealId;
 }
