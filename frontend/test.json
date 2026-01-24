@@ -1,0 +1,223 @@
+{
+    "success": true,
+    "message": "Health analysis completed",
+    "data": {
+        "analysis": {
+            "bmi": 48,
+            "bmr": 1450,
+            "tdee": 1740,
+            "healthStatus": "OBESE",
+            "summary": "Người dùng có chỉ số BMI rất cao, ở mức béo phì độ III, cần giảm cân để cải thiện sức khỏe tổng thể."
+        },
+        "lifestyleInsights": {
+            "activity": "Ít vận động",
+            "sleep": "Ngủ ít hơn 5 tiếng mỗi đêm",
+            "stress": "Mức độ stress thấp"
+        },
+        "threeMonthPlan": {
+            "goal": "WEIGHT_LOSS",
+            "totalTargetWeightChangeKg": 50,
+            "months": [
+                {
+                    "month": 1,
+                    "title": "Giảm cân ban đầu",
+                    "dailyCalories": 1500,
+                    "macronutrients": "Đạm: 120g (30%)- Béo: 40g (20%)- Tinh bột: 200g (50%)",
+                    "habitFocus": "Tăng cường vận động nhẹ",
+                    "mealTips": "Ăn nhiều rau xanh, hạn chế đồ ăn nhanh",
+                    "specificActions": "Uống 2L nước lọc mỗi ngày. Đi bộ nhanh 10p sau mỗi bữa ăn chính. Ngủ đủ 7 tiếng, bắt đầu từ 22h.",
+                    "sampleDailyMeals": [
+                        {
+                            "mealName": "Cháo yến mạch với trái cây",
+                            "quantity": "1 bát cháo (200g)",
+                            "calories": 250,
+                            "type": "Sáng"
+                        },
+                        {
+                            "mealName": "Cơm trắng với cá hấp và rau xào",
+                            "quantity": "1 đĩa (1 bát cơm trắng)",
+                            "calories": 400,
+                            "type": "Trưa"
+                        },
+                        {
+                            "mealName": "Súp lơ xanh luộc với thịt nạc",
+                            "quantity": "1 chén súp lơ (100g)",
+                            "calories": 100,
+                            "type": "Phụ"
+                        },
+                        {
+                            "mealName": "Cơm gạo lứt với gà nướng và rau cải",
+                            "quantity": "1 đĩa (1 bát cơm gạo lứt)",
+                            "calories": 450,
+                            "type": "Tối"
+                        }
+                    ],
+                    "weeks": [
+                        {
+                            "week": 1,
+                            "title": "Khởi động giảm cân",
+                            "nutritionFocus": "Giảm calo, tăng chất xơ",
+                            "mealTips": "Bắt đầu ngày mới với nước chanh ấm",
+                            "note": "Hạn chế đồ uống có gas"
+                        },
+                        {
+                            "week": 2,
+                            "title": "Tăng cường vận động",
+                            "nutritionFocus": "Duy trì giảm calo, tăng protein",
+                            "mealTips": "Ăn thêm một quả trứng mỗi ngày",
+                            "note": "Tập đi bộ nhanh 15 phút sau bữa ăn"
+                        },
+                        {
+                            "week": 3,
+                            "title": "Cải thiện khẩu phần",
+                            "nutritionFocus": "Tăng cường thực phẩm giàu chất xơ",
+                            "mealTips": "Thêm một chén rau sống mỗi bữa",
+                            "note": "Hạn chế ăn sau 8h tối"
+                        },
+                        {
+                            "week": 4,
+                            "title": "Đánh giá tiến độ",
+                            "nutritionFocus": "Điều chỉnh calo hợp lý",
+                            "mealTips": "Uống một ly nước ép trái cây mỗi ngày",
+                            "note": "Ghi chép nhật ký ăn uống"
+                        }
+                    ],
+                    "note": "Cần kiên nhẫn và duy trì lối sống lành mạnh."
+                },
+                {
+                    "month": 2,
+                    "title": "Tăng cường giảm cân",
+                    "dailyCalories": 1400,
+                    "macronutrients": "Đạm: 130g (35%)- Béo: 35g (20%)- Tinh bột: 180g (45%)",
+                    "habitFocus": "Tăng thời gian vận động",
+                    "mealTips": "Thêm cá vào khẩu phần ăn",
+                    "specificActions": "Uống 2.5L nước lọc mỗi ngày. Đi bộ nhanh 15p sau mỗi bữa ăn chính. Ngủ đủ 7.5 tiếng, bắt đầu từ 21h30.",
+                    "sampleDailyMeals": [
+                        {
+                            "mealName": "Bánh cuốn với thịt nạc và rau sống",
+                            "quantity": "1 cuốn (150g)",
+                            "calories": 300,
+                            "type": "Sáng"
+                        },
+                        {
+                            "mealName": "Cơm trắng với gà nướng và rau cải xanh",
+                            "quantity": "1 đĩa (1 bát cơm trắng)",
+                            "calories": 420,
+                            "type": "Trưa"
+                        },
+                        {
+                            "mealName": "Trái cây tươi",
+                            "quantity": "1 chén trái cây (100g)",
+                            "calories": 60,
+                            "type": "Phụ"
+                        },
+                        {
+                            "mealName": "Cơm gạo lứt với cá hấp và súp lơ",
+                            "quantity": "1 đĩa (1 bát cơm gạo lứt)",
+                            "calories": 380,
+                            "type": "Tối"
+                        }
+                    ],
+                    "weeks": [
+                        {
+                            "week": 1,
+                            "title": "Tăng cường protein",
+                            "nutritionFocus": "Duy trì giảm calo, tăng chất đạm",
+                            "mealTips": "Ăn thêm một quả trứng mỗi ngày",
+                            "note": "Hạn chế đồ ăn nhiều đường"
+                        },
+                        {
+                            "week": 2,
+                            "title": "Cải thiện vận động",
+                            "nutritionFocus": "Tăng thời gian vận động nhẹ",
+                            "mealTips": "Tập đi bộ nhanh 20 phút sau bữa ăn",
+                            "note": "Uống nước trước và sau khi tập"
+                        },
+                        {
+                            "week": 3,
+                            "title": "Đánh giá và điều chỉnh",
+                            "nutritionFocus": "Xem xét hiệu quả giảm cân",
+                            "mealTips": "Ghi chép thực phẩm ăn hàng ngày",
+                            "note": "Cân nhắc giảm thêm calo nếu cần"
+                        },
+                        {
+                            "week": 4,
+                            "title": "Chuẩn bị cho tháng cuối",
+                            "nutritionFocus": "Duy trì ổn định cân nặng",
+                            "mealTips": "Ăn uống cân đối và lành mạnh",
+                            "note": "Tập trung vào việc duy trì thói quen tốt"
+                        }
+                    ],
+                    "note": "Cần tiếp tục duy trì và điều chỉnh kế hoạch cho phù hợp."
+                },
+                {
+                    "month": 3,
+                    "title": "Duy trì và hoàn thiện",
+                    "dailyCalories": 1500,
+                    "macronutrients": "Đạm: 120g (30%)- Béo: 40g (20%)- Tinh bột: 220g (50%)",
+                    "habitFocus": "Hoàn thiện lối sống lành mạnh",
+                    "mealTips": "Tăng cường ăn thực phẩm giàu chất xơ và protein",
+                    "specificActions": "Uống 3L nước lọc mỗi ngày. Đi bộ nhanh 20p sau mỗi bữa ăn chính. Ngủ đủ 8 tiếng, bắt đầu từ 22h.",
+                    "sampleDailyMeals": [
+                        {
+                            "mealName": "Cháo dinh dưỡng với trứng và rau",
+                            "quantity": "1 bát cháo (250g)",
+                            "calories": 280,
+                            "type": "Sáng"
+                        },
+                        {
+                            "mealName": "Cơm gạo lứt với thịt gà và rau cải",
+                            "quantity": "1 đĩa (1 bát cơm gạo lứt)",
+                            "calories": 440,
+                            "type": "Trưa"
+                        },
+                        {
+                            "mealName": "Sữa chua không đường",
+                            "quantity": "1 chén (150g)",
+                            "calories": 80,
+                            "type": "Phụ"
+                        },
+                        {
+                            "mealName": "Cơm trắng với cá nướng và súp lơ xanh",
+                            "quantity": "1 đĩa (1 bát cơm trắng)",
+                            "calories": 400,
+                            "type": "Tối"
+                        }
+                    ],
+                    "weeks": [
+                        {
+                            "week": 1,
+                            "title": "Duy trì giảm cân",
+                            "nutritionFocus": "Duy trì calo hợp lý",
+                            "mealTips": "Ăn nhiều loại thực phẩm",
+                            "note": "Tập trung vào lối sống cân bằng"
+                        },
+                        {
+                            "week": 2,
+                            "title": "Tăng cường sức khỏe tổng thể",
+                            "nutritionFocus": "Tăng cường vitamin và khoáng chất",
+                            "mealTips": "Ăn thêm trái cây và rau xanh",
+                            "note": "Uống đủ nước hàng ngày"
+                        },
+                        {
+                            "week": 3,
+                            "title": "Đánh giá cuối cùng",
+                            "nutritionFocus": "Xem xét kết quả giảm cân",
+                            "mealTips": "Ghi chép và đánh giá tiến độ",
+                            "note": "Cân nhắc kế hoạch duy trì lâu dài"
+                        },
+                        {
+                            "week": 4,
+                            "title": "Kết thúc và định hướng tương lai",
+                            "nutritionFocus": "Duy trì và phát triển thói quen lành mạnh",
+                            "mealTips": "Lập kế hoạch cho tương lai",
+                            "note": "Chúc mừng và tiếp tục phát triển"
+                        }
+                    ],
+                    "note": "Chúc mừng bạn đã đạt được mục tiêu! Hãy tiếp tục duy trì lối sống lành mạnh."
+                }
+            ]
+        }
+    },
+    "timestamp": "2026-01-24T14:20:04.6423011"
+}
