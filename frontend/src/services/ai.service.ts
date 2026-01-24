@@ -80,7 +80,7 @@ interface ApiResponse<T> {
  * true = Use mock data (for development/demo)
  * false = Call real API (when backend is ready)
  */
-const USE_MOCK_DATA = true;
+const USE_MOCK_DATA = false;
 
 // ============================================================
 // MOCK DATA
@@ -159,7 +159,7 @@ export const aiService = {
                 mappedData
             );
 
-            console.log('🤖 [analyzeHealth] Raw response:', response);
+            console.log('🤖 [analyzeHealth] data:', response.data);
 
             // http interceptor unwraps .data, so response IS ApiResponse
             const apiResponse = response as unknown as ApiResponse<AIAnalysisResponse>;
@@ -221,19 +221,24 @@ export const aiService = {
             console.log('📊 [getStoredAnalysis] Fetching stored analysis...');
 
             const response = await http.get<ApiResponse<AIAnalysisResponse>>(
-                '/ai/health-analysis'
+                '/health-analysis'
             );
 
             console.log('📊 [getStoredAnalysis] Raw response:', response);
 
             // http interceptor unwraps .data, so response IS ApiResponse
-            const apiResponse = response as unknown as ApiResponse<AIAnalysisResponse>;
+            // Backend returns data as JSON string, need to parse it
+            const apiResponse = response as unknown as ApiResponse<string>;
 
             if (apiResponse?.success && apiResponse?.data) {
                 console.log('✅ [getStoredAnalysis] Success!');
+                // Parse JSON string to object
+                const parsedData = typeof apiResponse.data === 'string'
+                    ? JSON.parse(apiResponse.data) as AIAnalysisResponse
+                    : apiResponse.data as unknown as AIAnalysisResponse;
                 return {
                     success: true,
-                    data: apiResponse.data,
+                    data: parsedData,
                 };
             }
 
@@ -259,6 +264,61 @@ export const aiService = {
             return {
                 success: false,
                 error: errorMessage,
+            };
+        }
+    },
+
+    /**
+     * Save health analysis to database
+     * Requires authentication
+     * 
+     * @param analysisJson - JSON string (already stringified) to save
+     * @returns Promise with save result
+     */
+    saveHealthAnalysis: async (
+        analysisJson: string
+    ): Promise<ServiceResult<void>> => {
+        try {
+            console.log('💾 [saveHealthAnalysis] Saving to DB...');
+            console.log('💾 [saveHealthAnalysis] JSON String:', analysisJson);
+
+            // Send JSON string directly to POST /health-analysis
+            const response = await http.post<ApiResponse<void>>(
+                '/health-analysis',
+                analysisJson,
+                {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            console.log('💾 [saveHealthAnalysis] Response:', response);
+
+            const apiResponse = response as unknown as ApiResponse<void>;
+
+            if (apiResponse?.success) {
+                console.log('✅ [saveHealthAnalysis] Saved successfully!');
+                return { success: true };
+            }
+
+            return {
+                success: false,
+                error: apiResponse?.message || 'Lưu dữ liệu thất bại',
+            };
+        } catch (error) {
+            console.error('❌ [saveHealthAnalysis] Error:', error);
+
+            const axiosError = error as {
+                response?: {
+                    data?: { message?: string };
+                };
+                message?: string;
+            };
+
+            return {
+                success: false,
+                error: axiosError.response?.data?.message || axiosError.message || 'Không thể lưu dữ liệu',
             };
         }
     },

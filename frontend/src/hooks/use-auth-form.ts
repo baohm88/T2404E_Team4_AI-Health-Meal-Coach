@@ -54,9 +54,19 @@ async function syncGuestDataAndRedirect(token: string, router: ReturnType<typeof
         }
 
         // 2. Chạy AI phân tích
-        await aiService.analyzeHealth(mapped);
+        const aiResult = await aiService.analyzeHealth(mapped);
 
-        // 3. Xóa localStorage sau khi sync xong
+        // 3. Lưu kết quả AI vào DB (Stringify trước khi gửi)
+        if (aiResult.success && aiResult.data) {
+            console.log('💾 [syncGuestData] Saving AI result to DB...');
+            const jsonString = JSON.stringify(aiResult.data);
+            const saveRes = await aiService.saveHealthAnalysis(jsonString);
+            if (!saveRes.success) {
+                console.warn('Save AI result failed:', saveRes.error);
+            }
+        }
+
+        // 4. Xóa localStorage sau khi sync xong
         localStorage.removeItem('onboarding-data');
     } catch (e) {
         console.error('Error during guest sync:', e);
