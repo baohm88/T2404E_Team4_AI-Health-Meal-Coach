@@ -11,22 +11,22 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/ai/meal-plan")
+@RequestMapping("/meal-plans")
 @RequiredArgsConstructor
 public class MealPlanController {
 
     private final MealPlanService service;
 
-    @PostMapping("/generate")
+    @PostMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> generate(
+    public ResponseEntity<ApiResponse<MealPlan>> generate(
             HttpServletRequest request) {
 
         Long userId = RequestUtil.getUserId(request);
-        service.generateForUser(userId);
+        MealPlan mealPlan = service.generateForUser(userId);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Meal plan generated successfully", null)
+                ApiResponse.success("Meal plan generated successfully", mealPlan)
         );
     }
 
@@ -45,16 +45,16 @@ public class MealPlanController {
         );
     }
 
-    @PostMapping("/regenerate")
+    @PutMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
-    public ResponseEntity<ApiResponse<Void>> regenerate(
+    public ResponseEntity<ApiResponse<MealPlan>> regenerate(
             HttpServletRequest request) {
 
         Long userId = RequestUtil.getUserId(request);
-        service.regenerate(userId);
+        MealPlan mealPlan = service.regenerate(userId);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Meal plan regenerated successfully", null)
+                ApiResponse.success("Meal plan regenerated successfully", mealPlan)
         );
     }
 }
