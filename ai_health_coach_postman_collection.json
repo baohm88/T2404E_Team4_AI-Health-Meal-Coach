@@ -1,0 +1,456 @@
+{
+    "info": {
+        "_postman_id": "8b5d3a2e-4f5a-4e2b-8c6e-1d2e3f4a5b6c",
+        "name": "AI Health Coach API",
+        "description": "Bộ API dành cho ứng dụng AI Health Coach - T2404E Team 4. Hỗ trợ đầy đủ các tính năng: Đăng nhập/Đăng ký, Phân tích sức khỏe AI, Quản lý hồ sơ, Phân tích bữa ăn qua ảnh và Gợi ý thực đơn.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "Authentication",
+            "item": [
+                {
+                    "name": "Register",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"fullName\": \"Nguyen Van A\",\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/register",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "register"
+                            ]
+                        },
+                        "description": "Đăng ký tài khoản mới. Trả về userId trong registerResponse."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"email\": \"test@example.com\",\n    \"password\": \"password123\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/auth/login",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Đăng nhập để lấy Access Token. Token này sẽ được dùng cho các API yêu cầu xác thực."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API liên quan đến xác thực người dùng."
+        },
+        {
+            "name": "Health Profile",
+            "item": [
+                {
+                    "name": "Create/Update Profile",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"age\": 25,\n    \"gender\": \"MALE\",\n    \"height\": 175.0,\n    \"weight\": 70.0,\n    \"activityLevel\": \"MODERATE\",\n    \"stressLevel\": \"MEDIUM\",\n    \"sleepDuration\": \"SEVEN_TO_NINE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/health-profile",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health-profile"
+                            ]
+                        },
+                        "description": "Lưu hoặc cập nhật thông tin chỉ số cơ thể và lối sống của người dùng."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/health-profile",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health-profile"
+                            ]
+                        },
+                        "description": "Lấy thông tin profile hiện tại của người dùng."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Quản lý thông tin sức khỏe cá nhân (Chiều cao, cân nặng, vận động...)"
+        },
+        {
+            "name": "AI Analysis",
+            "item": [
+                {
+                    "name": "Analyze Health (AI)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"age\": 25,\n    \"gender\": \"MALE\",\n    \"height\": 175.0,\n    \"weight\": 70.0,\n    \"activityLevel\": \"MODERATE\",\n    \"stressLevel\": \"MEDIUM\",\n    \"sleepDuration\": \"SEVEN_TO_NINE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/ai/health-analysis",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "ai",
+                                "health-analysis"
+                            ]
+                        },
+                        "description": "Gửi thông tin sức khỏe để AI phân tích tình trạng và đưa ra lời khuyên. Nếu đã đăng nhập, kết quả sẽ tự động được lưu."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Save Health Analysis Result",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"summary\": \"Bạn đang có sức khỏe tốt...\",\n    \"bmi\": 22.86,\n    \"bmiStatus\": \"NORMAL\",\n    \"advice\": \"Nên duy trì tập luyện...\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/health-analysis",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health-analysis"
+                            ]
+                        },
+                        "description": "Lưu trữ thủ công kết quả phân tích AI vào cơ sở dữ liệu."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Saved Health Analysis",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/health-analysis",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health-analysis"
+                            ]
+                        },
+                        "description": "Lấy kết quả phân tích AI đã lưu gần nhất."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các tính năng phân tích sức khỏe dựa trên trí tuệ nhân tạo."
+        },
+        {
+            "name": "Meal Analysis",
+            "item": [
+                {
+                    "name": "Analyze Meal Image",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": []
+                                },
+                                {
+                                    "key": "plannedMealId",
+                                    "value": "1",
+                                    "type": "text",
+                                    "disabled": true
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/meals/analyze",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "meals",
+                                "analyze"
+                            ]
+                        },
+                        "description": "Tải ảnh bữa ăn lên để AI phân tích tên món, calo và dinh dưỡng. Có thể truyền thêm `plannedMealId` nếu đây là một bữa ăn nằm trong kế hoạch."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Meal Check-in (No Image)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"foodName\": \"Phở bò\",\n    \"estimatedCalories\": 450,\n    \"nutritionDetails\": \"Protein: 20g, Carbs: 60g, Fat: 15g\",\n    \"plannedMealId\": 1\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/meals/check-in",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "meals",
+                                "check-in"
+                            ]
+                        },
+                        "description": "Xác nhận đã ăn một món (thường dùng khi ăn đúng theo thực đơn gợi ý mà không cần chụp ảnh)."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Phân tích bữa ăn thông qua hình ảnh hoặc xác nhận thủ công."
+        },
+        {
+            "name": "Meal Plan",
+            "item": [
+                {
+                    "name": "Generate Meal Plan",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/meal-plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "meal-plans"
+                            ]
+                        },
+                        "description": "Dựa trên profile sức khỏe, AI sẽ tạo ra một thực đơn ăn uống phù hợp cho người dùng."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Current Meal Plan",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/meal-plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "meal-plans"
+                            ]
+                        },
+                        "description": "Lấy thực đơn hiện tại của người dùng."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Regenerate Meal Plan",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/meal-plans",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "meal-plans"
+                            ]
+                        },
+                        "description": "Yêu cầu AI tạo lại một thực đơn mới (đổi món)."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Quản lý và tạo thực đơn ăn uống cá nhân hóa."
+        },
+        {
+            "name": "Admin",
+            "item": [
+                {
+                    "name": "Admin Ping",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/ping",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "admin",
+                                "ping"
+                            ]
+                        },
+                        "description": "Kiểm tra quyền Admin. Yêu cầu token của tài khoản có role ADMIN."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Các API dành riêng cho quản trị viên."
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "token",
+            "value": "YOUR_JWT_TOKEN_HERE",
+            "type": "string"
+        }
+    ]
+}
