@@ -2,101 +2,94 @@
  * Admin Service
  * 
  * Service functions for Admin operations.
- * Currently uses mock data, ready to integrate with real API.
+ * Integrates with real Backend API.
  */
 
+import { http } from '@/lib/http';
 import {
-    MOCK_ADMIN_STATS,
-    MOCK_USERS_LIST,
-    MOCK_FOOD_DATABASE,
-    AdminUser,
-    FoodItem,
-} from '@/lib/mock-data';
-
-// ============================================================
-// STATS
-// ============================================================
-
-export const getStats = async () => {
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return MOCK_ADMIN_STATS;
-};
+  AdminUser,
+  CreateDishRequest,
+  DishLibrary,
+  MealTimeSlot,
+  PageResponse,
+  UpdateDishRequest
+} from '@/types/admin';
+import { ApiResponse } from '@/types/api';
 
 // ============================================================
 // USER MANAGEMENT
 // ============================================================
 
-export const getUsers = async (): Promise<AdminUser[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return MOCK_USERS_LIST;
-};
-
-export const banUser = async (userId: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    console.log(`User ${userId} has been banned`);
-    // In real app, this would call API
-    return true;
-};
-
-export const unbanUser = async (userId: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    console.log(`User ${userId} has been unbanned`);
-    return true;
-};
-
-export const getUserPlan = async (userId: number): Promise<any | null> => {
-    try {
-        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : '';
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/admin/users/${userId}/plan`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-        });
-
-        if (!response.ok) return null;
-
-        const json = await response.json();
-        // Critical: Parse the serialized JSON string if necessary
-        const parsedData = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
-        return parsedData;
-    } catch (error) {
-        console.error('Error fetching user plan:', error);
-        return null;
+export const getUsers = async (
+    page: number = 0, 
+    size: number = 10, 
+    keyword: string = '',
+    sort: string = 'id,desc'
+): Promise<PageResponse<AdminUser>> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+        sort: sort
+    });
+    if (keyword) {
+        params.append('keyword', keyword);
     }
+
+    const response = await http.get<any, ApiResponse<PageResponse<AdminUser>>>(`/admin/users?${params.toString()}`);
+    return response.data;
+};
+
+export const toggleUserStatus = async (userId: number): Promise<void> => {
+    await http.patch(`/admin/users/${userId}/toggle-status`);
+};
+
+export const togglePremiumStatus = async (userId: number): Promise<void> => {
+    await http.patch(`/admin/users/${userId}/toggle-premium`);
+};
+
+export const getUserPlan = async (userId: number): Promise<any> => {
+    const response = await http.get<any, ApiResponse<any>>(`/admin/users/${userId}/plan`);
+    return response.data;
 };
 
 // ============================================================
 // FOOD DATABASE MANAGEMENT
 // ============================================================
 
-export const getFoods = async (): Promise<FoodItem[]> => {
-    await new Promise((resolve) => setTimeout(resolve, 100));
-    return MOCK_FOOD_DATABASE;
+export const getDishes = async (
+    page: number = 0,
+    size: number = 10,
+    keyword: string = '',
+    category?: MealTimeSlot,
+    sort: string = 'id,desc'
+): Promise<PageResponse<DishLibrary>> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+        sort: sort
+    });
+    if (keyword) params.append('keyword', keyword);
+    if (category) params.append('category', category);
+
+    const response = await http.get<any, ApiResponse<PageResponse<DishLibrary>>>(`/admin/dishes?${params.toString()}`);
+    return response.data;
 };
 
-export const deleteFood = async (foodId: string): Promise<boolean> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    console.log(`Food ${foodId} has been deleted`);
-    return true;
+export const getDishById = async (id: number): Promise<DishLibrary> => {
+    const response = await http.get<any, ApiResponse<DishLibrary>>(`/admin/dishes/${id}`);
+    return response.data;
 };
 
-export const createFood = async (food: Omit<FoodItem, 'id'>): Promise<FoodItem> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const newFood: FoodItem = {
-        ...food,
-        id: `f${Date.now()}`,
-    };
-    console.log('Food created:', newFood);
-    return newFood;
+export const createDish = async (data: CreateDishRequest): Promise<DishLibrary> => {
+    const response = await http.post<any, ApiResponse<DishLibrary>>('/admin/dishes', data);
+    return response.data;
 };
 
-export const updateFood = async (foodId: string, data: Partial<FoodItem>): Promise<FoodItem | null> => {
-    await new Promise((resolve) => setTimeout(resolve, 200));
-    const food = MOCK_FOOD_DATABASE.find((f) => f.id === foodId);
-    if (!food) return null;
-    console.log(`Food ${foodId} updated:`, data);
-    return { ...food, ...data };
+export const updateDish = async (id: number, data: UpdateDishRequest): Promise<DishLibrary> => {
+    const response = await http.put<any, ApiResponse<DishLibrary>>(`/admin/dishes/${id}`, data);
+    return response.data;
+};
+
+export const toggleDishStatus = async (id: number): Promise<void> => {
+    await http.patch(`/admin/dishes/${id}/toggle-status`);
 };
