@@ -1,22 +1,25 @@
 package com.t2404e.aihealthcoach.controller;
 
+import java.io.IOException;
+
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.ai.MealAnalysisResponse;
 import com.t2404e.aihealthcoach.entity.UserMealLog;
-import com.t2404e.aihealthcoach.repository.PlannedMealRepository;
-import com.t2404e.aihealthcoach.repository.UserMealLogRepository;
-import com.t2404e.aihealthcoach.service.AiMealVisionService;
-import com.t2404e.aihealthcoach.service.CloudinaryService;
+import com.t2404e.aihealthcoach.service.MealLogService;
 import com.t2404e.aihealthcoach.util.RequestUtil;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
-import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/meals")
@@ -24,49 +27,30 @@ import java.io.IOException;
 @Tag(name = "Meal Analysis", description = "API phân tích bữa ăn qua hình ảnh và AI")
 public class MealAnalysisController {
 
-    private final CloudinaryService cloudinaryService;
-    private final AiMealVisionService aiMealVisionService;
-    private final UserMealLogRepository logRepository;
-    private final PlannedMealRepository plannedMealRepository;
+    private final MealLogService mealLogService;
 
     @PostMapping(value = "/analyze", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Operation(summary = "Tải ảnh lên và phân tích calo")
+    @Operation(summary = "Tải ảnh lên và phân tích calo", description = "Upload ảnh món ăn để AI nhận diện và tính toán dinh dưỡng.")
     public ApiResponse<MealAnalysisResponse> analyzeMeal(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "plannedMealId", required = false) Long plannedMealId,
+            @RequestParam(value = "category", required = false) String category,
             HttpServletRequest request) {
         try {
+            System.out.println("DEBUG: Received analyze request");
             Long userId = RequestUtil.getUserId(request);
             if (userId == null)
                 return ApiResponse.error("User not authenticated");
 
-            String imageUrl = cloudinaryService.uploadImage(file);
-            MealAnalysisResponse analysis = aiMealVisionService.analyzeMealImage(imageUrl);
-            analysis.setImageUrl(imageUrl);
+            // Delegate to Service
+            MealAnalysisResponse result = mealLogService.analyzeAndLog(file, userId, plannedMealId, category);
 
-            Long dishId = null;
-            if (plannedMealId != null) {
-                dishId = plannedMealRepository.findById(plannedMealId)
-                        .map(pm -> pm.getDish() != null ? pm.getDish().getId() : null)
-                        .orElse(null);
-            }
-
-            UserMealLog log = UserMealLog.builder()
-                    .userId(userId)
-                    .imageUrl(imageUrl)
-                    .foodName(analysis.getFoodName())
-                    .estimatedCalories(analysis.getEstimatedCalories())
-                    .nutritionDetails(analysis.getNutritionDetails())
-                    .plannedMealId(plannedMealId)
-                    .dishId(dishId)
-                    .isPlanCompliant(plannedMealId != null)
-                    .build();
-            logRepository.save(log);
-
-            return ApiResponse.success("Phân tích bữa ăn thành công", analysis);
+            return ApiResponse.success("Phân tích bữa ăn thành công", result);
         } catch (IOException e) {
+            System.out.println("ERROR: Upload failed: " + e.getMessage());
             return ApiResponse.error("Lỗi khi tải ảnh lên: " + e.getMessage());
         } catch (Exception e) {
+            System.out.println("ERROR: Analysis failed: " + e.getMessage());
             return ApiResponse.error("Lỗi khi phân tích ảnh: " + e.getMessage());
         }
     }
@@ -76,9 +60,9 @@ public class MealAnalysisController {
     public ApiResponse<UserMealLog> checkIn(
             @RequestBody MealAnalysisResponse checkInData,
             HttpServletRequest request) {
-        
-        System.out.println("DEBUG: Handing check-in for food: " + (checkInData != null ? checkInData.getFoodName() : "NULL"));
-        
+
+        System.out.println("DEBUG: Handing check-in request");
+
         Long userId = RequestUtil.getUserId(request);
         if (userId == null) {
             System.out.println("DEBUG: Check-in failed - User not authenticated");
@@ -89,31 +73,22 @@ public class MealAnalysisController {
             return ApiResponse.error("Dữ liệu không hợp lệ");
         }
 
-        String details = checkInData.getNutritionDetails();
-        if (details == null) details = "Ăn theo kế hoạch";
-        else details += " (Xác nhận theo kế hoạch)";
+        // Delegate to Service
+        UserMealLog log = mealLogService.confirmCheckIn(checkInData, userId);
+        return ApiResponse.success("Đã xác nhận bữa ăn", log);
+    }
 
-        Long dishId = null;
-        if (checkInData.getPlannedMealId() != null) {
-            dishId = plannedMealRepository.findById(checkInData.getPlannedMealId())
-                    .map(pm -> pm.getDish() != null ? pm.getDish().getId() : null)
-                    .orElse(null);
-        }
+    @PostMapping("/{logId}/check-in")
+    @Operation(summary = "Đánh dấu một bữa ăn trong kế hoạch là đã hoàn thành")
+    public ApiResponse<UserMealLog> checkInById(
+            @org.springframework.web.bind.annotation.PathVariable Long logId,
+            HttpServletRequest request) {
 
-        UserMealLog log = UserMealLog.builder()
-                .userId(userId)
-                .plannedMealId(checkInData.getPlannedMealId())
-                .dishId(dishId)
-                .foodName(checkInData.getFoodName())
-                .imageUrl("") // Mặc định không có ảnh để tránh lỗi Database constraint
-                .estimatedCalories(checkInData.getEstimatedCalories())
-                .isPlanCompliant(true)
-                .nutritionDetails(details)
-                .build();
-        
-        UserMealLog saved = logRepository.save(log);
-        System.out.println("DEBUG: Check-in success. Log ID: " + saved.getId());
-        
-        return ApiResponse.success("Đã xác nhận bữa ăn", saved);
+        Long userId = RequestUtil.getUserId(request);
+        if (userId == null)
+            return ApiResponse.error("Unauthenticated");
+
+        UserMealLog updated = mealLogService.checkInLog(logId, userId);
+        return ApiResponse.success("Đã đánh dấu bữa ăn là hoàn thành", updated);
     }
 }

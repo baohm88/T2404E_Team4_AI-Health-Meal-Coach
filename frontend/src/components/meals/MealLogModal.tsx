@@ -42,7 +42,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
 
         try {
             setLoading(true);
-            const res = await mealLogService.analyzeMealImage(file, plannedMealId) as any;
+            const res = await mealLogService.analyzeMealImage(file, plannedMealId, mealType) as any;
 
             if (res.success) {
                 setResult(res.data);

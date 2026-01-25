@@ -72,7 +72,7 @@
             "name": "Health Profile",
             "item": [
                 {
-                    "name": "Create/Update Profile",
+                    "name": "Create Profile",
                     "request": {
                         "method": "POST",
                         "header": [
@@ -100,7 +100,40 @@
                                 "health-profile"
                             ]
                         },
-                        "description": "Lưu hoặc cập nhật thông tin chỉ số cơ thể và lối sống của người dùng."
+                        "description": "Lưu thông tin chỉ số cơ thể và lối sống của người dùng lần đầu."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Profile",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n    \"age\": 26,\n    \"gender\": \"MALE\",\n    \"height\": 175.0,\n    \"weight\": 72.0,\n    \"activityLevel\": \"ACTIVE\",\n    \"stressLevel\": \"LOW\",\n    \"sleepDuration\": \"SEVEN_TO_NINE\"\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/health-profile",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "health-profile"
+                            ]
+                        },
+                        "description": "Cập nhật thông tin chỉ số cơ thể và lối sống."
                     },
                     "response": []
                 },
@@ -255,6 +288,12 @@
                                     "value": "1",
                                     "type": "text",
                                     "disabled": true
+                                },
+                                {
+                                    "key": "category",
+                                    "value": "LUNCH",
+                                    "description": "BREAKFAST, LUNCH, DINNER, SNACK",
+                                    "type": "text"
                                 }
                             ]
                         },
@@ -269,7 +308,7 @@
                                 "analyze"
                             ]
                         },
-                        "description": "Tải ảnh bữa ăn lên để AI phân tích tên món, calo và dinh dưỡng. Có thể truyền thêm `plannedMealId` nếu đây là một bữa ăn nằm trong kế hoạch."
+                        "description": "Tải ảnh bữa ăn lên để AI phân tích tên món, calo và dinh dưỡng. Có thể truyền thêm `plannedMealId` hoặc `category`."
                     },
                     "response": []
                 },
@@ -286,7 +325,7 @@
                         ],
                         "body": {
                             "mode": "raw",
-                            "raw": "{\n    \"foodName\": \"Phở bò\",\n    \"estimatedCalories\": 450,\n    \"nutritionDetails\": \"Protein: 20g, Carbs: 60g, Fat: 15g\",\n    \"plannedMealId\": 1\n}",
+                            "raw": "{\n    \"foodName\": \"Phở bò\",\n    \"estimatedCalories\": 450,\n    \"nutritionDetails\": \"Protein: 20g, Carbs: 60g, Fat: 15g\",\n    \"plannedMealId\": 1,\n    \"type\": \"BREAKFAST\"\n}",
                             "options": {
                                 "raw": {
                                     "language": "json"
@@ -305,6 +344,39 @@
                             ]
                         },
                         "description": "Xác nhận đã ăn một món (thường dùng khi ăn đúng theo thực đơn gợi ý mà không cần chụp ảnh)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Complete Planned Meal By ID",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{token}}",
+                                "type": "text"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/meals/:logId/check-in",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "meals",
+                                ":logId",
+                                "check-in"
+                            ],
+                            "variable": [
+                                {
+                                    "key": "logId",
+                                    "value": "1"
+                                }
+                            ]
+                        },
+                        "description": "Đánh dấu một bữa ăn cụ thể trong kế hoạch là đã hoàn thành."
                     },
                     "response": []
                 }
@@ -390,32 +462,343 @@
             "description": "Quản lý và tạo thực đơn ăn uống cá nhân hóa."
         },
         {
-            "name": "Admin",
+            "name": "Admin Management",
             "item": [
                 {
-                    "name": "Admin Ping",
-                    "request": {
-                        "method": "GET",
-                        "header": [
-                            {
-                                "key": "Authorization",
-                                "value": "Bearer {{token}}",
-                                "type": "text"
-                            }
-                        ],
-                        "url": {
-                            "raw": "{{baseUrl}}/admin/ping",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "admin",
-                                "ping"
-                            ]
+                    "name": "Admin - General",
+                    "item": [
+                        {
+                            "name": "Admin Ping",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/ping",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "ping"
+                                    ]
+                                },
+                                "description": "Kiểm tra quyền Admin. Yêu cầu token của tài khoản có role ADMIN."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin - Dish Management",
+                    "item": [
+                        {
+                            "name": "Get Dishes List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/dishes?keyword=&category=LUNCH&page=0&size=10&sort=id,desc",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "dishes"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "keyword",
+                                            "value": ""
+                                        },
+                                        {
+                                            "key": "category",
+                                            "value": "LUNCH"
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "0"
+                                        },
+                                        {
+                                            "key": "size",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "sort",
+                                            "value": "id,desc"
+                                        }
+                                    ]
+                                },
+                                "description": "Lấy danh sách món ăn trong thư viện với phân trang và bộ lọc."
+                            },
+                            "response": []
                         },
-                        "description": "Kiểm tra quyền Admin. Yêu cầu token của tài khoản có role ADMIN."
-                    },
-                    "response": []
+                        {
+                            "name": "Get Dish Detail",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/dishes/:id",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "dishes",
+                                        ":id"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "1"
+                                        }
+                                    ]
+                                },
+                                "description": "Xem chi tiết một món ăn cụ thể."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Create Dish",
+                            "request": {
+                                "method": "POST",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"name\": \"Salad Ức Gà\",\n    \"baseCalories\": 350,\n    \"unit\": \"đĩa\",\n    \"category\": \"LUNCH\",\n    \"description\": \"Salad ức gà áp chảo cùng rau xà lách và sốt dầu giấm.\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/dishes",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "dishes"
+                                    ]
+                                },
+                                "description": "Thêm một món ăn mới vào thư viện."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Update Dish",
+                            "request": {
+                                "method": "PUT",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n    \"name\": \"Salad Ức Gà (Updated)\",\n    \"baseCalories\": 320,\n    \"unit\": \"đĩa\",\n    \"category\": \"LUNCH\",\n    \"description\": \"Salad ức gà sạch, tốt cho sức khỏe.\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                },
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/dishes/:id",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "dishes",
+                                        ":id"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "1"
+                                        }
+                                    ]
+                                },
+                                "description": "Cập nhật thông tin món ăn hiện có."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Toggle Dish Status",
+                            "request": {
+                                "method": "PATCH",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/dishes/:id/toggle-status",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "dishes",
+                                        ":id",
+                                        "toggle-status"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "1"
+                                        }
+                                    ]
+                                },
+                                "description": "Ẩn hoặc hiện món ăn trong thư viện (Delete mềm)."
+                            },
+                            "response": []
+                        }
+                    ]
+                },
+                {
+                    "name": "Admin - User Management",
+                    "item": [
+                        {
+                            "name": "Get Users List",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users?keyword=&page=0&size=10&sort=id,desc",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "users"
+                                    ],
+                                    "query": [
+                                        {
+                                            "key": "keyword",
+                                            "value": ""
+                                        },
+                                        {
+                                            "key": "page",
+                                            "value": "0"
+                                        },
+                                        {
+                                            "key": "size",
+                                            "value": "10"
+                                        },
+                                        {
+                                            "key": "sort",
+                                            "value": "id,desc"
+                                        }
+                                    ]
+                                },
+                                "description": "Lấy danh sách người dùng với phân trang và tìm kiếm."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Get User's Meal Plan",
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users/:userId/plan",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "users",
+                                        ":userId",
+                                        "plan"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "userId",
+                                            "value": "1"
+                                        }
+                                    ]
+                                },
+                                "description": "Xem chi tiết kế hoạch ăn uống của một người dùng cụ thể."
+                            },
+                            "response": []
+                        },
+                        {
+                            "name": "Toggle User Status",
+                            "request": {
+                                "method": "PATCH",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{token}}",
+                                        "type": "text"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users/:id/toggle-status",
+                                    "host": [
+                                        "{{baseUrl}}"
+                                    ],
+                                    "path": [
+                                        "admin",
+                                        "users",
+                                        ":id",
+                                        "toggle-status"
+                                    ],
+                                    "variable": [
+                                        {
+                                            "key": "id",
+                                            "value": "1"
+                                        }
+                                    ]
+                                },
+                                "description": "Kích hoạt hoặc vô hiệu hóa tài khoản người dùng."
+                            },
+                            "response": []
+                        }
+                    ]
                 }
             ],
             "description": "Các API dành riêng cho quản trị viên."

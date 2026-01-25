@@ -1,17 +1,24 @@
 package com.t2404e.aihealthcoach.controller;
 
-import com.t2404e.aihealthcoach.common.ApiResponse;
-import com.t2404e.aihealthcoach.dto.request.HealthAnalysisPersistRequest;
-import com.t2404e.aihealthcoach.service.HealthAnalysisService;
-import com.t2404e.aihealthcoach.util.RequestUtil;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.t2404e.aihealthcoach.common.ApiResponse;
+import com.t2404e.aihealthcoach.service.HealthAnalysisService;
+import com.t2404e.aihealthcoach.util.RequestUtil;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/health-analysis")
+@Tag(name = "Health Analysis History", description = "Lịch sử phân tích sức khỏe người dùng")
 public class HealthAnalysisController {
 
     private final HealthAnalysisService service;
@@ -22,6 +29,7 @@ public class HealthAnalysisController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @Operation(summary = "Lưu kết quả phân tích", description = "Lưu lại JSON kết quả phân tích AI vào lịch sử.")
     public ResponseEntity<ApiResponse<Void>> save(
             @RequestBody String analysisJson,
             HttpServletRequest request) {
@@ -37,6 +45,7 @@ public class HealthAnalysisController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('USER','ADMIN')")
+    @Operation(summary = "Lấy lịch sử phân tích gần nhất", description = "Lấy kết quả phân tích AI gần nhất của người dùng.")
     public ResponseEntity<ApiResponse<String>> get(
             HttpServletRequest request) {
 

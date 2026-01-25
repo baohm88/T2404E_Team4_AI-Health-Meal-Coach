@@ -25,6 +25,7 @@ public class MealPlanServiceImpl implements MealPlanService {
         private final MealPlanRepository mealPlanRepo;
         private final PlannedMealRepository plannedMealRepo;
         private final DishLibraryRepository dishLibraryRepo;
+        private final UserMealLogRepository logRepo;
         private final ChatClient.Builder chatClientBuilder;
         private final ObjectMapper objectMapper;
 
@@ -93,12 +94,24 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                         DishLibrary dish = dishLibraryRepo
                                                                                         .findById(dishId).orElse(null);
 
+                                                                        String category = (String) mealData
+                                                                                        .get("category");
+                                                                        if (category == null) {
+                                                                                category = (String) mealData
+                                                                                                .get("type");
+                                                                        }
+                                                                        // Ưu tiên lấy category từ DishLibrary nếu có
+                                                                        if (dish != null && dish
+                                                                                        .getCategory() != null) {
+                                                                                category = dish.getCategory().name();
+                                                                        }
+                                                                        category = mapToVietnameseCategory(category);
+
                                                                         PlannedMeal plannedMeal = PlannedMeal.builder()
                                                                                         .mealPlanId(plan.getId())
                                                                                         .dayNumber(dayNum)
                                                                                         .dish(dish)
-                                                                                        .mealType((String) mealData
-                                                                                                        .get("type"))
+                                                                                        .category(category)
                                                                                         .mealName((String) mealData.get(
                                                                                                         "mealName"))
                                                                                         .quantity((String) mealData.get(
@@ -107,7 +120,31 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                                         .get("calories"))
                                                                                                         .intValue())
                                                                                         .build();
-                                                                        plannedMealRepo.save(plannedMeal);
+                                                                        PlannedMeal savedPlannedMeal = plannedMealRepo
+                                                                                        .save(plannedMeal);
+
+                                                                        // 4. Đồng bộ sang UserMealLog
+                                                                        UserMealLog log = UserMealLog.builder()
+                                                                                        .userId(plan.getUserId())
+                                                                                        .plannedMealId(savedPlannedMeal
+                                                                                                        .getId())
+                                                                                        .dishId(dish != null
+                                                                                                        ? dish.getId()
+                                                                                                        : null)
+                                                                                        .foodName(savedPlannedMeal
+                                                                                                        .getMealName())
+                                                                                        .estimatedCalories(
+                                                                                                        savedPlannedMeal.getCalories())
+                                                                                        .dayNumber(dayNum)
+                                                                                        .category(savedPlannedMeal
+                                                                                                        .getCategory())
+                                                                                        .checkedIn(false)
+                                                                                        .isPlanCompliant(true)
+                                                                                        .loggedAt(plan.getStartDate()
+                                                                                                        .atStartOfDay()
+                                                                                                        .plusDays(dayNum - 1))
+                                                                                        .build();
+                                                                        logRepo.save(log);
                                                                 }
                                                         }
                                                 }
@@ -132,23 +169,35 @@ public class MealPlanServiceImpl implements MealPlanService {
         }
 
         private MealPlanResponse convertToResponse(MealPlan plan) {
-                List<PlannedMeal> meals = plannedMealRepo.findByMealPlanIdOrderByDayNumberAsc(plan.getId());
+                List<UserMealLog> logs = logRepo.findByUserIdOrderByLoggedAtAsc(plan.getUserId());
 
-                // Group by day for response
-                Map<Integer, List<PlannedMeal>> groupedByDay = meals.stream()
-                                .collect(Collectors.groupingBy(PlannedMeal::getDayNumber));
+                // Group by day number
+                Map<Integer, List<UserMealLog>> groupedByDay = logs.stream()
+                                .filter(l -> l.getDayNumber() != null)
+                                .collect(Collectors.groupingBy(UserMealLog::getDayNumber));
 
                 List<DayPlanDTO> dayPlans = groupedByDay.entrySet().stream()
                                 .map(e -> {
                                         Integer day = e.getKey();
-                                        List<PlannedMeal> dayMeals = e.getValue();
+                                        List<UserMealLog> dayLogs = e.getValue();
 
-                                        List<MealDTO> mealDTOs = dayMeals.stream().map(m -> MealDTO.builder()
-                                                        .id(m.getId())
-                                                        .mealName(m.getMealName())
-                                                        .quantity(m.getQuantity())
-                                                        .calories(m.getCalories())
-                                                        .type(m.getMealType())
+                                        // Chỉ lấy bản ghi mới nhất cho mỗi category trong ngày
+                                        Map<String, UserMealLog> uniqueLogs = new LinkedHashMap<>();
+                                        for (UserMealLog log : dayLogs) {
+                                                String cat = log.getCategory();
+                                                if (cat == null)
+                                                        cat = "Phụ";
+                                                // mapToVietnameseCategory(cat) để đồng bộ key
+                                                uniqueLogs.put(mapToVietnameseCategory(cat), log);
+                                        }
+
+                                        List<MealDTO> mealDTOs = uniqueLogs.values().stream().map(l -> MealDTO.builder()
+                                                        .id(l.getId())
+                                                        .mealName(l.getFoodName())
+                                                        .quantity("")
+                                                        .calories(l.getEstimatedCalories())
+                                                        .type(mapToVietnameseCategory(l.getCategory()))
+                                                        .checkedIn(l.getCheckedIn())
                                                         .build()).collect(Collectors.toList());
 
                                         return DayPlanDTO.builder()
@@ -166,5 +215,17 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 .totalDays(plan.getTotalDays())
                                 .mealPlan(dayPlans)
                                 .build();
+        }
+
+        private String mapToVietnameseCategory(String category) {
+                if (category == null)
+                        return "Phụ";
+                return switch (category.toUpperCase()) {
+                        case "BREAKFAST", "SÁNG" -> "Sáng";
+                        case "LUNCH", "TRƯA" -> "Trưa";
+                        case "DINNER", "TỐI" -> "Tối";
+                        case "SNACK", "PHỤ" -> "Phụ";
+                        default -> category;
+                };
         }
 }
