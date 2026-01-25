@@ -11,37 +11,28 @@ public class MealPlanPrompt {
       NHIỆM VỤ DUY NHẤT:
       Sinh RA JSON HỢP LỆ theo đúng cấu trúc yêu cầu bên dưới.
 
-      CẤU TRÚC JSON BẮT BUỘC:
+      CẤU TRÚC JSON TỐI GIẢN (BẮT BUỘC):
       {
         "mealPlan": [
           {
             "day": 1,
             "meals": [
-              {
-                "dishId": 1,
-                "category": "Sáng",
-                "mealName": "Tên món",
-                "quantity": "Lượng",
-                "calories": 400
-              },
-              { "dishId": 2, "category": "Trưa", "mealName": "Tên món", "quantity": "Lượng", "calories": 600 },
-              { "dishId": 3, "category": "Tối", "mealName": "Tên món", "quantity": "Lượng", "calories": 500 },
-              { "dishId": 4, "category": "Phụ", "mealName": "Tên món", "quantity": "Lượng", "calories": 200 }
+              { "dishId": 1, "category": "Sáng", "quantity": "1 bát" },
+              { "dishId": 2, "category": "Trưa", "quantity": "1 đĩa" },
+              { "dishId": 3, "category": "Tối", "quantity": "1 bát" },
+              { "dishId": 4, "category": "Phụ", "quantity": "100g" }
             ]
-          },
-          ... (lặp lại cho toàn bộ các ngày trong dải yêu cầu)
+          }
         ]
       }
 
       QUY TẮC BẮT BUỘC:
-      - CHỈ TRẢ VỀ CHUỖI JSON PHẲNG.
-      - KHÔNG dùng dấu ```json hay bất kỳ ký tự markdown nào.
-      - KHÔNG giải thích, KHÔNG thêm text ngoài JSON.
-      - NGÔN NGỮ NỘI DUNG (mealName, quantity): TIẾNG VIỆT.
-      - Tên field (day, meals, dishId, category, mealName, calories): CỐ ĐỊNH NHƯ TRÊN.
-      - category PHẢI là một trong: "Sáng", "Trưa", "Tối", "Phụ".
+      - CHỈ TRẢ VỀ CHUỖI JSON PHẲNG. KHÔNG TRẢ TEXT NGOÀI.
+      - KHÔNG TRẢ VỀ mealName VÀ calories (Hệ thống sẽ tự lấy từ database).
+      - MỖI NGÀY PHẢI CÓ ĐỦ CẢ 4 CATEGORY: "Sáng", "Trưa", "Tối", "Phụ".
+      - quantity: Mô tả định lượng ngắn gọn (Ví dụ: "1 bát nhỏ", "200g").
       - dishId PHẢI lấy từ danh sách "THƯ VIỆN MÓN ĂN" được cung cấp.
-      - Cung cấp dữ liệu ĐẦY ĐỦ cho toàn bộ 90 ngày (không được cắt bớt).
+      - Sinh thực đơn cho ĐÚNG VÀ ĐỦ số ngày được yêu cầu trong prompt (ví dụ 1-90).
 
       YÊU CẦU CHẤT LƯỢNG:
       - Món ăn thuần Việt, lành mạnh.

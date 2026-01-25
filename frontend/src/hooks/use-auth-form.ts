@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 import { loginSchema, registerSchema, LoginData, RegisterData } from '@/lib/schemas/auth.schema';
 import { authService } from '@/services/auth.service';
@@ -108,6 +109,7 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
                 console.warn('⚠️ [useLoginForm] No accessToken in response!');
             }
 
+            toast.success('Đăng nhập thành công!');
             console.log('🚀 [useLoginForm] Redirecting...');
             await syncGuestDataAndRedirect(loginRes.accessToken ?? '', router);
         } catch (err) {
@@ -142,24 +144,13 @@ export const useRegisterForm = (): UseAuthFormReturn<RegisterData> => {
             const registerRes = await authService.register(data);
             if (!registerRes.success) {
                 setServerError(registerRes.error || 'Đăng ký thất bại');
+                setIsLoading(false);
                 return;
             }
 
-            const token = registerRes.accessToken;
-            if (token) {
-                saveToken(token);
-                // 🔥 FIX RACE CONDITION: Chờ 100ms để Cookie kịp lưu
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } else {
-                // Fallback: Tự động login nếu register không trả về token (tuỳ backend)
-                const loginRes = await authService.login({ email: data.email, password: data.password });
-                if (loginRes.success && loginRes.accessToken) {
-                    saveToken(loginRes.accessToken);
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-            }
-
-            await syncGuestDataAndRedirect(token ?? '', router);
+            // Thông báo và chuyển hướng
+            toast.success('Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
+            router.push('/login');
         } catch (err) {
             const axiosErr = err as { response?: { data?: { message?: string } } };
             const msg = axiosErr.response?.data?.message || 'Lỗi kết nối server';
