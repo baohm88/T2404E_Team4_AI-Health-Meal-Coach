@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { CalorieCircle } from '@/components/dashboard/widgets/CalorieCircle';
 import { MacrosBreakdown } from '@/components/dashboard/widgets/MacrosBreakdown';
 import { WaterTracker } from '@/components/dashboard/widgets/WaterTracker';
@@ -33,6 +35,8 @@ export default function DashboardPage() {
     const [data, setData] = useState<DashboardSummary>(DEFAULT_DASHBOARD_SUMMARY);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const fetchDashboardData = useCallback(async () => {
         setIsLoading(true);
@@ -84,6 +88,25 @@ export default function DashboardPage() {
     useEffect(() => {
         fetchDashboardData();
     }, [fetchDashboardData]);
+
+    // Check for VNPay Return
+    useEffect(() => {
+        const paymentStatus = searchParams.get('payment');
+        const msg = searchParams.get('msg');
+
+        if (paymentStatus) {
+            if (paymentStatus === 'success') {
+                toast.success('Thanh toán thành công! Bạn đã là thành viên Premium.');
+            } else if (paymentStatus === 'failed') {
+                toast.error('Thanh toán thất bại hoặc bị hủy.');
+            } else if (paymentStatus === 'error') {
+                toast.error(`Lỗi thanh toán: ${msg || 'Không xác định'}`);
+            }
+
+            // Cleanup URL immediately
+            router.replace('/dashboard');
+        }
+    }, [searchParams, router]);
 
     // Show skeleton while loading
     if (isLoading) {
