@@ -1,20 +1,28 @@
 package com.t2404e.aihealthcoach.controller;
 
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.request.HealthProfileRequest;
 import com.t2404e.aihealthcoach.dto.response.ai.AiHealthAnalysisResponse;
 import com.t2404e.aihealthcoach.service.AiHealthAnalysisService;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.util.RequestUtil;
-import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/ai")
 @RequiredArgsConstructor
+@Tag(name = "AI Analysis", description = "Phân tích sức khỏe và đề xuất lộ trình bằng AI")
 public class AiController {
 
     private final AiHealthAnalysisService aiService;
@@ -22,6 +30,7 @@ public class AiController {
     private final ObjectMapper objectMapper;
 
     @PostMapping("/health-analysis")
+    @Operation(summary = "Phân tích chỉ số sức khỏe", description = "Gửi thông tin cơ bản (chiêu cao, cân nặng, v.v) để AI phân tích BMI, BMR, TDEE và lộ trình.")
     public ApiResponse<AiHealthAnalysisResponse> analyze(
             @Valid @RequestBody HealthProfileRequest request,
             HttpServletRequest httpRequest) {
