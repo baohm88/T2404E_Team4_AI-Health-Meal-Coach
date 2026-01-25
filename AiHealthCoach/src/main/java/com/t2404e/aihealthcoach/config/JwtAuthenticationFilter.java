@@ -22,7 +22,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     public JwtAuthenticationFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
     }
-
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getServletPath();
+        // Trả về true nghĩa là: "Đừng lọc request này, cho qua luôn"
+        // Bạn liệt kê các path muốn public hoàn toàn ở đây
+        return path.startsWith("/payment/") ||
+                path.startsWith("/api/v1/payment/");
+    }
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
