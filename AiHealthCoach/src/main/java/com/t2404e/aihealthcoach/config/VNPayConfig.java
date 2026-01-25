@@ -14,7 +14,7 @@ public class VNPayConfig {
 
     // Bạn đăng ký tài khoản Sandbox VNPay để lấy các key này
     public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_ReturnUrl = "http://localhost:8080/api/payments/vnpay/return"; // Frontend URL nhận kết quả
+    public static String vnp_ReturnUrl = "http://localhost:8080/payment/vnpay-return";
     public static String vnp_TmnCode = "Z7SGOZ58"; // <--- THAY CÁI NÀY
     public static String vnp_HashSecret = "YHNQDMSUCK63MK5EIXOLKBLDWYRBIH6N"; // <--- THAY CÁI NÀY
     public static String vnp_ApiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
