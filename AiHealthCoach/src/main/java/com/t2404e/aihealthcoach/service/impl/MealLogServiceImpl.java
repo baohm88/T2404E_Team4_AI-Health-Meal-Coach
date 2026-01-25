@@ -38,6 +38,16 @@ public class MealLogServiceImpl implements MealLogService {
         analysis.setImageUrl(imageUrl); // Gán lại URL ảnh vào response
         System.out.println("DEBUG: AI Analysis result: " + analysis.getFoodName());
 
+        // Xác định category: Ưu tiên tham số truyền vào -> Loại từ AI/Thư viện
+        String finalCategory = categoryParam;
+        if (finalCategory == null || finalCategory.isEmpty()) {
+            finalCategory = (plannedMealId != null)
+                    ? logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
+                            .map(UserMealLog::getCategory)
+                            .orElse("PHỤ")
+                    : "PHỤ";
+        }
+
         // 3. Đối chiếu xem món đó đã có trong dish_library chưa
         com.t2404e.aihealthcoach.repository.DishLibraryRepository dishLibraryRepo = com.t2404e.aihealthcoach.util.SpringContextUtil
                 .getBean(com.t2404e.aihealthcoach.repository.DishLibraryRepository.class);
@@ -52,10 +62,20 @@ public class MealLogServiceImpl implements MealLogService {
             // Cập nhật calo chuẩn từ thư viện nếu tìm thấy khớp
             analysis.setEstimatedCalories(matchedDish.getBaseCalories());
             System.out.println("DEBUG: Matched dish in library: " + matchedDish.getName() + " (ID: " + dishId + ")");
-        } else if (plannedMealId != null) {
-            dishId = plannedMealRepository.findById(plannedMealId)
-                    .map(pm -> pm.getDish() != null ? pm.getDish().getId() : null)
-                    .orElse(null);
+        } else {
+            // Option 2: Tạo mới DishLibrary với trạng thái unverified
+            com.t2404e.aihealthcoach.entity.DishLibrary newDish = com.t2404e.aihealthcoach.entity.DishLibrary.builder()
+                    .name(analysis.getFoodName())
+                    .baseCalories(analysis.getEstimatedCalories())
+                    .category(com.t2404e.aihealthcoach.util.MealCategoryMapper.mapVietnameseToEnum(finalCategory))
+                    .isVerified(false)
+                    .isAiSuggested(true)
+                    .description("AI nhận diện món từ hình ảnh người dùng.")
+                    .build();
+            newDish = dishLibraryRepo.save(newDish);
+            dishId = newDish.getId();
+            System.out.println(
+                    "DEBUG: Created new unverified dish in library: " + newDish.getName() + " (ID: " + dishId + ")");
         }
 
         // 4. Lưu vào DB (Cập nhật nếu đã có bản ghi từ sync thực đơn)
@@ -70,17 +90,6 @@ public class MealLogServiceImpl implements MealLogService {
             log = UserMealLog.builder()
                     .userId(userId)
                     .build();
-        }
-
-        // Xác định category: Ưu tiên tham số truyền vào -> Category cũ -> Loại từ
-        // AI/Thư
-        // viện
-        String finalCategory = categoryParam;
-        if (finalCategory == null || finalCategory.isEmpty()) {
-            finalCategory = log.getCategory();
-        }
-        if (finalCategory == null || finalCategory.isEmpty()) {
-            finalCategory = matchedDish != null ? matchedDish.getCategory().name() : "PHỤ";
         }
 
         // Cập nhật thông tin mới từ AI

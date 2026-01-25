@@ -46,7 +46,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 .orElseThrow(() -> new IllegalStateException(
                                                 "Vui lòng hoàn thành khảo sát sức khỏe trước khi tạo thực đơn"));
 
-                List<DishLibrary> dishes = dishLibraryRepo.findAll();
+                List<DishLibrary> dishes = dishLibraryRepo.findByIsVerifiedTrueAndIsDeletedFalse();
                 ChatClient chatClient = chatClientBuilder.build();
 
                 MealPlan mealPlan = MealPlan.builder()
