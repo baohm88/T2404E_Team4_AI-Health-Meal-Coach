@@ -34,6 +34,7 @@ public class MealAnalysisController {
     public ApiResponse<MealAnalysisResponse> analyzeMeal(
             @RequestParam("file") MultipartFile file,
             @RequestParam(value = "plannedMealId", required = false) Long plannedMealId,
+            @RequestParam(value = "category", required = false) String category,
             HttpServletRequest request) {
         try {
             System.out.println("DEBUG: Received analyze request");
@@ -42,7 +43,7 @@ public class MealAnalysisController {
                 return ApiResponse.error("User not authenticated");
 
             // Delegate to Service
-            MealAnalysisResponse result = mealLogService.analyzeAndLog(file, userId, plannedMealId);
+            MealAnalysisResponse result = mealLogService.analyzeAndLog(file, userId, plannedMealId, category);
 
             return ApiResponse.success("Phân tích bữa ăn thành công", result);
         } catch (IOException e) {
@@ -59,9 +60,9 @@ public class MealAnalysisController {
     public ApiResponse<UserMealLog> checkIn(
             @RequestBody MealAnalysisResponse checkInData,
             HttpServletRequest request) {
-        
+
         System.out.println("DEBUG: Handing check-in request");
-        
+
         Long userId = RequestUtil.getUserId(request);
         if (userId == null) {
             System.out.println("DEBUG: Check-in failed - User not authenticated");
@@ -74,7 +75,20 @@ public class MealAnalysisController {
 
         // Delegate to Service
         UserMealLog log = mealLogService.confirmCheckIn(checkInData, userId);
-        
         return ApiResponse.success("Đã xác nhận bữa ăn", log);
+    }
+
+    @PostMapping("/{logId}/check-in")
+    @Operation(summary = "Đánh dấu một bữa ăn trong kế hoạch là đã hoàn thành")
+    public ApiResponse<UserMealLog> checkInById(
+            @org.springframework.web.bind.annotation.PathVariable Long logId,
+            HttpServletRequest request) {
+
+        Long userId = RequestUtil.getUserId(request);
+        if (userId == null)
+            return ApiResponse.error("Unauthenticated");
+
+        UserMealLog updated = mealLogService.checkInLog(logId, userId);
+        return ApiResponse.success("Đã đánh dấu bữa ăn là hoàn thành", updated);
     }
 }

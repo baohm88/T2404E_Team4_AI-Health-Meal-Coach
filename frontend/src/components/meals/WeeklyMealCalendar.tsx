@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ChevronLeft, ChevronRight, Calendar, Coffee, Sun, Moon, Utensils, Check, RefreshCw, Loader2 } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { format, addDays, parseISO, isSameDay, isBefore, startOfDay } from "date-fns";
+import { format, addDays, parseISO, isSameDay, isBefore, isAfter, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
 import { mealLogService } from "@/services/meal-log.service";
 import { MealLogModal } from "./MealLogModal";
@@ -21,6 +21,7 @@ interface Meal {
     quantity: string;
     calories: number;
     type: string;
+    checkedIn: boolean;
 }
 
 interface DayPlan {
@@ -51,11 +52,22 @@ const mealTypeColors: Record<string, string> = {
 };
 
 export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialData, startDate }) => {
+    const [mealPlanState, setMealPlanState] = useState<DayPlan[]>(initialData.mealPlan);
     const [currentWeek, setCurrentWeek] = useState(0);
     const [selectedDayIdx, setSelectedDayIdx] = useState(0); // For Mobile View
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMeal, setSelectedMeal] = useState<{ id: number; day: number; type: string; mealName: string; calories: number } | null>(null);
-    const [confirmedMeals, setConfirmedMeals] = useState<Set<string>>(new Set());
+    const [confirmedMeals, setConfirmedMeals] = useState<Set<string>>(() => {
+        const initialConfirmed = new Set<string>();
+        initialData.mealPlan.forEach(day => {
+            day.meals.forEach(meal => {
+                if (meal.checkedIn) {
+                    initialConfirmed.add(`${day.day}-${meal.type}`);
+                }
+            });
+        });
+        return initialConfirmed;
+    });
     const [loggingId, setLoggingId] = useState<string | null>(null);
 
     const baseDate = useMemo(() => {
@@ -66,15 +78,15 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
         }
     }, [startDate]);
 
-    const totalDays = initialData.mealPlan.length;
+    const totalDays = mealPlanState.length;
     const totalWeeks = Math.ceil(totalDays / 7);
     const mealTypes = ["Sáng", "Trưa", "Tối", "Phụ"];
 
     const currentWeekData = useMemo(() => {
         const startIdx = currentWeek * 7;
         const endIdx = startIdx + 7;
-        return initialData.mealPlan.slice(startIdx, endIdx);
-    }, [currentWeek, initialData.mealPlan]);
+        return mealPlanState.slice(startIdx, endIdx);
+    }, [currentWeek, mealPlanState]);
 
     const nextWeek = () => setCurrentWeek((prev) => Math.min(prev + 1, totalWeeks - 1));
     const prevWeek = () => setCurrentWeek((prev) => Math.max(prev - 1, 0));
@@ -83,12 +95,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
         const mealKey = `${day}-${type}`;
         try {
             setLoggingId(mealKey);
-            const res = await mealLogService.checkInPlannedMeal({
-                foodName: mealName,
-                estimatedCalories: calories,
-                plannedMealId: mealId,
-                nutritionDetails: "Ăn đúng theo kế hoạch"
-            }) as any;
+            const res = await mealLogService.checkInPlannedMealById(mealId) as any;
 
             if (res.success) {
                 setConfirmedMeals(prev => new Set(prev).add(mealKey));
@@ -109,16 +116,41 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
         setIsModalOpen(true);
     };
 
-    const onSwapSuccess = () => {
+    const onSwapSuccess = (newData: any) => {
         if (selectedMeal) {
             const mealKey = `${selectedMeal.day}-${selectedMeal.type}`;
+
+            // Cập nhật state UI ngay lập tức
+            setMealPlanState(prev => prev.map(dayPlan => {
+                if (dayPlan.day === selectedMeal.day) {
+                    const updatedMeals = dayPlan.meals.map(m => {
+                        if (m.type === selectedMeal.type) {
+                            return {
+                                ...m,
+                                mealName: newData.foodName,
+                                calories: newData.estimatedCalories,
+                                checkedIn: true
+                            };
+                        }
+                        return m;
+                    });
+
+                    return {
+                        ...dayPlan,
+                        meals: updatedMeals,
+                        totalCalories: updatedMeals.reduce((sum, m) => sum + m.calories, 0)
+                    };
+                }
+                return dayPlan;
+            }));
+
             setConfirmedMeals(prev => new Set(prev).add(mealKey));
             toast.success("Đã cập nhật bữa ăn mới bằng AI!");
         }
     };
 
     // Helper component for Meal Card to avoid duplication
-    const MealCard = ({ meal, dayData, type, isTodayDate, isPastDate, mealKey }: any) => (
+    const MealCard = ({ meal, dayData, type, isTodayDate, isPastDate, isFutureDate, mealKey }: any) => (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -126,6 +158,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 "h-full p-3 rounded-2xl border flex flex-col transition-all duration-300 relative",
                 isTodayDate ? "bg-emerald-50/50 border-emerald-200 ring-2 ring-emerald-500/10" : "bg-white border-slate-100",
                 isPastDate && "bg-slate-50/80 border-slate-200 grayscale-[0.2] opacity-80",
+                isFutureDate && "bg-slate-50/30 border-slate-100 opacity-60",
                 mealKey && confirmedMeals.has(mealKey) && "border-emerald-500 bg-emerald-50/40"
             )}
         >
@@ -164,10 +197,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
                     <button
                         onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey)}
+                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
                         className={cn(
                             "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
-                            confirmedMeals.has(mealKey)
+                            (confirmedMeals.has(mealKey) || isFutureDate)
                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                                 : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
                         )}
@@ -177,10 +210,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                     </button>
                     <button
                         onClick={() => handleSwapClick(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={confirmedMeals.has(mealKey)}
+                        disabled={confirmedMeals.has(mealKey) || isFutureDate}
                         className={cn(
                             "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
-                            confirmedMeals.has(mealKey)
+                            (confirmedMeals.has(mealKey) || isFutureDate)
                                 ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
                                 : "bg-slate-800 text-white hover:bg-slate-900"
                         )}
@@ -284,6 +317,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                                 {mealTypes.map(type => {
                                     const meal = dayData.meals.find(m => m.type === type);
                                     const isPastDate = isBefore(startOfDay(actualDate), startOfDay(new Date()));
+                                    const isFutureDate = isAfter(startOfDay(actualDate), startOfDay(new Date()));
                                     const mealKey = `${dayData.day}-${type}`;
 
                                     return meal ? (
@@ -294,6 +328,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                                             type={type}
                                             isTodayDate={isTodayDate}
                                             isPastDate={isPastDate}
+                                            isFutureDate={isFutureDate}
                                             mealKey={mealKey}
                                         />
                                     ) : (
@@ -352,6 +387,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                                 const actualDate = dayData ? addDays(baseDate, (currentWeek * 7) + dayIdx) : null;
                                 const isTodayDate = actualDate ? isSameDay(startOfDay(actualDate), startOfDay(new Date())) : false;
                                 const isPastDate = actualDate ? isBefore(startOfDay(actualDate), startOfDay(new Date())) : false;
+                                const isFutureDate = actualDate ? isAfter(startOfDay(actualDate), startOfDay(new Date())) : false;
                                 const mealKey = dayData ? `${dayData.day}-${type}` : null;
 
                                 return (
@@ -363,6 +399,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                                                 type={type}
                                                 isTodayDate={isTodayDate}
                                                 isPastDate={isPastDate}
+                                                isFutureDate={isFutureDate}
                                                 mealKey={mealKey}
                                             />
                                         ) : (

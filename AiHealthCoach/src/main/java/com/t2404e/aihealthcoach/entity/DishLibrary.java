@@ -53,6 +53,10 @@ public class DishLibrary {
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
 
+    @Builder.Default
+    @Column(name = "is_verified")
+    private Boolean isVerified = false;
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
