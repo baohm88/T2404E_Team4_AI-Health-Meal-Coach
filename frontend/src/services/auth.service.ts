@@ -87,15 +87,12 @@ export const authService = {
 
             console.log('📝 Register API Response:', response); // Debug log
 
-            if (response.success && response.data?.token) {
-                const { token } = response.data;
-
-                // ⚠️ NOTE: Token is saved in use-auth-form.ts hook, not here
-                // This keeps token management centralized in the UI layer
+            if (response.success) {
+                const token = response.data?.token;
 
                 return {
                     success: true,
-                    accessToken: token,
+                    accessToken: token, // May be undefined, handled by hook
                 };
             }
 
