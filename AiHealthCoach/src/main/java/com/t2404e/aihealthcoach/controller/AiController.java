@@ -27,6 +27,7 @@ public class AiController {
 
     private final AiHealthAnalysisService aiService;
     private final HealthAnalysisService storageService;
+    private final com.t2404e.aihealthcoach.service.HealthProfileService profileService; // Inject Profile Service
     private final ObjectMapper objectMapper;
 
     @PostMapping("/health-analysis")
@@ -42,8 +43,17 @@ public class AiController {
         Long userId = RequestUtil.getUserId(httpRequest);
         if (userId != null) {
             try {
+                // Save Health Analysis JSON
                 String json = objectMapper.writeValueAsString(analysis);
                 storageService.saveOrUpdate(userId, json);
+
+                // Save Health Profile (Height, Weight, etc) to prevent 404 on /health-profile
+                try {
+                    profileService.saveOrUpdate(userId, request);
+                } catch (Exception e) {
+                    System.err.println("❌ Failed to auto-save health profile: " + e.getMessage());
+                }
+
             } catch (Exception e) {
                 System.err.println("❌ Failed to auto-save health analysis: " + e.getMessage());
             }
