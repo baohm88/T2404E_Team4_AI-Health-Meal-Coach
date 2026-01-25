@@ -9,8 +9,10 @@
 
 'use client';
 
-import { Scale, Activity, TrendingUp, Footprints, Moon, Zap, Sparkles, Info } from 'lucide-react';
-import { AIAnalysisResponse, MonthPlan } from '@/services/ai.service';
+import { Scale, Activity, TrendingUp, Footprints, Moon, Zap, Sparkles, Info, Calendar } from 'lucide-react';
+import { AIAnalysisResponse, MonthPlan as BaseMonthPlan } from '@/services/ai.service';
+
+interface MonthPlan extends BaseMonthPlan { }
 
 // ============================================================
 // TYPES
@@ -42,7 +44,7 @@ export const RoadmapView = ({ data, loading, error }: RoadmapViewProps) => {
     const { analysis, lifestyleInsights, threeMonthPlan } = data;
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100">
             {/* Header Section with Gradient */}
             <div className="bg-gradient-to-r from-emerald-500 to-green-500 p-6 text-white">
                 <div className="flex items-center gap-3 mb-4">
@@ -125,7 +127,7 @@ export const RoadmapView = ({ data, loading, error }: RoadmapViewProps) => {
                         <MonthCard
                             key={month.month}
                             month={month}
-                            isActive={index === 0} // First month is active by default
+                            isActive={index === 0}
                         />
                     ))}
                 </div>
@@ -133,6 +135,7 @@ export const RoadmapView = ({ data, loading, error }: RoadmapViewProps) => {
         </div>
     );
 };
+
 
 // ============================================================
 // SUB-COMPONENTS
@@ -185,8 +188,8 @@ const MonthCard = ({ month, isActive }: MonthCardProps) => {
             {/* Status Icon */}
             <div
                 className={`w-8 h-8 rounded-full flex items-center justify-center border-2 mb-3 transition-all ${isActive
-                        ? 'border-emerald-500 bg-emerald-50 text-emerald-500 ring-4 ring-emerald-100'
-                        : 'border-slate-300 bg-slate-50 text-slate-400'
+                    ? 'border-emerald-500 bg-emerald-50 text-emerald-500 ring-4 ring-emerald-100'
+                    : 'border-slate-300 bg-slate-50 text-slate-400'
                     }`}
             >
                 <span className="text-xs font-bold">{month.month}</span>
@@ -202,8 +205,8 @@ const MonthCard = ({ month, isActive }: MonthCardProps) => {
                 <div className="mt-2">
                     <span
                         className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${isActive
-                                ? 'bg-emerald-100 text-emerald-700'
-                                : 'bg-slate-100 text-slate-600'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-slate-100 text-slate-600'
                             }`}
                     >
                         {month.dailyCalories} kcal

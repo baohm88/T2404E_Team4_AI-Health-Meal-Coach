@@ -1,9 +1,12 @@
 package com.t2404e.aihealthcoach.repository;
 
-import com.t2404e.aihealthcoach.entity.User;
+import java.util.Optional;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
+import com.t2404e.aihealthcoach.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
@@ -17,4 +20,9 @@ public interface UserRepository extends JpaRepository<User, Long> {
             "(:status IS NULL OR u.status = :status) AND " +
             "(:isPremium IS NULL OR u.isPremium = :isPremium)")
     org.springframework.data.domain.Page<User> searchUsers(String keyword, Integer status, Boolean isPremium, org.springframework.data.domain.Pageable pageable);
+
+    /**
+     * Tìm kiếm user theo tên hoặc email (phân trang)
+     */
+    Page<User> findByFullNameContainingOrEmailContaining(String fullName, String email, Pageable pageable);
 }
