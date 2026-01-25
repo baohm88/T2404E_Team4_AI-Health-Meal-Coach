@@ -1,12 +1,25 @@
 package com.t2404e.aihealthcoach.entity;
 
-import com.t2404e.aihealthcoach.enums.UserRole;
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import com.t2404e.aihealthcoach.enums.UserRole;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "users")
@@ -32,6 +45,7 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
+    @Builder.Default
     private UserRole role = UserRole.USER;
 
     /**
@@ -40,9 +54,11 @@ public class User {
      * -1 = DELETED
      */
     @Column(nullable = false)
+    @Builder.Default
     private Integer status = 1;
 
     @Column(name = "is_premium", nullable = false)
+    @Builder.Default
     private Boolean isPremium = false;
 
     @CreationTimestamp
