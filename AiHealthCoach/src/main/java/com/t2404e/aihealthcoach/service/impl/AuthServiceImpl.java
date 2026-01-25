@@ -1,5 +1,8 @@
 package com.t2404e.aihealthcoach.service.impl;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.t2404e.aihealthcoach.config.JwtUtil;
 import com.t2404e.aihealthcoach.dto.request.LoginRequest;
 import com.t2404e.aihealthcoach.dto.request.RegisterRequest;
@@ -10,8 +13,6 @@ import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.exception.UnauthorizedException;
 import com.t2404e.aihealthcoach.repository.UserRepository;
 import com.t2404e.aihealthcoach.service.AuthService;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AuthServiceImpl implements AuthService {
