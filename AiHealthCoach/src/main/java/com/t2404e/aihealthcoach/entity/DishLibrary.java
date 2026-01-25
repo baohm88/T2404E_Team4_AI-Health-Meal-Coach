@@ -1,12 +1,24 @@
 package com.t2404e.aihealthcoach.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import java.time.LocalDateTime;
+
 import org.hibernate.annotations.CreationTimestamp;
 
 import com.t2404e.aihealthcoach.enums.MealTimeSlot;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "dish_library")
@@ -36,6 +48,10 @@ public class DishLibrary {
     @Builder.Default
     @Column(name = "is_ai_suggested")
     private Boolean isAiSuggested = false;
+
+    @Builder.Default
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
 
     @Column(columnDefinition = "TEXT")
     private String description;
