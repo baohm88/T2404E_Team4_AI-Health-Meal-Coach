@@ -27,4 +27,10 @@ public interface UserService {
      */
     void toggleUserStatus(Long id);
 
+    /**
+     * Chuyển đổi trạng thái Premium (true <-> false)
+     */
+    void togglePremiumStatus(Long id);
+
+
 }
