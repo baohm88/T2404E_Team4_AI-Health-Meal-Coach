@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
+import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.UserService;
-import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -75,5 +75,14 @@ public class AdminController {
         userService.toggleUserStatus(id);
         return ResponseEntity.ok(ApiResponse.success("Thay đổi trạng thái người dùng thành công", null));
     }
+
+    @PatchMapping("/users/{id}/toggle-premium")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Kích hoạt/Hủy gói Premium", description = "Chuyển đổi trạng thái Premium của người dùng.")
+    public ResponseEntity<ApiResponse<Void>> togglePremiumStatus(@PathVariable Long id) {
+        userService.togglePremiumStatus(id);
+        return ResponseEntity.ok(ApiResponse.success("Thay đổi trạng thái Premium thành công", null));
+    }
+
 
 }
