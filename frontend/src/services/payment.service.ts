@@ -1,11 +1,14 @@
 /**
- * Payment Service (Mock Implementation)
+ * Payment Service (Real Implementation)
  * 
- * Simulates VNPay payment gateway integration.
- * All functions use mock data with realistic delays.
+ * Integration with Backend to generate VNPay URLs.
  * 
- * @see /services/subscription.service.ts - Related subscription service
+ * @see /lib/http.ts - HTTP client
  */
+
+import http from '@/lib/http';
+import { ApiResponse } from '@/types/api';
+import { jwtDecode } from 'jwt-decode';
 
 // ============================================================
 // TYPES
@@ -14,7 +17,7 @@
 export interface PaymentUrlResult {
     success: boolean;
     url: string;
-    transactionId: string;
+    transactionId?: string;
     error?: string;
 }
 
@@ -33,17 +36,11 @@ export interface TransactionResult {
     error?: string;
 }
 
-// ============================================================
-// MOCK DATA
-// ============================================================
-
-const MOCK_TRANSACTION_ID = 'MOCK_123456';
-
-// ============================================================
-// HELPER: Simulate Network Delay
-// ============================================================
-
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+interface DecodedToken {
+    userId: string;
+    sub: string;
+    exp: number;
+}
 
 // ============================================================
 // SERVICE IMPLEMENTATION
@@ -51,81 +48,77 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const paymentService = {
     /**
-     * Tạo URL thanh toán VNPay (Mock)
+     * Create VNPay Payment URL
      * 
-     * @param amount - Số tiền thanh toán (VND)
-     * @returns Promise với URL thanh toán
-     * 
-     * Note: Trong môi trường thật, sẽ gọi API backend để tạo URL VNPay
+     * @param amount - Amount in VND
+     * @returns Promise with payment URL
      */
     createPaymentUrl: async (amount: number): Promise<PaymentUrlResult> => {
-        console.log('💳 [MOCK] Creating payment URL for:', amount.toLocaleString('vi-VN'), 'VND');
+        try {
+            // 1. Get User ID from Token
+            const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+            if (!token) {
+                return { success: false, url: '', error: 'User not authenticated' };
+            }
 
-        // Giả lập network delay 1 giây
-        await delay(1000);
+            let userId: string;
+            try {
+                const decoded = jwtDecode<DecodedToken>(token);
+                // Backend usually puts ID in 'userId' or 'sub'
+                userId = decoded.userId || decoded.sub;
+            } catch (e) {
+                return { success: false, url: '', error: 'Invalid token' };
+            }
 
-        // Mock: Trả về URL success với transactionId
-        const successUrl = typeof window !== 'undefined'
-            ? `${window.location.origin}/payment/success?transactionId=${MOCK_TRANSACTION_ID}`
-            : `/payment/success?transactionId=${MOCK_TRANSACTION_ID}`;
+            console.log(`💳 Initiating Payment for User [${userId}] Amount: ${amount}`);
 
-        console.log('✅ [MOCK] Payment URL created:', successUrl);
+            // 2. Call Backend API
+            const response = await http.get<ApiResponse<string>>('/payment/create-url', {
+                params: {
+                    userId,
+                    amount
+                }
+            });
 
-        return {
-            success: true,
-            url: successUrl,
-            transactionId: MOCK_TRANSACTION_ID,
-        };
+            if (response.success && response.data) {
+                console.log('✅ VNPay URL generated:', response.data);
+                return {
+                    success: true,
+                    url: response.data,
+                };
+            }
+
+            return {
+                success: false,
+                url: '',
+                error: response.message || 'Failed to generate URL'
+            };
+
+        } catch (error) {
+            console.error('Payment creation error:...', error);
+            // Default fallback or detailed error
+            return {
+                success: false,
+                url: '',
+                error: 'System error. Please try again later.',
+            };
+        }
     },
 
     /**
-     * Kiểm tra trạng thái giao dịch (Mock)
-     * 
-     * @param transactionId - ID giao dịch cần kiểm tra
-     * @returns Promise với trạng thái giao dịch
-     * 
-     * Note: Trong môi trường thật, sẽ gọi API backend để verify với VNPay
+     * Check transaction status
+     * Not actively used for VNPay as it relies on Redirect.
      */
     checkTransactionStatus: async (transactionId: string): Promise<TransactionResult> => {
-        console.log('🔍 [MOCK] Checking transaction status:', transactionId);
-
-        // Giả lập network delay
-        await delay(500);
-
-        // Mock: Luôn trả về SUCCESS
-        const mockStatus: TransactionStatus = {
-            transactionId,
-            status: 'SUCCESS',
-            isPremium: true,
-            amount: 899000, // Mặc định giá gói 6 tháng
-            paidAt: new Date().toISOString(),
-        };
-
-        console.log('✅ [MOCK] Transaction status:', mockStatus);
-
-        return {
-            success: true,
-            data: mockStatus,
-        };
+        // Placeholder
+        return { success: false, error: 'Not implemented' };
     },
 
     /**
-     * Lấy thông tin giao dịch gần nhất của user (Mock)
+     * Get Latest Transaction
      */
     getLatestTransaction: async (): Promise<TransactionResult> => {
-        console.log('📋 [MOCK] Fetching latest transaction...');
-
-        await delay(300);
-
-        return {
-            success: true,
-            data: {
-                transactionId: MOCK_TRANSACTION_ID,
-                status: 'SUCCESS',
-                isPremium: true,
-                amount: 899000,
-                paidAt: new Date().toISOString(),
-            },
-        };
+        // Placeholder
+        return { success: false, error: 'Not implemented' };
     },
 };
