@@ -8,5 +8,9 @@ import java.util.List;
 
 @Repository
 public interface UserMealLogRepository extends JpaRepository<UserMealLog, Long> {
+    List<UserMealLog> findByUserIdOrderByLoggedAtAsc(Long userId);
+
     List<UserMealLog> findByUserIdOrderByLoggedAtDesc(Long userId);
+
+    java.util.Optional<UserMealLog> findFirstByPlannedMealIdOrderByLoggedAtDesc(Long plannedMealId);
 }

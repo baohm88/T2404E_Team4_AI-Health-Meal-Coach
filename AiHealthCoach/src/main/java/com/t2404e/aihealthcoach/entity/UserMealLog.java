@@ -41,10 +41,20 @@ public class UserMealLog {
     @Column(name = "is_plan_compliant")
     private Boolean isPlanCompliant = true;
 
+    @Builder.Default
+    @Column(name = "checked_in")
+    private Boolean checkedIn = false;
+
+    @Column(name = "day_number")
+    private Integer dayNumber;
+
+    @Column(name = "category")
+    private String category;
+
     @Column(columnDefinition = "TEXT")
     private String nutritionDetails;
 
     @CreationTimestamp
-    @Column(name = "logged_at", updatable = false)
+    @Column(name = "logged_at")
     private LocalDateTime loggedAt;
 }

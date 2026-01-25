@@ -25,8 +25,8 @@ public class PlannedMeal {
     @Column(name = "day_number", nullable = false)
     private Integer dayNumber; // 1-90
 
-    @Column(name = "meal_type", nullable = false)
-    private String mealType; // Sáng, Trưa, Tối, Phụ
+    @Column(name = "category", nullable = false)
+    private String category; // Sáng, Trưa, Tối, Phụ
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "dish_id")

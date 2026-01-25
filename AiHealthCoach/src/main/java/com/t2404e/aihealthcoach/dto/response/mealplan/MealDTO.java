@@ -12,4 +12,5 @@ public class MealDTO {
     private String quantity;
     private Integer calories;
     private String type;
+    private Boolean checkedIn;
 }

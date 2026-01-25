@@ -12,4 +12,5 @@ public class MealAnalysisResponse {
     private String nutritionDetails; // Phân tích chi tiết: protein, carb, fat...
     private String imageUrl;
     private Long plannedMealId;
+    private String type; // Thêm field để lưu category (Sáng, Trưa, Tối, Phụ)
 }

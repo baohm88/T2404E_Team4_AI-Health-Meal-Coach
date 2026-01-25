@@ -46,6 +46,7 @@ public class DishServiceImpl implements DishService {
                 .description(request.getDescription())
                 .isAiSuggested(false) // Món do admin tạo thì là chuẩn, ko phải gợi ý
                 .isDeleted(false)
+                .isVerified(true)
                 .build();
         return dishRepository.save(dish);
     }
@@ -53,13 +54,13 @@ public class DishServiceImpl implements DishService {
     @Override
     public DishLibrary updateDish(Long id, DishRequest request) {
         DishLibrary dish = getDishById(id);
-        
+
         dish.setName(request.getName());
         dish.setBaseCalories(request.getBaseCalories());
         dish.setUnit(request.getUnit());
         dish.setCategory(request.getCategory());
         dish.setDescription(request.getDescription());
-        
+
         return dishRepository.save(dish);
     }
 

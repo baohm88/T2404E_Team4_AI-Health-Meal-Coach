@@ -12,11 +12,14 @@ class MealLogService {
     /**
      * Phân tích ảnh món ăn và lưu log (Swap)
      */
-    async analyzeMealImage(file: File, plannedMealId?: number) {
+    async analyzeMealImage(file: File, plannedMealId?: number, category?: string) {
         const formData = new FormData();
         formData.append('file', file);
         if (plannedMealId) {
             formData.append('plannedMealId', plannedMealId.toString());
+        }
+        if (category) {
+            formData.append('category', category);
         }
         return http.post<ApiResponse<any>>('/api/meals/analyze', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
@@ -28,6 +31,13 @@ class MealLogService {
      */
     async checkInPlannedMeal(data: PlannedMealLogData) {
         return http.post<ApiResponse<any>>('/api/meals/check-in', data) as any as Promise<ApiResponse<any>>;
+    }
+
+    /**
+     * Xác nhận ăn theo kế hoạch bằng ID log
+     */
+    async checkInPlannedMealById(logId: number) {
+        return http.post<ApiResponse<any>>(`/api/meals/${logId}/check-in`, {}) as any as Promise<ApiResponse<any>>;
     }
 }
 
