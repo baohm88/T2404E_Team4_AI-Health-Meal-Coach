@@ -56,6 +56,14 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public void togglePremiumStatus(Long id) {
+        User user = findUserEntityById(id);
+        user.setIsPremium(!Boolean.TRUE.equals(user.getIsPremium()));
+        userRepository.save(user);
+    }
+
+
 
     private UserResponse convertToDTO(User user) {
         return UserResponse.builder()
