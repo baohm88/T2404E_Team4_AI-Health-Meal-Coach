@@ -6,7 +6,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.util.Map;
 
 @RestController
@@ -34,14 +38,23 @@ public class PaymentController {
 
     // 2. API Callback (Frontend gọi API này sau khi VNPay redirect về)
     // Frontend gom toàn bộ URL Params gửi vào đây
+    @Operation(summary = "VNPay Return Callback", description = "Handles the callback from VNPay after payment. Verifies signature and updates user status. Redirects to Frontend.")
+    @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "302", description = "Redirect to Frontend (Success/Fail)")
     @GetMapping("/vnpay-return")
-    public ResponseEntity<ApiResponse<?>> handleReturn(@RequestParam Map<String, String> allParams) {
-        boolean success = paymentService.processPaymentReturn(allParams);
-        
-        if (success) {
-            return ResponseEntity.ok(ApiResponse.success("Payment successful. User upgraded to Premium.", null));
-        } else {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Payment failed or invalid signature."));
+    public void handleReturn(@RequestParam Map<String, String> allParams, HttpServletResponse response) throws IOException {
+        try {
+            boolean success = paymentService.processPaymentReturn(allParams);
+            
+            if (success) {
+                // Redirect về trang thành công của Frontend (Next.js)
+                response.sendRedirect("http://localhost:3000/dashboard?payment=success");
+            } else {
+                // Redirect về trang thất bại
+                response.sendRedirect("http://localhost:3000/dashboard?payment=failed");
+            }
+        } catch (Exception e) {
+             // Lỗi hệ thống hoặc Checksum sai
+             response.sendRedirect("http://localhost:3000/dashboard?payment=error&msg=" + e.getMessage());
         }
     }
 }

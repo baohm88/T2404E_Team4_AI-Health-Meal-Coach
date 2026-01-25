@@ -15,8 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
-import com.t2404e.aihealthcoach.service.MealPlanService;
+import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.UserService;
+import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 public class AdminController {
 
     private final UserService userService;
-    private final MealPlanService mealPlanService;
+    private final HealthAnalysisService healthAnalysisService;
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
@@ -58,9 +59,13 @@ public class AdminController {
 
     @GetMapping("/users/{userId}/plan")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Xem kế hoạch ăn uống của User", description = "Admin xem chi tiết thực đơn của một user cụ thể.")
+    @Operation(summary = "Xem kế hoạch sức khỏe của User", description = "Admin xem chi tiết phân tích sức khỏe (Roadmap) của một user cụ thể.")
     public ResponseEntity<ApiResponse<?>> getUserPlan(@PathVariable Long userId) {
-        return ResponseEntity.ok(ApiResponse.success("Lấy kế hoạch user thành công", mealPlanService.getByUserId(userId)));
+        String plan = healthAnalysisService.getByUserId(userId);
+        if (plan == null) {
+            throw new ResourceNotFoundException("User has no health analysis plan yet.");
+        }
+        return ResponseEntity.ok(ApiResponse.success("Lấy kế hoạch user thành công", plan));
     }
 
     @PatchMapping("/users/{id}/toggle-status")

@@ -45,6 +45,29 @@ export const unbanUser = async (userId: string): Promise<boolean> => {
     return true;
 };
 
+export const getUserPlan = async (userId: number): Promise<any | null> => {
+    try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : '';
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'}/api/v1/admin/users/${userId}/plan`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) return null;
+
+        const json = await response.json();
+        // Critical: Parse the serialized JSON string if necessary
+        const parsedData = typeof json.data === 'string' ? JSON.parse(json.data) : json.data;
+        return parsedData;
+    } catch (error) {
+        console.error('Error fetching user plan:', error);
+        return null;
+    }
+};
+
 // ============================================================
 // FOOD DATABASE MANAGEMENT
 // ============================================================
