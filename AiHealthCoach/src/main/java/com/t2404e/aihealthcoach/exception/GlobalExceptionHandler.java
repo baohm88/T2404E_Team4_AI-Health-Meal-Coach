@@ -5,6 +5,7 @@ import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import com.t2404e.aihealthcoach.exception.InvalidSignatureException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -86,6 +87,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.FORBIDDEN)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+    // 1. Xử lý lỗi chữ ký VNPay (Rất quan trọng để bảo mật)
+    // Trả về 403 Forbidden vì đây là lỗi liên quan đến bảo mật/xác thực dữ liệu
+    @ExceptionHandler(InvalidSignatureException.class)
+    public ResponseEntity<ApiResponse<?>> handleInvalidSignature(InvalidSignatureException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(ApiResponse.error("Security Error: " + ex.getMessage()));
     }
 }
 
