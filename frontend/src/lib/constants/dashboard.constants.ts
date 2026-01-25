@@ -17,7 +17,7 @@ export const DASHBOARD_ROUTES = {
     DIARY: '/dashboard/diary',
     FOODS: '/dashboard/foods',
     PROFILE: '/dashboard/profile',
-    MEAL_PLAN: '/meal-plan',
+    MEAL_PLAN: '/dashboard/meal-plan',
 } as const;
 
 /** Menu item type */

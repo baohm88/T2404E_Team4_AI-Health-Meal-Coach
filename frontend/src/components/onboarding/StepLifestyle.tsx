@@ -12,24 +12,23 @@
 
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
-import { useOnboardingStore } from '@/stores/useOnboardingStore';
-import { profileService } from '@/services/profile.service';
-import { ActivityLevel, SleepRange, StressLevel, OnboardingData } from '@/lib/schemas/onboarding.schema';
 import {
-    ACTIVITY_LABELS,
     ACTIVITY_DESCRIPTIONS,
+    ACTIVITY_LABELS,
     SLEEP_LABELS,
     STRESS_LABELS,
 } from '@/lib/constants/onboarding.constants';
+import { ActivityLevel, SleepRange, StressLevel } from '@/lib/schemas/onboarding.schema';
+import { useOnboardingStore } from '@/stores/useOnboardingStore';
 import clsx from 'clsx';
 import {
     Activity,
-    Moon,
     Brain,
     Loader2,
+    Moon,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
 
 // ============================================================
 // CONSTANTS
@@ -75,22 +74,39 @@ export function StepLifestyle() {
      * GUEST FIRST FLOW: Just redirect to result page
      * Profile will be saved after user registers
      */
-    const handleSubmit = useCallback(() => {
+    const handleSubmit = useCallback(async () => {
         if (!isValid) return;
 
         setIsSubmitting(true);
         setError(null);
 
         try {
-            console.log('📝 Onboarding complete, redirecting to result page');
+            console.log('📝 Onboarding complete');
             console.log('Form data:', formData);
 
-            // Data is already persisted in localStorage via Zustand persist
-            // Navigate to result page (public, no auth required)
+            // Check if user is authenticated
+            const { getToken } = require('@/lib/http'); // Import dynamically or at top level to avoid circular issues if any
+            const token = getToken();
+
+            if (token) {
+                // Determine user is logged in, call API to save/analyze immediately
+                const { aiService } = require('@/services/ai.service');
+                console.log('🚀 Authenticated user - calling AI Analysis...');
+                const res = await aiService.analyzeHealth(formData);
+                
+                if (!res.success) {
+                    throw new Error(res.error || 'Phân tích thất bại');
+                }
+                console.log('✅ Analysis saved!');
+            } else {
+                console.log('👤 Guest user - redirecting to flow...');
+            }
+
+            // Navigate to result page
             router.push('/onboarding/result');
-        } catch (err) {
+        } catch (err: any) {
             console.error('❌ Error:', err);
-            setError('Có lỗi xảy ra. Vui lòng thử lại.');
+            setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
             setIsSubmitting(false);
         }
     }, [formData, isValid, router]);

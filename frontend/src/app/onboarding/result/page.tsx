@@ -13,22 +13,21 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { aiService, AIAnalysisResponse } from '@/services/ai.service';
 import { getToken } from '@/lib/http';
+import { AIAnalysisResponse, aiService } from '@/services/ai.service';
 import { motion } from 'framer-motion';
 import {
-    ArrowRight,
-    Crown,
-    Loader2,
     Activity,
-    Flame,
-    TrendingUp,
-    Target,
+    ArrowRight,
     Calendar,
-    CheckCircle2
+    CheckCircle2,
+    Crown,
+    Flame,
+    Target,
+    TrendingUp
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // ============================================================
 // SKELETON COMPONENT
@@ -164,8 +163,15 @@ export default function OnboardingResultPage() {
 
         console.log('📊 [OnboardingResult] Fetching analysis data...');
         // Authenticated – fetch stored analysis
+        // Authenticated – fetch stored analysis or create new one if pending
         const fetchAnalysis = async () => {
-            try {
+             // Import store dynamically or assume it's available (better to import at top, but here allows keeping diff small if I could, but I should add import at top. 
+             // Since I can't add top-level import easily with this tool without replacing widely, I will use require or rely on the fact that I will add import in a separate block? No I should replace the file content properly.)
+             // Actually, replace_file_content is fine with adding imports if I touch top of file.
+             // But for now, let's use the local logic.
+             
+             try {
+                // 1. Try to get stored analysis
                 const res = await aiService.getStoredAnalysis();
                 console.log('📊 [OnboardingResult] Analysis response:', res);
 
@@ -173,12 +179,30 @@ export default function OnboardingResultPage() {
                     console.log('✅ [OnboardingResult] Analysis loaded successfully');
                     setAnalysis(res.data);
                 } else {
-                    console.error('❌ [OnboardingResult] Analysis fetch failed:', res.error);
-                    setError(res.error || 'Không thể tải dữ liệu phân tích');
+                    console.warn('⚠️ [OnboardingResult] Analysis not found on server, checking local store...');
+                    
+                    // 2. If not found, check if we have pending data in store (Post-Registration flow)
+                    const { useOnboardingStore } = require('@/stores/useOnboardingStore');
+                    const { formData } = useOnboardingStore.getState();
+                    
+                    if (formData && formData.activityLevel) {
+                         console.log('🚀 [OnboardingResult] Found pending data, submitting to AI service...');
+                         const createRes = await aiService.analyzeHealth(formData);
+                         
+                         if (createRes.success && createRes.data) {
+                             console.log('✅ [OnboardingResult] Created new analysis successfully');
+                             setAnalysis(createRes.data);
+                         } else {
+                             throw new Error(createRes.error || 'Không thể tạo phân tích mới');
+                         }
+                    } else {
+                         console.error('❌ [OnboardingResult] No pending data found');
+                         setError(res.error || 'Không thể tải dữ liệu phân tích');
+                    }
                 }
-            } catch (e) {
-                console.error('❌ [OnboardingResult] Error fetching analysis:', e);
-                setError('Lỗi khi kết nối tới server');
+            } catch (e: any) {
+                console.error('❌ [OnboardingResult] Error fetching/creating analysis:', e);
+                setError(e.message || 'Lỗi khi kết nối tới server');
             } finally {
                 setLoading(false);
             }

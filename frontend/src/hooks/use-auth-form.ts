@@ -1,15 +1,15 @@
-import { useState, useCallback } from 'react';
-import { useForm, UseFormReturn } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import { useForm, UseFormReturn } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { loginSchema, registerSchema, LoginData, RegisterData } from '@/lib/schemas/auth.schema';
+import { saveToken } from '@/lib/http';
+import { LoginData, loginSchema, RegisterData, registerSchema } from '@/lib/schemas/auth.schema';
+import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
+import { aiService } from '@/services/ai.service';
 import { authService } from '@/services/auth.service';
 import { profileService } from '@/services/profile.service';
-import { aiService } from '@/services/ai.service';
-import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
-import { saveToken } from '@/lib/http';
 
 interface UseAuthFormReturn<T extends LoginData | RegisterData> {
     form: UseFormReturn<T>;
@@ -39,9 +39,9 @@ function getGuestData(): Record<string, unknown> | null {
 async function syncGuestDataAndRedirect(token: string, router: ReturnType<typeof useRouter>) {
     const guestData = getGuestData();
 
-    // Nếu không có dữ liệu khách -> Vẫn đẩy về result (để user chọn dashboard hoặc premium)
+    // Nếu không có dữ liệu khách -> Đã là user cũ hoặc đăng nhập bình thường -> Về Dashboard
     if (!guestData) {
-        router.push('/onboarding/result');
+        router.push('/dashboard');
         return;
     }
 

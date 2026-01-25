@@ -10,8 +10,8 @@
  */
 
 import http from '@/lib/http';
-import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
 import { AI_RESPONSES, ChatMessage } from '@/lib/mock-data';
+import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
 
 // ============================================================
 // AI ANALYSIS TYPES
@@ -187,10 +187,19 @@ export const aiService = {
                 message?: string;
             };
 
-            const errorMessage =
+            let errorMessage =
                 axiosError.response?.data?.message ||
                 axiosError.message ||
                 'Không thể kết nối server AI';
+
+            // Check for Rate Limit (429) or specific error text
+            const isRateLimit = 
+                axiosError.response?.status === 429 || 
+                (typeof errorMessage === 'string' && errorMessage.includes('Rate limit reached'));
+
+            if (isRateLimit) {
+                errorMessage = 'Hệ thống AI đang quá tải. Vui lòng thử lại sau 30 giây.';
+            }
 
             return {
                 success: false,
