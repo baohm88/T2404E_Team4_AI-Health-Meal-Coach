@@ -22,6 +22,9 @@ public class MealPlanPromptBuilder {
         THÔNG TIN SỨC KHỎE NGƯỜI DÙNG (LƯU TỪ DATABASE):
         %s
 
+        PHÂN TÍCH DINH DƯỠNG MỤC TIÊU:
+        %s
+
         THƯ VIỆN MÓN ĂN CÓ SẴN (BẮT BUỘC CHỌN TỪ ĐÂY):
         %s
 
@@ -36,6 +39,7 @@ public class MealPlanPromptBuilder {
         CHỈ TRẢ JSON.
         """.formatted(
         buildProfileText(profile),
+        buildAnalysisText(analysis),
         buildDishLibraryText(dishes),
         startDay,
         endDay,
@@ -61,10 +65,29 @@ public class MealPlanPromptBuilder {
         p.getStressLevel());
   }
 
+  private static String buildAnalysisText(HealthAnalysis a) {
+    if (a == null || a.getAnalysisJson() == null)
+      return "- Chưa có phân tích sức khỏe.";
+    // Chỉ lấy phần đầu của JSON (thường chứa TDEE, BMI, Goal) để tiết kiệm token
+    String json = a.getAnalysisJson();
+    if (json.length() > 1000) {
+      json = json.substring(0, 1000) + "...";
+    }
+    return "THÔNG TIN PHÂN TÍCH (Tóm tắt):\n" + json;
+  }
+
   private static String buildDishLibraryText(List<DishLibrary> dishes) {
     return dishes.stream()
-        .map(d -> "[ID: %d] %s - %d kcal/%s (%s)".formatted(
-            d.getId(), d.getName(), d.getBaseCalories(), d.getUnit(), d.getCategory()))
-        .collect(Collectors.joining("\n"));
+        .map(d -> {
+          String vn = switch (d.getCategory()) {
+            case BREAKFAST -> "S";
+            case LUNCH -> "Tr";
+            case DINNER -> "T";
+            case SNACK -> "P";
+            default -> "O";
+          };
+          return "#%d:%s(%dkcal/%s)".formatted(d.getId(), d.getName(), d.getBaseCalories(), vn);
+        })
+        .collect(Collectors.joining("|"));
   }
 }

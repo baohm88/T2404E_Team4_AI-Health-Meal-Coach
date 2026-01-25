@@ -56,17 +56,29 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 .build();
                 MealPlan savedPlan = mealPlanRepo.save(mealPlan);
 
-                // Generate in 3 chunks of 30 days to avoid token limits
-                int[][] chunks = { { 1, 30 }, { 31, 60 }, { 61, 90 } };
-                for (int[] chunk : chunks) {
-                        String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, chunk[0], chunk[1]);
-                        String rawJson = chatClient.prompt()
-                                        .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
-                                        .user(prompt)
-                                        .call()
-                                        .content();
-                        // This call should be transactional to save records safely
-                        parseAndSaveChunk(savedPlan, rawJson);
+                // Generate in chunks of 7 days to ensure quality and stay within token limits
+                try {
+                        for (int i = 1; i <= 90; i += 7) {
+                                int start = i;
+                                int end = Math.min(i + 6, 90);
+                                System.out.println(
+                                                "DEBUG: Generating meal plan chunk for days " + start + " to " + end);
+
+                                String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, start, end);
+                                String rawJson = chatClient.prompt()
+                                                .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
+                                                .user(prompt)
+                                                .call()
+                                                .content();
+                                parseAndSaveChunk(savedPlan, rawJson);
+                        }
+                } catch (Exception e) {
+                        System.err.println("CRITICAL AI ERROR: " + e.getMessage());
+                        if (e.getMessage().contains("429") || e.getMessage().contains("rate_limit")) {
+                                throw new RuntimeException(
+                                                "Giới hạn lượt dùng AI đã hết cho hôm nay (Rate Limit). Vui lòng thử lại sau vài phút hoặc ngày mai.");
+                        }
+                        throw e;
                 }
 
                 return convertToResponse(savedPlan);
@@ -75,6 +87,15 @@ public class MealPlanServiceImpl implements MealPlanService {
         @Transactional
         protected void parseAndSaveChunk(MealPlan plan, String rawJson) {
                 try {
+                        // Clean markdown backticks if present
+                        if (rawJson != null && rawJson.contains("```")) {
+                                int firstIndex = rawJson.indexOf("{");
+                                int lastIndex = rawJson.lastIndexOf("}");
+                                if (firstIndex != -1 && lastIndex != -1 && lastIndex > firstIndex) {
+                                        rawJson = rawJson.substring(firstIndex, lastIndex + 1);
+                                }
+                        }
+
                         Map<String, Object> map = objectMapper.readValue(rawJson,
                                         new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
                                         });
@@ -100,25 +121,37 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                 category = (String) mealData
                                                                                                 .get("type");
                                                                         }
-                                                                        // Ưu tiên lấy category từ DishLibrary nếu có
-                                                                        if (dish != null && dish
-                                                                                        .getCategory() != null) {
-                                                                                category = dish.getCategory().name();
-                                                                        }
+                                                                        // Respect AI category choice. Do not override
+                                                                        // based on library default.
                                                                         category = mapToVietnameseCategory(category);
+
+                                                                        // Hydrate missing fields from DishLibrary
+                                                                        String mealName = (String) mealData
+                                                                                        .get("mealName");
+                                                                        if (mealName == null && dish != null) {
+                                                                                mealName = dish.getName();
+                                                                        }
+                                                                        if (mealName == null)
+                                                                                mealName = "Món ăn lạ";
+
+                                                                        int calories = 0;
+                                                                        if (mealData.get("calories") != null) {
+                                                                                calories = ((Number) mealData
+                                                                                                .get("calories"))
+                                                                                                .intValue();
+                                                                        } else if (dish != null) {
+                                                                                calories = dish.getBaseCalories();
+                                                                        }
 
                                                                         PlannedMeal plannedMeal = PlannedMeal.builder()
                                                                                         .mealPlanId(plan.getId())
                                                                                         .dayNumber(dayNum)
                                                                                         .dish(dish)
                                                                                         .category(category)
-                                                                                        .mealName((String) mealData.get(
-                                                                                                        "mealName"))
+                                                                                        .mealName(mealName)
                                                                                         .quantity((String) mealData.get(
                                                                                                         "quantity"))
-                                                                                        .calories(((Number) mealData
-                                                                                                        .get("calories"))
-                                                                                                        .intValue())
+                                                                                        .calories(calories)
                                                                                         .build();
                                                                         PlannedMeal savedPlannedMeal = plannedMealRepo
                                                                                         .save(plannedMeal);
@@ -152,7 +185,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 }
                         }
                 } catch (Exception e) {
-                        System.err.println("Error parsing AI Meal Plan chunk: " + e.getMessage());
+                        System.err.println("Error parsing AI Meal Plan: " + e.getMessage());
                 }
         }
 
@@ -181,24 +214,48 @@ public class MealPlanServiceImpl implements MealPlanService {
                                         Integer day = e.getKey();
                                         List<UserMealLog> dayLogs = e.getValue();
 
-                                        // Chỉ lấy bản ghi mới nhất cho mỗi category trong ngày
-                                        Map<String, UserMealLog> uniqueLogs = new LinkedHashMap<>();
-                                        for (UserMealLog log : dayLogs) {
-                                                String cat = log.getCategory();
-                                                if (cat == null)
-                                                        cat = "Phụ";
-                                                // mapToVietnameseCategory(cat) để đồng bộ key
-                                                uniqueLogs.put(mapToVietnameseCategory(cat), log);
-                                        }
+                                        // Đảm bảo luôn có 4 category: Sáng, Trưa, Tối, Phụ
+                                        List<String> mandatoryCategories = List.of("Sáng", "Trưa", "Tối", "Phụ");
+                                        Map<String, List<UserMealLog>> groupedByCategory = dayLogs.stream()
+                                                        .collect(Collectors.groupingBy(
+                                                                        l -> mapToVietnameseCategory(
+                                                                                        l.getCategory() == null ? "Phụ"
+                                                                                                        : l.getCategory())));
 
-                                        List<MealDTO> mealDTOs = uniqueLogs.values().stream().map(l -> MealDTO.builder()
-                                                        .id(l.getId())
-                                                        .mealName(l.getFoodName())
-                                                        .quantity("")
-                                                        .calories(l.getEstimatedCalories())
-                                                        .type(mapToVietnameseCategory(l.getCategory()))
-                                                        .checkedIn(l.getCheckedIn())
-                                                        .build()).collect(Collectors.toList());
+                                        List<MealDTO> mealDTOs = mandatoryCategories.stream().map(categoryName -> {
+                                                List<UserMealLog> categoryLogs = groupedByCategory.getOrDefault(
+                                                                categoryName,
+                                                                Collections.emptyList());
+
+                                                if (categoryLogs.isEmpty()) {
+                                                        return MealDTO.builder()
+                                                                        .id(-1L) // ID giả cho slot trống
+                                                                        .mealName("Chưa có món")
+                                                                        .quantity("")
+                                                                        .calories(0)
+                                                                        .type(categoryName)
+                                                                        .checkedIn(false)
+                                                                        .build();
+                                                }
+
+                                                String combinedName = categoryLogs.stream()
+                                                                .map(UserMealLog::getFoodName)
+                                                                .collect(Collectors.joining(" + "));
+                                                int totalCal = categoryLogs.stream()
+                                                                .mapToInt(UserMealLog::getEstimatedCalories)
+                                                                .sum();
+                                                boolean anyCheckedIn = categoryLogs.stream()
+                                                                .anyMatch(l -> Boolean.TRUE.equals(l.getCheckedIn()));
+
+                                                return MealDTO.builder()
+                                                                .id(categoryLogs.get(0).getId())
+                                                                .mealName(combinedName)
+                                                                .quantity("")
+                                                                .calories(totalCal)
+                                                                .type(categoryName)
+                                                                .checkedIn(anyCheckedIn)
+                                                                .build();
+                                        }).collect(Collectors.toList());
 
                                         return DayPlanDTO.builder()
                                                         .day(day)
