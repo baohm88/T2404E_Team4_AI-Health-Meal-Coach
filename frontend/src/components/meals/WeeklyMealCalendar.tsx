@@ -1,15 +1,15 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Calendar, Coffee, Sun, Moon, Utensils, Check, RefreshCw, Loader2 } from "lucide-react";
-import { clsx, type ClassValue } from "clsx";
-import { twMerge } from "tailwind-merge";
-import { format, addDays, parseISO, isSameDay, isBefore, isAfter, startOfDay } from "date-fns";
-import { vi } from "date-fns/locale";
 import { mealLogService } from "@/services/meal-log.service";
-import { MealLogModal } from "./MealLogModal";
+import { clsx, type ClassValue } from "clsx";
+import { addDays, format, isAfter, isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
+import { vi } from "date-fns/locale";
+import { motion } from "framer-motion";
+import { Calendar, Check, ChevronLeft, ChevronRight, Coffee, Loader2, Moon, RefreshCw, Sun, Utensils } from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { twMerge } from "tailwind-merge";
+import { MealLogModal } from "./MealLogModal";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -197,10 +197,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
                     <button
                         onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
+                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || !isTodayDate}
                         className={cn(
                             "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
-                            (confirmedMeals.has(mealKey) || isFutureDate)
+                            (confirmedMeals.has(mealKey) || !isTodayDate)
                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                                 : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
                         )}
@@ -210,10 +210,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                     </button>
                     <button
                         onClick={() => handleSwapClick(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={confirmedMeals.has(mealKey) || isFutureDate}
+                        disabled={confirmedMeals.has(mealKey) || !isTodayDate}
                         className={cn(
                             "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
-                            (confirmedMeals.has(mealKey) || isFutureDate)
+                            (confirmedMeals.has(mealKey) || !isTodayDate)
                                 ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
                                 : "bg-slate-800 text-white hover:bg-slate-900"
                         )}
