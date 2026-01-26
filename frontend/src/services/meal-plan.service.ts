@@ -7,6 +7,7 @@ export interface Meal {
     quantity: string;
     calories: number;
     type: string;
+    checkedIn?: boolean;
 }
 
 export interface DayPlan {

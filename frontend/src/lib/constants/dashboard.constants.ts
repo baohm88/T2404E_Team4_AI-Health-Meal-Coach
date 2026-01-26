@@ -34,7 +34,6 @@ export const DASHBOARD_MENU_ITEMS: MenuItem[] = [
     { href: DASHBOARD_ROUTES.DIARY, icon: BookOpen, label: 'Nhật ký' },
     { href: DASHBOARD_ROUTES.FOODS, icon: Utensils, label: 'Món ăn' },
     { href: DASHBOARD_ROUTES.PROFILE, icon: User, label: 'Hồ sơ' },
-    { href: DASHBOARD_ROUTES.MEAL_PLAN, icon: Utensils, label: 'Kế hoạch bữa ăn' },
 ];
 
 // ============================================================

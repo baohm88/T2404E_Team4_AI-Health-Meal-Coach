@@ -17,14 +17,14 @@ import { getToken } from '@/lib/http';
 import { AIAnalysisResponse, aiService } from '@/services/ai.service';
 import { motion } from 'framer-motion';
 import {
-    Activity,
-    ArrowRight,
-    Calendar,
-    CheckCircle2,
-    Crown,
-    Flame,
-    Target,
-    TrendingUp
+  Activity,
+  ArrowRight,
+  Calendar,
+  CheckCircle2,
+  Crown,
+  Flame,
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -234,7 +234,7 @@ export default function OnboardingResultPage() {
                         Thử lại
                     </button>
                     <button
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => router.push('/dashboard/schedule')}
                         className="px-4 py-2 bg-slate-500 text-white rounded-lg hover:bg-slate-600"
                     >
                         Về Dashboard
@@ -253,7 +253,7 @@ export default function OnboardingResultPage() {
                 <h1 className="text-2xl font-bold text-slate-700 mb-2">Chưa có dữ liệu</h1>
                 <p className="text-slate-600 mb-4">Vui lòng hoàn thành quy trình onboarding trước.</p>
                 <button
-                    onClick={() => router.push('/dashboard')}
+                    onClick={() => router.push('/dashboard/schedule')}
                     className="px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600"
                 >
                     Về Dashboard
@@ -387,7 +387,7 @@ export default function OnboardingResultPage() {
                     className="flex flex-col gap-3"
                 >
                     <button
-                        onClick={() => router.push('/dashboard')}
+                        onClick={() => router.push('/dashboard/schedule')}
                         className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition font-medium"
                     >
                         Vào Dashboard <ArrowRight className="w-4 h-4" />
