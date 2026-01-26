@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 // ============================================================
 // CONSTANTS
@@ -45,7 +45,32 @@ export function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
 
-    // 3. Cho phép tất cả các routes khác (/, /onboarding, /onboarding/result, etc.)
+    // 3. Phân quyền (RBAC)
+    // Lưu ý: Middleware chạy trên Edge Runtime, một số thư viện nodejs không chạy được.
+    // jwt-decode chạy tốt trên Edge.
+    if (isAuthenticated && token) {
+        try {
+            const { jwtDecode } = require('jwt-decode'); // Import dynamic để tránh lỗi build static nếu có
+            const decoded: any = jwtDecode(token);
+            const role = decoded?.role || 'USER';
+
+            // ⛔ ADMIN trying to access CLIENT Pages -> Redirect to Admin
+            // (Optional: Prevent Admin from accidentally using user features)
+            if (role === 'ADMIN' && pathname.startsWith('/dashboard')) {
+                return NextResponse.redirect(new URL('/admin', request.url));
+            }
+
+            // ⛔ USER trying to access ADMIN Pages -> Redirect to Dashboard
+            if (role !== 'ADMIN' && pathname.startsWith('/admin')) {
+                return NextResponse.redirect(new URL('/dashboard', request.url));
+            }
+        } catch (e) {
+            console.error('Middleware decode error:', e);
+            // If token invalid, maybe force logout? For now just ignore rbacs
+        }
+    }
+
+    // 4. Cho phép tất cả các routes khác
     return NextResponse.next();
 }
 

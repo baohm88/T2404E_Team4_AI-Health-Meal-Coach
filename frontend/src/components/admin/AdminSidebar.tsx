@@ -7,11 +7,12 @@
 
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { ADMIN_BRAND, ADMIN_MENU_ITEMS, AdminMenuItem } from '@/lib/constants/admin.constants';
 import { cn } from '@/lib/utils';
-import { ADMIN_MENU_ITEMS, ADMIN_BRAND, AdminMenuItem } from '@/lib/constants/admin.constants';
-import { Shield, ChevronLeft, Menu, X } from 'lucide-react';
+import { authService } from '@/services/auth.service';
+import { ChevronLeft, LogOut, Menu, Shield, X } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 
 // ============================================================
@@ -20,11 +21,21 @@ import { useState } from 'react';
 
 export function AdminSidebar() {
     const pathname = usePathname();
+    const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+    const handleLogout = async () => {
+        try {
+            await authService.logout();
+            router.push('/login');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
 
     return (
         <>
-            <DesktopSidebar pathname={pathname} />
+            <DesktopSidebar pathname={pathname} onLogout={handleLogout} />
             <MobileHeader
                 isOpen={isMobileMenuOpen}
                 onToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -33,6 +44,7 @@ export function AdminSidebar() {
                 pathname={pathname}
                 isOpen={isMobileMenuOpen}
                 onClose={() => setIsMobileMenuOpen(false)}
+                onLogout={handleLogout}
             />
         </>
     );
@@ -44,9 +56,10 @@ export function AdminSidebar() {
 
 interface NavProps {
     pathname: string;
+    onLogout: () => void;
 }
 
-const DesktopSidebar = ({ pathname }: NavProps) => (
+const DesktopSidebar = ({ pathname, onLogout }: NavProps) => (
     <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-slate-900 p-6 z-40">
         {/* Logo */}
         <Link href="/admin" className="flex items-center gap-3 mb-10">
@@ -70,8 +83,8 @@ const DesktopSidebar = ({ pathname }: NavProps) => (
             ))}
         </nav>
 
-        {/* Back to User App */}
-        <div className="pt-6 border-t border-slate-700">
+        {/* Footer Actions */}
+        <div className="pt-6 border-t border-slate-700 space-y-3">
             <Link
                 href="/dashboard"
                 className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
@@ -79,9 +92,17 @@ const DesktopSidebar = ({ pathname }: NavProps) => (
                 <ChevronLeft className="w-4 h-4" />
                 Quay lại User App
             </Link>
+            
+            <button
+                onClick={onLogout}
+                className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm"
+            >
+                <LogOut className="w-4 h-4" />
+                Đăng xuất
+            </button>
         </div>
 
-        {/* Footer */}
+        {/* Branding */}
         <div className="pt-4">
             <p className="text-xs text-slate-500">{ADMIN_BRAND.COPYRIGHT}</p>
         </div>
@@ -118,9 +139,10 @@ interface MobileMenuProps {
     pathname: string;
     isOpen: boolean;
     onClose: () => void;
+    onLogout: () => void;
 }
 
-const MobileMenu = ({ pathname, isOpen, onClose }: MobileMenuProps) => (
+const MobileMenu = ({ pathname, isOpen, onClose, onLogout }: MobileMenuProps) => (
     <div
         className={cn(
             'lg:hidden fixed inset-0 bg-slate-900/95 backdrop-blur-xl z-40 transition-all duration-300',
@@ -128,15 +150,38 @@ const MobileMenu = ({ pathname, isOpen, onClose }: MobileMenuProps) => (
         )}
         style={{ paddingTop: '4rem' }}
     >
-        <nav className="p-6 space-y-2">
-            {ADMIN_MENU_ITEMS.map((item) => (
-                <MobileNavItem
-                    key={item.href}
-                    item={item}
-                    isActive={pathname === item.href}
+        <nav className="p-6 space-y-2 flex flex-col h-full">
+            <div className="flex-1 space-y-2">
+                {ADMIN_MENU_ITEMS.map((item) => (
+                    <MobileNavItem
+                        key={item.href}
+                        item={item}
+                        isActive={pathname === item.href}
+                        onClick={onClose}
+                    />
+                ))}
+            </div>
+
+            <div className="pt-6 border-t border-slate-700 space-y-4 pb-20">
+                <Link
+                    href="/dashboard"
                     onClick={onClose}
-                />
-            ))}
+                    className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors p-2"
+                >
+                    <ChevronLeft className="w-5 h-5" />
+                    Quay lại User App
+                </Link>
+                <button
+                    onClick={() => {
+                        onClose();
+                        onLogout();
+                    }}
+                    className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors p-2"
+                >
+                    <LogOut className="w-5 h-5" />
+                    Đăng xuất
+                </button>
+            </div>
         </nav>
     </div>
 );

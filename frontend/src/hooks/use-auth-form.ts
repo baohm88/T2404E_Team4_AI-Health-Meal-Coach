@@ -39,31 +39,51 @@ function getGuestData(): Record<string, unknown> | null {
 async function syncGuestDataAndRedirect(token: string, router: ReturnType<typeof useRouter>) {
     const guestData = getGuestData();
 
-    // Nếu không có dữ liệu khách -> Đã là user cũ hoặc đăng nhập bình thường -> Về Dashboard
-    if (!guestData) {
-        router.push('/dashboard');
+    // 1. Kiểm tra xem user đã có Profile chưa (Tránh spam AI và đè dữ liệu cũ)
+    const existingProfile = await profileService.getProfile();
+    
+    if (existingProfile.success && existingProfile.data) {
+        console.log('✅ User already has profile. Skipping onboarding sync.');
+        // Xóa dữ liệu rác nếu có
+        if (guestData) {
+            console.log('🧹 Clearing stale guest data.');
+            localStorage.removeItem('onboarding-data');
+        }
+        router.push('/dashboard/schedule');
         return;
     }
 
+    // 2. Nếu User MỚI (chưa có profile) mà KHÔNG có guestData -> Về Dashboard (để tạo mới từ đầu) hoặc Schedule
+    if (!guestData) {
+        // Tùy logic: Chưa có profile mà vào dashboard sẽ bị redirect sang onboarding (nếu logic dashboard xử lý)
+        // Nhưng ở đây ta cứ cho vào dashboard để user tự xử lý
+        router.push('/dashboard/schedule');
+        return;
+    }
+
+    // 3. User MỚI + Có GuestData -> Sync và tạo Profile
     try {
+        console.log('🚀 Syncing guest data for new user...');
         const mapped = mapFrontendToBackend(guestData);
 
-        // 1. Lưu Profile
+        // Lưu Profile
         const profileRes = await profileService.createProfile(mapped);
         if (!profileRes.success) {
-            console.warn('Profile sync failed:', profileRes.message);
+            console.warn('Profile sync warning:', profileRes.message);
         }
 
-        // 2. Chạy AI phân tích (Backend sẽ tự động lưu vào DB)
+        // Chạy AI phân tích
         await aiService.analyzeHealth(mapped);
 
-        // 3. Xóa localStorage sau khi sync xong
+        // Xóa localStorage
         localStorage.removeItem('onboarding-data');
+        
+        // Redirect về Result
+        router.push('/onboarding/result');
     } catch (e) {
         console.error('Error during guest sync:', e);
-    } finally {
-        // Dù thành công hay thất bại, luôn chuyển hướng về trang Kết quả
-        router.push('/onboarding/result');
+        // Fallback về dashboard nếu lỗi
+        router.push('/dashboard/schedule');
     }
 }
 
@@ -111,7 +131,18 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
 
             toast.success('Đăng nhập thành công!');
             console.log('🚀 [useLoginForm] Redirecting...');
-            await syncGuestDataAndRedirect(loginRes.accessToken ?? '', router);
+
+            // Check Role & Redirect
+            const { getUserRole, UserRole } = require('@/lib/utils/auth'); // Import dynamically to avoid cycle if any
+            const role = getUserRole(loginRes.accessToken || '');
+            
+            if (role === UserRole.ADMIN) {
+                 console.log('🛡️ User is ADMIN -> Redirecting to /admin');
+                 router.push('/admin');
+            } else {
+                 console.log('👤 User is MEMBER -> Checking onboarding data');
+                 await syncGuestDataAndRedirect(loginRes.accessToken ?? '', router);
+            }
         } catch (err) {
             console.error('❌ [useLoginForm] Error:', err);
             setServerError('Có lỗi xảy ra, vui lòng thử lại');
