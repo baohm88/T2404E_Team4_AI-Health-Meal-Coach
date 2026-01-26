@@ -31,6 +31,7 @@ public class AdminController {
 
     private final UserService userService;
     private final HealthAnalysisService healthAnalysisService;
+    private final com.t2404e.aihealthcoach.service.MealPlanService mealPlanService;
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
@@ -44,6 +45,10 @@ public class AdminController {
     @Operation(summary = "Lấy danh sách User", description = "Phân trang, tìm kiếm theo tên hoặc email. Sắp xếp mặc định theo ID giảm dần.")
     public ResponseEntity<ApiResponse<Page<UserResponse>>> getUsers(
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Boolean isPremium,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id,desc") String sort
@@ -53,8 +58,15 @@ public class AdminController {
         Sort sortObj = Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]);
         Pageable pageable = PageRequest.of(page, size, sortObj);
 
-        Page<UserResponse> users = userService.getUsers(keyword, pageable);
+        Page<UserResponse> users = userService.getUsers(keyword, status, isPremium, startDate, endDate, pageable);
         return ResponseEntity.ok(ApiResponse.success("Lấy danh sách user thành công", users));
+    }
+
+    @GetMapping("/users/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lấy chi tiết User", description = "Lấy thông tin chi tiết của một user theo ID.")
+    public ResponseEntity<ApiResponse<UserResponse>> getUser(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy thông tin user thành công", userService.getUserById(id)));
     }
 
     @GetMapping("/users/{userId}/plan")
@@ -66,6 +78,13 @@ public class AdminController {
             throw new ResourceNotFoundException("User has no health analysis plan yet.");
         }
         return ResponseEntity.ok(ApiResponse.success("Lấy kế hoạch user thành công", plan));
+    }
+
+    @GetMapping("/users/{userId}/meal-plan")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xem thực đơn của User", description = "Admin xem chi tiết thực đơn 7 ngày của một user cụ thể.")
+    public ResponseEntity<ApiResponse<?>> getUserMealPlan(@PathVariable Long userId) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy thực đơn user thành công", mealPlanService.getByUserId(userId)));
     }
 
     @PatchMapping("/users/{id}/toggle-status")

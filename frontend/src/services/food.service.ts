@@ -1,5 +1,7 @@
 // Food Service - Mock API for food database
-import { MOCK_FOOD_DATABASE, FoodItem } from '@/lib/mock-data';
+// TODO: Replace with real API when Backend Dish Search Endpoint for Users is ready.
+// Currently only Admin has Dish Management API.
+import { FoodItem, MOCK_FOOD_DATABASE } from '@/lib/mock-data';
 
 export const foodService = {
     // Search foods by name

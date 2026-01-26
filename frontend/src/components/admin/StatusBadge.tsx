@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 type BadgeVariant = 'success' | 'danger' | 'warning' | 'info' | 'default';
 
 interface StatusBadgeProps {
-    status: string;
+    status: string | number;
     variant?: BadgeVariant;
     className?: string;
 }
@@ -23,17 +23,28 @@ const variantStyles: Record<BadgeVariant, string> = {
 };
 
 // Auto-detect variant based on common status words
-const getAutoVariant = (status: string): BadgeVariant => {
+const getAutoVariant = (status: string | number): BadgeVariant => {
+    if (typeof status === 'number') {
+        return status === 1 ? 'success' : 'danger';
+    }
     const lowerStatus = status.toLowerCase();
-    if (['active', 'success', 'approved', 'completed'].includes(lowerStatus)) return 'success';
-    if (['banned', 'deleted', 'rejected', 'error'].includes(lowerStatus)) return 'danger';
-    if (['pending', 'waiting', 'draft'].includes(lowerStatus)) return 'warning';
+    if (['active', 'success', 'approved', 'completed', 'hoạt động'].includes(lowerStatus)) return 'success';
+    if (['banned', 'deleted', 'rejected', 'error', 'inactive', 'bị khóa', 'vô hiệu hóa'].includes(lowerStatus)) return 'danger';
+    if (['pending', 'waiting', 'draft', 'chờ duyệt'].includes(lowerStatus)) return 'warning';
     if (['info', 'new'].includes(lowerStatus)) return 'info';
     return 'default';
 };
 
+const getStatusLabel = (status: string | number): string => {
+    if (typeof status === 'number') {
+        return status === 1 ? 'Hoạt động' : 'Bị khóa';
+    }
+    return status;
+}
+
 export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
     const finalVariant = variant || getAutoVariant(status);
+    const label = getStatusLabel(status);
 
     return (
         <span
@@ -43,7 +54,7 @@ export function StatusBadge({ status, variant, className }: StatusBadgeProps) {
                 className
             )}
         >
-            {status}
+            {label}
         </span>
     );
 }

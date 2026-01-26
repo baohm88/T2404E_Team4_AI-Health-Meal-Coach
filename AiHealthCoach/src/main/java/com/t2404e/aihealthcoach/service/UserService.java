@@ -8,9 +8,9 @@ import com.t2404e.aihealthcoach.entity.User;
 
 public interface UserService {
     /**
-     * Lấy danh sách user có phân trang và tìm kiếm
+     * Lấy danh sách user có phân trang, tìm kiếm và lọc
      */
-    Page<UserResponse> getUsers(String keyword, Pageable pageable);
+    Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDate, String endDate, Pageable pageable);
 
     /**
      * Lấy chi tiết user (Admin view)

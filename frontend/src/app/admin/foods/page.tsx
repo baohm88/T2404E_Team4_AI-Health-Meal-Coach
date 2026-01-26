@@ -1,258 +1,280 @@
-/**
- * Food Database Management Page
- * 
- * Admin page for managing food database with CRUD operations.
- * Connected to Backend API.
- */
+"use client";
 
-'use client';
+import { ColumnDef, SortingState } from "@tanstack/react-table";
+import { Coffee, Edit, Moon, Plus, Sun, Trash2, Undo2, Utensils } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
-import { FoodFormModal } from '@/components/admin/FoodFormModal';
-import { FoodTable } from '@/components/admin/FoodTable';
-import { Pagination } from '@/components/ui/Pagination';
-import { Toast, ToastData } from '@/components/ui/Toast';
-import { createDish, getDishes, toggleDishStatus, updateDish } from '@/services/admin.service';
-import { CreateDishRequest, DishLibrary, MealTimeSlot } from '@/types/admin';
-import { Filter, Plus, Search } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { DataTable } from "@/components/admin/data-table/data-table";
+import { FoodFormModal } from "@/components/admin/FoodFormModal";
+import { Button } from "@/components/ui/Button";
+import { createDish, getDishes, toggleDishStatus, updateDish } from "@/services/admin.service";
+import { CreateDishRequest, DishLibrary, MealTimeSlot } from "@/types/admin";
 
-// ============================================================
-// MAIN PAGE COMPONENT
-// ============================================================
+// Category Badge Helper
+const CategoryBadge = ({ category }: { category: string }) => {
+    const configs: Record<string, { label: string; icon: any; color: string }> = {
+        BREAKFAST: { label: 'Sáng', icon: Coffee, color: 'bg-blue-100 text-blue-700' },
+        LUNCH: { label: 'Trưa', icon: Sun, color: 'bg-orange-100 text-orange-700' },
+        DINNER: { label: 'Tối', icon: Moon, color: 'bg-indigo-100 text-indigo-700' },
+        SNACK: { label: 'Phụ', icon: Utensils, color: 'bg-emerald-100 text-emerald-700' },
+    };
+    const config = configs[category] || { label: category, icon: Utensils, color: 'bg-slate-100 text-slate-700' };
+    const Icon = config.icon;
+
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${config.color}`}>
+            <Icon className="w-3 h-3" />
+            {config.label}
+        </span>
+    );
+};
 
 export default function FoodDatabasePage() {
-    // ============================================================
-    // STATE
-    // ============================================================
-
-    const [dishes, setDishes] = useState<DishLibrary[]>([]);
-    const [loading, setLoading] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState<MealTimeSlot | undefined>(undefined);
+    // State
+    const [data, setData] = useState<DishLibrary[]>([]);
+    const [loading, setLoading] = useState(true);
     
-    // Pagination
-    const [currentPage, setCurrentPage] = useState(0);
-    const [totalPages, setTotalPages] = useState(0);
-    const [totalElements, setTotalElements] = useState(0);
+    // Pagination & Sort
+    const [pageIndex, setPageIndex] = useState(0);
+    const [pageSize, setPageSize] = useState(10);
+    const [pageCount, setPageCount] = useState(0);
+    const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: true }]);
+    
+    // Filters
+    const [keyword, setKeyword] = useState("");
+    const [selectedCategory, setSelectedCategory] = useState<MealTimeSlot | undefined>(undefined);
 
-    // Sorting State
-    const [sortColumn, setSortColumn] = useState('id');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
-
-    const [toast, setToast] = useState<ToastData | null>(null);
-
-    // Modal State
+    // Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDish, setEditingDish] = useState<DishLibrary | null>(null);
 
-    // ============================================================
-    // HELPERS
-    // ============================================================
-
-    const showToast = useCallback((message: string, type: ToastData['type'] = 'success') => {
-        setToast({ message, type });
-        setTimeout(() => setToast(null), 3000);
-    }, []);
-
-    // ============================================================
-    // API CALLS
-    // ============================================================
-
-    const fetchDishes = useCallback(async (page: number, query: string, category?: MealTimeSlot, sortCol?: string, sortDir?: 'asc' | 'desc') => {
+    // Fetch Data
+    const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // NOTE: Need to update getDishes signature in admin.service.ts to accept sort
-            // For now, assuming getDishes handles params string manually or we update it.
-            // Let's check admin.service.ts - it currently hardcodes 'id,desc'.
-            // Accessing internal API of getDishes might require update.
-            // But wait, the previous `getDishes` implementation used `URLSearchParams`.
-            // We need to update `getDishes` to accept sort params too.
-            // See next step.
+            // Convert SortingState to API string "field,dir"
+            const sortField = sorting[0]?.id || 'id';
+            const sortDir = sorting[0]?.desc ? 'desc' : 'asc';
+            const sortParam = `${sortField},${sortDir}`;
+
+            const result = await getDishes(
+                pageIndex, 
+                pageSize, 
+                keyword, 
+                selectedCategory, 
+                sortParam
+            );
             
-            // Wait, I can't change service signature here. I should update service first or pass it if flexible.
-            // Actually, I'll update the service call here assuming service will be updated or accept flexible args.
-            // Let's modify the service call to pass sort.
-            
-            const rData = await getDishes(page, 10, query, category, `${sortCol || sortColumn},${sortDir || sortDirection}`);
-            setDishes(rData.content);
-            setTotalPages(rData.totalPages);
-            setTotalElements(rData.totalElements);
-            setCurrentPage(rData.number);
+            setData(result.content);
+            setPageCount(result.totalPages);
         } catch (error) {
-            console.error('Failed to fetch dishes:', error);
-            showToast('Không thể tải danh sách món ăn', 'error');
+            console.error("Failed to fetch dishes:", error);
+            toast.error("Không thể tải danh sách món ăn");
         } finally {
             setLoading(false);
         }
-    }, [showToast, sortColumn, sortDirection]);
+    }, [pageIndex, pageSize, keyword, selectedCategory, sorting]);
 
-    // Initial load & Search/Filter effect
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchDishes(currentPage, searchQuery, selectedCategory, sortColumn, sortDirection);
-        }, 500);
-
+            fetchData();
+        }, 300);
         return () => clearTimeout(timer);
-    }, [searchQuery, currentPage, selectedCategory, sortColumn, sortDirection, fetchDishes]);
+    }, [fetchData]);
 
-
-    // ============================================================
-    // HANDLERS
-    // ============================================================
-
-    const handleSort = (column: string) => {
-        // Toggle direction if clicking same column
-        const newDirection = sortColumn === column && sortDirection === 'asc' ? 'desc' : 'asc';
-        setSortColumn(column);
-        setSortDirection(newDirection);
-        // Effect will trigger fetch
-    };
-
-    /** Open Modal for Create */
-    const handleOpenCreate = useCallback(() => {
-        setEditingDish(null);
-        setIsModalOpen(true);
-    }, []);
-
-    /** Open Modal for Edit */
-    const handleEdit = useCallback((dish: DishLibrary) => {
-        setEditingDish(dish);
-        setIsModalOpen(true);
-    }, []);
-
-    /** Close Modal */
-    const handleCloseModal = useCallback(() => {
-        setIsModalOpen(false);
-        setEditingDish(null);
-    }, []);
-
-    /** Handle Create/Update from Modal */
-    const handleSubmit = useCallback(async (dishData: CreateDishRequest, isEdit: boolean) => {
-        try {
-            if (isEdit && editingDish) {
-                // UPDATE
-                await updateDish(editingDish.id, dishData);
-                showToast(`Đã cập nhật món "${dishData.name}" thành công!`);
-            } else {
-                // CREATE
-                await createDish(dishData);
-                showToast(`Đã thêm món "${dishData.name}" thành công!`);
-            }
-            // Refresh list
-            fetchDishes(currentPage, searchQuery, selectedCategory, sortColumn, sortDirection);
-            handleCloseModal();
-        } catch (error) {
-            console.error('Failed to save dish:', error);
-            showToast('Có lỗi xảy ra khi lưu món ăn', 'error');
-        }
-    }, [editingDish, showToast, handleCloseModal, currentPage, searchQuery, selectedCategory, sortColumn, sortDirection, fetchDishes]);
-
-    /** Handle Toggle Status (Soft Delete) */
-    const handleToggleStatus = useCallback(async (dish: DishLibrary) => {
+    // Handlers
+    const handleToggleStatus = async (dish: DishLibrary) => {
         const action = dish.isDeleted ? 'khôi phục' : 'ẩn';
         if (window.confirm(`Bạn chắc chắn muốn ${action} món "${dish.name}"?`)) {
             try {
                 await toggleDishStatus(dish.id);
-                showToast(`Đã ${action} món "${dish.name}"`);
-                fetchDishes(currentPage, searchQuery, selectedCategory, sortColumn, sortDirection);
+                toast.success(`Đã ${action} món ăn`);
+                fetchData();
             } catch (error) {
-                console.error('Failed to toggle status:', error);
-                showToast('Không thể thay đổi trạng thái', 'error');
+                toast.error('Lỗi cập nhật trạng thái');
             }
         }
-    }, [showToast, currentPage, searchQuery, selectedCategory, sortColumn, sortDirection, fetchDishes]);
+    };
 
-    // ============================================================
-    // RENDER
-    // ============================================================
+    const handleEdit = (dish: DishLibrary) => {
+        setEditingDish(dish);
+        setIsModalOpen(true);
+    }
+
+    const handleOpenCreate = () => {
+        setEditingDish(null);
+        setIsModalOpen(true);
+    }
+
+    const handleSubmit = async (dishData: CreateDishRequest, isEdit: boolean) => {
+        try {
+            if (isEdit && editingDish) {
+                await updateDish(editingDish.id, dishData);
+                toast.success(`Đã cập nhật món "${dishData.name}"`);
+            } else {
+                await createDish(dishData);
+                toast.success(`Đã thêm món "${dishData.name}"`);
+            }
+            fetchData();
+            setIsModalOpen(false);
+            setEditingDish(null);
+        } catch (error) {
+            toast.error('Có lỗi xảy ra khi lưu món ăn');
+        }
+    };
+
+    // Columns
+    const columns: ColumnDef<DishLibrary>[] = [
+        {
+            accessorKey: "id",
+            header: "ID",
+            cell: ({ row }) => <span className="font-mono text-xs text-slate-500">#{row.original.id}</span>,
+            enableSorting: true,
+        },
+        {
+            accessorKey: "name", // We use name for sorting, but render image+name
+            header: "Món ăn",
+            cell: ({ row }) => {
+                const dish = row.original;
+                return (
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 relative overflow-hidden flex-shrink-0 flex items-center justify-center text-lg">
+                            {dish.imageUrl ? (
+                                <Image 
+                                    src={dish.imageUrl} 
+                                    alt={dish.name}
+                                    fill
+                                    className="object-cover" 
+                                />
+                            ) : (
+                                <span>🍽️</span>
+                            )}
+                        </div>
+                        <div>
+                            <p className="font-medium text-slate-900 line-clamp-1">{dish.name}</p>
+                            <p className="text-xs text-slate-500 line-clamp-1">{dish.description || 'Chưa có mô tả'}</p>
+                        </div>
+                    </div>
+                );
+            },
+            enableSorting: true,
+        },
+        {
+            accessorKey: "category",
+            header: "Bữa ăn",
+            cell: ({ row }) => <CategoryBadge category={row.original.category} />,
+            enableSorting: true,
+        },
+        {
+            accessorKey: "calories",
+            header: "Calo",
+            cell: ({ row }) => <span className="font-bold text-slate-700">{row.original.calories} kcal</span>,
+            enableSorting: true,
+        },
+        {
+            accessorKey: "isDeleted",
+            header: "Trạng thái",
+            cell: ({ row }) => (
+                row.original.isDeleted ? (
+                    <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium border border-red-100">Đã xóa</span>
+                ) : (
+                    <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-medium border border-emerald-100">Hiện</span>
+                )
+            ),
+            enableSorting: true,
+        },
+        {
+            id: "actions",
+            header: "Thao tác",
+            cell: ({ row }) => {
+                const dish = row.original;
+                return (
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={() => handleEdit(dish)}
+                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                            title="Chỉnh sửa"
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        <button 
+                            onClick={() => handleToggleStatus(dish)}
+                            className={`p-2 rounded-lg transition-colors ${dish.isDeleted ? 'text-emerald-600 hover:bg-emerald-50' : 'text-red-400 hover:bg-red-50'}`}
+                            title={dish.isDeleted ? "Khôi phục" : "Xóa"}
+                        >
+                            {dish.isDeleted ? <Undo2 className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+                    </div>
+                )
+            },
+        },
+    ];
 
     return (
         <div className="space-y-6">
-            {/* Toast */}
-            {toast && <Toast {...toast} onClose={() => setToast(null)} />}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Quản lý món ăn</h1>
+                    <p className="text-slate-500">Cơ sở dữ liệu món ăn và thông tin dinh dưỡng</p>
+                </div>
+                <Button onClick={handleOpenCreate} className="gap-2">
+                    <Plus className="w-4 h-4" /> Thêm món mới
+                </Button>
+            </div>
 
-            {/* Modal */}
+            {/* Additional Custom Filter Logic for Category can be injected via Toolbar or separate UI above table 
+                For now, we can put a simple Select above or modify Helper to accept children?
+                Or update DataTableToolbar to accept extra filters. 
+                Let's put the Category select ABOVE the table for now for simplicity, 
+                or pass it as a custom filter if we had time to refactor Toolbar.
+            */}
+            <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap gap-4 items-center">
+                 <span className="text-sm font-medium text-slate-700">Lọc theo:</span>
+                 <select 
+                    value={selectedCategory || ''}
+                    onChange={(e) => {
+                        setSelectedCategory(e.target.value ? e.target.value as MealTimeSlot : undefined);
+                        setPageIndex(0);
+                    }}
+                    className="h-9 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                >
+                    <option value="">Tất cả bữa ăn</option>
+                    <option value="BREAKFAST">Sáng</option>
+                    <option value="LUNCH">Trưa</option>
+                    <option value="DINNER">Tối</option>
+                    <option value="SNACK">Phụ</option>
+                 </select>
+            </div>
+
+            <DataTable 
+                columns={columns} 
+                data={data}
+                searchKey="name"
+                searchValue={keyword}
+                onSearchChange={setKeyword}
+                // Pagination
+                pageCount={pageCount}
+                pagination={{ pageIndex, pageSize }}
+                onPaginationChange={({ pageIndex, pageSize }) => {
+                    setPageIndex(pageIndex);
+                    setPageSize(pageSize);
+                }}
+                // Sorting
+                sorting={sorting}
+                onSortingChange={setSorting}
+            />
+
             <FoodFormModal
                 isOpen={isModalOpen}
-                onClose={handleCloseModal}
+                onClose={() => {
+                    setIsModalOpen(false);
+                    setEditingDish(null);
+                }}
                 onSubmit={handleSubmit}
                 editingDish={editingDish}
             />
-
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                <p className="text-slate-500">
-                    Tổng cộng <span className="font-semibold text-slate-800">{totalElements}</span> món ăn
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-                    {/* Category Filter */}
-                    <div className="relative">
-                        <select 
-                            value={selectedCategory || ''}
-                            onChange={(e) => {
-                                setSelectedCategory(e.target.value ? e.target.value as MealTimeSlot : undefined);
-                                setCurrentPage(0);
-                            }}
-                            className="px-4 py-2.5 pr-8 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary text-sm appearance-none bg-white cursor-pointer hover:bg-slate-50 transition-colors"
-                        >
-                            <option value="">Tất cả phân loại</option>
-                            <option value="BREAKFAST">Bữa Sáng</option>
-                            <option value="LUNCH">Bữa Trưa</option>
-                            <option value="DINNER">Bữa Tối</option>
-                            <option value="SNACK">Bữa Phụ</option>
-                        </select>
-                        <Filter className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-                    </div>
-
-                    {/* Search */}
-                    <div className="relative flex-1 sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            type="text"
-                            placeholder="Tìm món ăn..."
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(0);
-                            }}
-                            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm"
-                        />
-                    </div>
-
-                    {/* Add Button */}
-                    <button
-                        onClick={handleOpenCreate}
-                        className="flex items-center justify-center gap-2 px-5 py-2.5 bg-primary text-white font-semibold rounded-xl hover:bg-green-600 transition-colors shadow-lg shadow-primary/30"
-                    >
-                        <Plus className="w-5 h-5" />
-                        <span>Thêm món mới</span>
-                    </button>
-                </div>
-            </div>
-
-            {/* Table */}
-            {loading && dishes.length === 0 ? (
-                 <div className="text-center py-12 text-slate-400">Đang tải...</div>
-            ) : (
-                <>
-                    <FoodTable
-                        data={dishes}
-                        onEdit={handleEdit}
-                        onToggleStatus={handleToggleStatus}
-                        emptyMessage="Không tìm thấy món ăn"
-                        sortColumn={sortColumn}
-                        sortDirection={sortDirection}
-                        onSort={handleSort}
-                    />
-
-                    <Pagination 
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        onPageChange={setCurrentPage}
-                    />
-                </>
-            )}
         </div>
     );
 }
