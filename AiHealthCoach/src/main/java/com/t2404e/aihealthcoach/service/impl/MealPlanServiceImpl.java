@@ -1,20 +1,37 @@
 package com.t2404e.aihealthcoach.service.impl;
 
-import com.t2404e.aihealthcoach.ai.prompt.MealPlanPromptBuilder;
-import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
-import com.t2404e.aihealthcoach.dto.response.mealplan.*;
-import com.t2404e.aihealthcoach.entity.*;
-import com.t2404e.aihealthcoach.repository.*;
-import com.t2404e.aihealthcoach.service.MealPlanService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.t2404e.aihealthcoach.ai.prompt.MealPlanPromptBuilder;
+import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
+import com.t2404e.aihealthcoach.dto.response.mealplan.DayPlanDTO;
+import com.t2404e.aihealthcoach.dto.response.mealplan.MealDTO;
+import com.t2404e.aihealthcoach.entity.DishLibrary;
+import com.t2404e.aihealthcoach.entity.HealthAnalysis;
+import com.t2404e.aihealthcoach.entity.HealthProfile;
+import com.t2404e.aihealthcoach.entity.MealPlan;
+import com.t2404e.aihealthcoach.entity.PlannedMeal;
+import com.t2404e.aihealthcoach.entity.UserMealLog;
+import com.t2404e.aihealthcoach.repository.DishLibraryRepository;
+import com.t2404e.aihealthcoach.repository.HealthAnalysisRepository;
+import com.t2404e.aihealthcoach.repository.HealthProfileRepository;
+import com.t2404e.aihealthcoach.repository.MealPlanRepository;
+import com.t2404e.aihealthcoach.repository.PlannedMealRepository;
+import com.t2404e.aihealthcoach.repository.UserMealLogRepository;
+import com.t2404e.aihealthcoach.service.MealPlanService;
+
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -52,15 +69,16 @@ public class MealPlanServiceImpl implements MealPlanService {
                 MealPlan mealPlan = MealPlan.builder()
                                 .userId(userId)
                                 .startDate(LocalDate.now())
-                                .totalDays(90)
+                                .startDate(LocalDate.now())
+                                .totalDays(7)
                                 .build();
                 MealPlan savedPlan = mealPlanRepo.save(mealPlan);
 
-                // Generate in chunks of 7 days to ensure quality and stay within token limits
+                // Generate in chunks of 7 days (now only 1 chunk)
                 try {
-                        for (int i = 1; i <= 90; i += 7) {
+                        for (int i = 1; i <= 7; i += 7) {
                                 int start = i;
-                                int end = Math.min(i + 6, 90);
+                                int end = Math.min(i + 6, 7);
                                 System.out.println(
                                                 "DEBUG: Generating meal plan chunk for days " + start + " to " + end);
 

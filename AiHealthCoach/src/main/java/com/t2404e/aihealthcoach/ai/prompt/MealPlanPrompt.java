@@ -32,7 +32,7 @@ public class MealPlanPrompt {
       - MỖI NGÀY PHẢI CÓ ĐỦ CẢ 4 CATEGORY: "Sáng", "Trưa", "Tối", "Phụ".
       - quantity: Mô tả định lượng ngắn gọn (Ví dụ: "1 bát nhỏ", "200g").
       - dishId PHẢI lấy từ danh sách "THƯ VIỆN MÓN ĂN" được cung cấp.
-      - Sinh thực đơn cho ĐÚNG VÀ ĐỦ số ngày được yêu cầu trong prompt (ví dụ 1-90).
+      - Sinh thực đơn cho ĐÚNG VÀ ĐỦ số ngày được yêu cầu trong prompt (thường là 7 ngày).
 
       YÊU CẦU CHẤT LƯỢNG:
       - Món ăn thuần Việt, lành mạnh.
