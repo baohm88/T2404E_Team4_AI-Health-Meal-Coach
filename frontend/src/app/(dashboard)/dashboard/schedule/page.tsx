@@ -33,17 +33,34 @@ export default function SchedulePage() {
     }
 
     const handleRegenerate = async () => {
-        const promise = mealPlanService.regenerateMealPlan();
-        toast.promise(promise, {
-            loading: 'Đang khởi tạo lại thực đơn mới...',
-            success: (res) => {
-                if (res.data) {
-                    setPlanData(res.data);
-                }
-                return 'Đã cập nhật thực đơn mới thành công!';
-            },
-            error: 'Lỗi khi tạo lại thực đơn.',
-        });
+        try {
+            toast.loading("Đang khởi tạo lại thực đơn...", { id: 'regenerate-toasts' });
+            
+            // Check if user is premium? Actually backend throws error if not.
+            // We just need to catch it.
+            const res = await mealPlanService.regenerateMealPlan();
+            
+            if (res.success && res.data) {
+                setPlanData(res.data);
+                toast.success('Đã cập nhật thực đơn mới thành công!', { id: 'regenerate-toasts' });
+            } else {
+                 toast.error(res.message || 'Lỗi khi tạo lại thực đơn.', { id: 'regenerate-toasts' });
+            }
+        } catch (error: any) {
+            const msg = error.response?.data?.message || "";
+            if (msg.includes("FEATURE_LOCKED_PREMIUM")) {
+                toast.error("Tính năng này chỉ dành cho Premium!", {
+                    id: 'regenerate-toasts',
+                    description: "Vui lòng nâng cấp để tạo lộ trình chi tiết.",
+                    action: {
+                        label: "Đăng ký ngay",
+                        onClick: () => window.location.href = '/dashboard/plan-overview' // Or pricing page
+                    }
+                });
+            } else {
+                toast.error(msg || "Lỗi khi tạo lại thực đơn.", { id: 'regenerate-toasts' });
+            }
+        }
     };
 
     useEffect(() => {

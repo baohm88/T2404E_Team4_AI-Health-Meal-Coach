@@ -9,10 +9,10 @@
 
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Check, Star, Zap, Crown } from 'lucide-react';
+import { Check, Crown, Star, Zap } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
 
 // ============================================================
 // CONSTANTS
@@ -121,7 +121,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
             transition={{ duration: 0.5, delay: index * 0.1 }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`relative rounded-2xl overflow-hidden ${plan.popular
+            className={`relative rounded-2xl overflow-hidden flex flex-col h-full ${plan.popular
                     ? 'ring-2 ring-emerald-500 shadow-xl shadow-emerald-500/20 scale-105 z-10'
                     : 'border border-slate-200 shadow-lg'
                 }`}
@@ -136,7 +136,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
             )}
 
             {/* Card Content */}
-            <div className="bg-white p-8">
+            <div className="bg-white p-8 flex flex-col h-full">
                 {/* Icon & Name */}
                 <div className="flex items-center gap-3 mb-4">
                     <div
@@ -168,7 +168,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
                 </div>
 
                 {/* Features */}
-                <ul className="space-y-3 mb-8">
+                <ul className="space-y-3 mb-8 flex-1">
                     {plan.features.map((feature, idx) => (
                         <li key={idx} className="flex items-start gap-3">
                             <Check className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
@@ -180,7 +180,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
                 {/* CTA Button */}
                 <Link
                     href={`/checkout?plan=${plan.id}`}
-                    className={`block w-full py-4 px-6 text-center rounded-xl font-bold text-lg transition-all duration-300 ${plan.popular
+                    className={`block w-full py-4 px-6 text-center rounded-xl font-bold text-lg transition-all duration-300 mt-auto ${plan.popular
                             ? `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]`
                             : 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02]'
                         }`}

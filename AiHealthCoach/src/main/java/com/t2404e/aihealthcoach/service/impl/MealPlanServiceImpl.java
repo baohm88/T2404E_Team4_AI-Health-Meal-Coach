@@ -23,6 +23,7 @@ import com.t2404e.aihealthcoach.entity.HealthProfile;
 import com.t2404e.aihealthcoach.entity.MealPlan;
 import com.t2404e.aihealthcoach.entity.PlannedMeal;
 import com.t2404e.aihealthcoach.entity.UserMealLog;
+import com.t2404e.aihealthcoach.exception.PremiumRequiredException;
 import com.t2404e.aihealthcoach.repository.DishLibraryRepository;
 import com.t2404e.aihealthcoach.repository.HealthAnalysisRepository;
 import com.t2404e.aihealthcoach.repository.HealthProfileRepository;
@@ -43,11 +44,20 @@ public class MealPlanServiceImpl implements MealPlanService {
         private final PlannedMealRepository plannedMealRepo;
         private final DishLibraryRepository dishLibraryRepo;
         private final UserMealLogRepository logRepo;
+        private final com.t2404e.aihealthcoach.repository.UserRepository userRepo;
         private final ChatClient.Builder chatClientBuilder;
         private final ObjectMapper objectMapper;
 
         @Override
         public MealPlanResponse generateForUser(Long userId) {
+                // Check Premium Status
+                com.t2404e.aihealthcoach.entity.User user = userRepo.findById(userId)
+                                .orElseThrow(() -> new IllegalStateException("User not found"));
+
+                if (!Boolean.TRUE.equals(user.getIsPremium())) {
+                        throw new PremiumRequiredException("FEATURE_LOCKED_PREMIUM: Vui lòng nâng cấp Premium để tạo lộ trình chi tiết.");
+                }
+
                 Optional<MealPlan> existingPlan = mealPlanRepo.findByUserId(userId);
                 if (existingPlan.isPresent()) {
                         plannedMealRepo.deleteByMealPlanId(existingPlan.get().getId());
