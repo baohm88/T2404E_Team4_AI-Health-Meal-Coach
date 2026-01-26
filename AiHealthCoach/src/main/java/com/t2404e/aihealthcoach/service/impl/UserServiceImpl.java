@@ -19,13 +19,25 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    public Page<UserResponse> getUsers(String keyword, Pageable pageable) {
-        Page<User> usersPage;
-        if (keyword != null && !keyword.trim().isEmpty()) {
-            usersPage = userRepository.findByFullNameContainingOrEmailContaining(keyword, keyword, pageable);
-        } else {
-            usersPage = userRepository.findAll(pageable);
+    public Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDateStr, String endDateStr, Pageable pageable) {
+        java.time.LocalDateTime startDate = null;
+        java.time.LocalDateTime endDate = null;
+
+        try {
+            if (startDateStr != null && !startDateStr.isEmpty()) {
+                // Parse start of day
+                startDate = java.time.LocalDate.parse(startDateStr).atStartOfDay();
+            }
+            if (endDateStr != null && !endDateStr.isEmpty()) {
+                // Parse end of day
+                endDate = java.time.LocalDate.parse(endDateStr).atTime(java.time.LocalTime.MAX);
+            }
+        } catch (Exception e) {
+            // Ignore parse error, treat as null or logged
+            System.err.println("Date parse error: " + e.getMessage());
         }
+
+        Page<User> usersPage = userRepository.searchUsers(keyword, status, isPremium, startDate, endDate, pageable);
 
         // Map Entity -> DTO
         return usersPage.map(this::convertToDTO);

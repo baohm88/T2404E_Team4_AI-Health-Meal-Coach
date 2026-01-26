@@ -10,7 +10,6 @@
  */
 
 import http from '@/lib/http';
-import { AI_RESPONSES, ChatMessage } from '@/lib/mock-data';
 import { mapFrontendToBackend } from '@/lib/utils/data-mapper';
 
 // ============================================================
@@ -72,58 +71,8 @@ interface ApiResponse<T> {
 }
 
 // ============================================================
-// CONFIGURATION
-// ============================================================
-
-/**
- * Toggle mock data mode
- * true = Use mock data (for development/demo)
- * false = Call real API (when backend is ready)
- */
-const USE_MOCK_DATA = false;
-
-// ============================================================
 // MOCK DATA
 // ============================================================
-
-const MOCK_AI_ANALYSIS: AIAnalysisResponse = {
-    analysis: {
-        bmi: 24.8,
-        bmr: 1650,
-        tdee: 2310,
-        healthStatus: 'NORMAL',
-        summary: 'Bạn đang ở mức cân nặng bình thường. Để duy trì sức khỏe, hãy tiếp tục chế độ ăn cân bằng và tập luyện đều đặn 3-4 lần/tuần.',
-    },
-    lifestyleInsights: {
-        activity: 'Mức độ vận động trung bình - phù hợp với công việc văn phòng kết hợp tập gym',
-        sleep: 'Giấc ngủ đủ 7-8 tiếng giúp cơ thể phục hồi tốt',
-        stress: 'Mức stress trung bình - nên thực hành thiền hoặc yoga để giảm căng thẳng',
-    },
-    threeMonthPlan: {
-        goal: 'Giảm 4kg một cách an toàn và bền vững',
-        totalTargetWeightChangeKg: -4,
-        months: [
-            {
-                month: 1,
-                title: 'Tháng 1: Khởi động & Thích nghi',
-                dailyCalories: 1900,
-                note: 'Giảm 500 kcal/ngày, tập trung protein và rau xanh',
-            },
-            {
-                month: 2,
-                title: 'Tháng 2: Tăng cường',
-                dailyCalories: 1850,
-                note: 'Tăng cường cardio, duy trì chế độ ăn',
-            },
-            {
-                month: 3,
-                title: 'Tháng 3: Hoàn thiện',
-                dailyCalories: 1800,
-                note: 'Đạt mục tiêu, chuẩn bị chuyển sang giai đoạn duy trì',
-            },
-        ],
-    },
-};
 
 // Helper: Simulate network delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -215,16 +164,6 @@ export const aiService = {
      * @returns Promise with stored AI analysis response
      */
     getStoredAnalysis: async (): Promise<ServiceResult<AIAnalysisResponse>> => {
-        // Mock mode - return fake data
-        if (USE_MOCK_DATA) {
-            console.log('🎭 [MOCK] Fetching stored analysis...');
-            await delay(500); // Simulate network latency
-            return {
-                success: true,
-                data: MOCK_AI_ANALYSIS,
-            };
-        }
-
         // Real API mode
         try {
             console.log('📊 [getStoredAnalysis] Fetching stored analysis...');
@@ -336,12 +275,11 @@ export const aiService = {
      * Send message and get AI Coach response (Mock)
      * @deprecated Will be replaced with real API
      */
-    sendMessage: async (message: string): Promise<ChatMessage> => {
+    sendMessage: async (message: string): Promise<{ id: string; role: string; content: string; timestamp: string }> => {
         return new Promise((resolve) => {
             setTimeout(() => {
-                const randomResponse = AI_RESPONSES[Math.floor(Math.random() * AI_RESPONSES.length)];
-
-                let response = randomResponse;
+                let response = 'Chào bạn, tôi là AI Health Coach. Hiện tại tính năng chat đang được bảo trì để nâng cấp.';
+                
                 if (message.toLowerCase().includes('giảm cân')) {
                     response = 'Để giảm cân hiệu quả, bạn nên tạo calorie deficit (tiêu thụ ít hơn 300-500 kcal so với nhu cầu). Kết hợp với tập luyện 3-4 buổi/tuần và uống đủ 2L nước mỗi ngày.';
                 } else if (message.toLowerCase().includes('protein')) {
@@ -356,7 +294,7 @@ export const aiService = {
                     content: response,
                     timestamp: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
                 });
-            }, 1500);
+            }, 1000);
         });
     },
 };
