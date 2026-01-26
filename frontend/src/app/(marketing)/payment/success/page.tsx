@@ -9,128 +9,14 @@
 
 'use client';
 
-import { useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import Link from 'next/link';
-import { CheckCircle, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 import { paymentService } from '@/services/payment.service';
-
-// ============================================================
-// CONFETTI CANVAS COMPONENT
-// ============================================================
-
-interface ConfettiParticle {
-    x: number;
-    y: number;
-    vx: number;
-    vy: number;
-    size: number;
-    color: string;
-    rotation: number;
-    rotationSpeed: number;
-}
-
-const CONFETTI_COLORS = [
-    '#10B981', // emerald-500
-    '#3B82F6', // blue-500
-    '#F59E0B', // amber-500
-    '#EC4899', // pink-500
-    '#8B5CF6', // violet-500
-    '#EF4444', // red-500
-];
-
-function ConfettiCanvas() {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return;
-
-        // Set canvas size
-        const resizeCanvas = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        };
-        resizeCanvas();
-        window.addEventListener('resize', resizeCanvas);
-
-        // Create particles
-        const particles: ConfettiParticle[] = [];
-        const particleCount = 150;
-
-        for (let i = 0; i < particleCount; i++) {
-            particles.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height - canvas.height,
-                vx: (Math.random() - 0.5) * 4,
-                vy: Math.random() * 3 + 2,
-                size: Math.random() * 8 + 4,
-                color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-                rotation: Math.random() * 360,
-                rotationSpeed: (Math.random() - 0.5) * 10,
-            });
-        }
-
-        // Animation loop
-        let animationId: number;
-        const animate = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            particles.forEach((p) => {
-                // Update position
-                p.x += p.vx;
-                p.y += p.vy;
-                p.rotation += p.rotationSpeed;
-
-                // Add gravity
-                p.vy += 0.1;
-
-                // Draw particle
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                ctx.rotate((p.rotation * Math.PI) / 180);
-                ctx.fillStyle = p.color;
-                ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size / 2);
-                ctx.restore();
-
-                // Reset if off screen
-                if (p.y > canvas.height + 50) {
-                    p.y = -20;
-                    p.x = Math.random() * canvas.width;
-                    p.vy = Math.random() * 3 + 2;
-                }
-            });
-
-            animationId = requestAnimationFrame(animate);
-        };
-
-        animate();
-
-        // Stop after 5 seconds
-        const stopTimeout = setTimeout(() => {
-            cancelAnimationFrame(animationId);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }, 5000);
-
-        return () => {
-            window.removeEventListener('resize', resizeCanvas);
-            cancelAnimationFrame(animationId);
-            clearTimeout(stopTimeout);
-        };
-    }, []);
-
-    return (
-        <canvas
-            ref={canvasRef}
-            className="fixed inset-0 pointer-events-none z-50"
-            style={{ width: '100vw', height: '100vh' }}
-        />
-    );
-}
+import confetti from 'canvas-confetti';
+import { motion } from 'framer-motion';
+import { ArrowRight, CheckCircle, Loader2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
+import { Suspense, useEffect } from 'react';
+import { toast } from 'sonner';
 
 // ============================================================
 // SUCCESS CONTENT COMPONENT
@@ -140,20 +26,90 @@ function SuccessContent() {
     const searchParams = useSearchParams();
     const transactionId = searchParams.get('transactionId') || 'N/A';
 
-    // Optionally verify transaction status
+    // Sound Effect
+    const playSuccessSound = () => {
+        try {
+            const audio = new Audio('/sounds/success.mp3'); // We need to ensure this file exists or use a CDN
+            // Fallback if local file doesn't exist, try a CDN or base64? 
+            // For now, let's assume valid URL or handle error silently.
+            // Using a simple short beep base64 for reliability if file missing is risky.
+            // But user asked for "music". Let's try a standard upbeat sound.
+            // Actually, I'll use a reliable external URL or placeholder.
+            // Better: I will assume the user puts a file in public/sounds, 
+            // OR I will create a simple synth beep using Web Audio API to avoid external deps.
+            
+            // Web Audio API Beep (Celebratory Chord)
+            const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+            if (AudioContext) {
+                const ctx = new AudioContext();
+                const playNote = (freq: number, delay: number, type: 'sine' | 'triangle' = 'triangle') => {
+                     const osc = ctx.createOscillator();
+                     const gain = ctx.createGain();
+                     osc.type = type;
+                     osc.frequency.value = freq;
+                     osc.connect(gain);
+                     gain.connect(ctx.destination);
+                     osc.start(ctx.currentTime + delay);
+                     gain.gain.setValueAtTime(0.1, ctx.currentTime + delay);
+                     gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + delay + 0.5);
+                     osc.stop(ctx.currentTime + delay + 0.5);
+                };
+                
+                // C Major Chord Arpeggio
+                playNote(523.25, 0); // C5
+                playNote(659.25, 0.1); // E5
+                playNote(783.99, 0.2); // G5
+                playNote(1046.50, 0.4); // C6
+            }
+            
+        } catch (e) {
+            console.error("Audio play failed", e);
+        }
+    };
+
     useEffect(() => {
+        // 1. Verify Transaction
         if (transactionId && transactionId !== 'N/A') {
             paymentService.checkTransactionStatus(transactionId).then((result) => {
                 console.log('Transaction verified:', result);
             });
         }
+
+        // 2. Confetti Explosion
+        const duration = 5 * 1000;
+        const animationEnd = Date.now() + duration;
+        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+        const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
+
+        const interval: any = setInterval(function() {
+            const timeLeft = animationEnd - Date.now();
+
+            if (timeLeft <= 0) {
+                return clearInterval(interval);
+            }
+
+            const particleCount = 50 * (timeLeft / duration);
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
+            confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
+        }, 250);
+
+        // 3. Play Sound
+        playSuccessSound();
+
+        // 4. Toast Notification
+        toast.success('Nâng cấp Premium thành công!', {
+            description: 'Chúc mừng bạn! Bạn đã có thể tạo lộ trình dinh dưỡng chi tiết.',
+            duration: 5000,
+            icon: <Sparkles className="w-5 h-5 text-amber-500" />
+        });
+
+        return () => clearInterval(interval);
     }, [transactionId]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white relative overflow-hidden">
-            {/* Confetti */}
-            <ConfettiCanvas />
-
+            
             {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
                 {/* Success Icon */}
@@ -244,13 +200,30 @@ function SuccessContent() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8 }}
                 >
-                    <Link
-                        href="/dashboard/plan-overview"
+                    <button
+                        onClick={async () => {
+                            const toastId = toast.loading('Đang khởi tạo lộ trình cá nhân hóa...');
+                            try {
+                                const res = await import('@/services/meal-plan.service').then(m => m.mealPlanService.regenerateMealPlan());
+                                if (res.success) {
+                                    toast.success('Đã tạo lộ trình thành công!', { id: toastId });
+                                    window.location.href = '/dashboard/schedule';
+                                } else {
+                                    toast.error('Có lỗi khi tạo lộ trình: ' + res.message, { id: toastId });
+                                    // Still redirect or stay? Let's stay so they can try again or go to dashboard manually.
+                                    // User said "call... + redirect". If fails, maybe we shouldn't redirect blindly.
+                                    // But to be safe, if fail, we might want to let them go to dashboard anyway.
+                                    // For now, let's stop on error.
+                                }
+                            } catch (e) {
+                                toast.error('Lỗi kết nối.', { id: toastId });
+                            }
+                        }}
                         className="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-emerald-500/30 hover:shadow-xl hover:scale-[1.02] transition-all duration-300"
                     >
                         Kích hoạt lộ trình chi tiết
                         <ArrowRight className="w-5 h-5" />
-                    </Link>
+                    </button>
                 </motion.div>
 
                 {/* Secondary Link */}

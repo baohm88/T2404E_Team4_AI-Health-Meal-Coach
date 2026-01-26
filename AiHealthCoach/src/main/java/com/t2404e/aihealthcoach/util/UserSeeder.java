@@ -68,7 +68,7 @@ public class UserSeeder implements CommandLineRunner {
                 + "}";
 
         for (int i = 1; i <= 20; i++) {
-            String email = "user" + i + "@example.com";
+            String email = "user" + i + "@gmail.com";
             if (userRepository.findByEmail(email).isPresent()) continue;
 
             // 1. Create User

@@ -1,19 +1,22 @@
 package com.t2404e.aihealthcoach.controller;
 
-import com.t2404e.aihealthcoach.common.ApiResponse;
-import com.t2404e.aihealthcoach.dto.request.VnPayCallbackDTO;
-import com.t2404e.aihealthcoach.service.PaymentService;
-import io.swagger.v3.oas.annotations.Parameter;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.Operation;
-
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.t2404e.aihealthcoach.common.ApiResponse;
+import com.t2404e.aihealthcoach.service.PaymentService;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/payment")
@@ -78,9 +81,11 @@ public class PaymentController {
             boolean success = paymentService.processPaymentReturn(vnpParams);
 
             if (success) {
-                response.sendRedirect("http://localhost:3000/dashboard?payment=success");
+                // Redirect to Success Page with Transaction ID
+                String txnId = vnp_TransactionNo != null ? vnp_TransactionNo : "unknown";
+                response.sendRedirect("http://localhost:3000/payment/success?transactionId=" + txnId);
             } else {
-                response.sendRedirect("http://localhost:3000/dashboard?payment=failed");
+                response.sendRedirect("http://localhost:3000/pricing?payment=failed");
             }
         } catch (Exception e) {
             response.sendRedirect("http://localhost:3000/dashboard?payment=error&msg=" + e.getMessage());

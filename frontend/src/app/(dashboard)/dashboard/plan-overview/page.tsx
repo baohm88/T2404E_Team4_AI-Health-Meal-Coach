@@ -11,6 +11,7 @@
 
 'use client';
 
+import { HealthAnalysisView } from '@/components/health/HealthAnalysisView';
 import { Button } from '@/components/ui/Button';
 import { AIAnalysisResponse, aiService } from '@/services/ai.service';
 import {
@@ -219,10 +220,7 @@ export default function PlanOverviewPage() {
                         <Button
                             variant="primary"
                             className="w-full bg-emerald-600 hover:bg-emerald-700 from-emerald-600 to-emerald-600"
-                            onClick={() => {
-                                // TODO: Navigate to pricing or show upgrade modal
-                                alert('Tính năng Premium sẽ sớm ra mắt!');
-                            }}
+                            onClick={() => router.push('/pricing')}
                         >
                             Nâng cấp ngay
                             <ArrowRight className="w-4 h-4 ml-2" />
