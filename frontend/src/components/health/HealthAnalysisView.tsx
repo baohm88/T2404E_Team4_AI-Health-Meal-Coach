@@ -1,182 +1,278 @@
-"use client";
+'use client';
 
-import { AIAnalysisResponse } from "@/services/ai.service";
-import { Activity, Calendar, Flame, Heart, TrendingUp } from "lucide-react";
+import { AIAnalysisResponse } from '@/services/ai.service';
+import clsx from 'clsx';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Activity,
+  Brain,
+  Calendar,
+  ChevronDown,
+  Dumbbell,
+  Flame,
+  Heart,
+  Moon,
+  Utensils,
+  Zap
+} from 'lucide-react';
+import { useState } from 'react';
+
+// ===================================
+// TYPES & HELPERS
+// ===================================
+
+const HealthStatusMap: Record<string, { label: string; color: string; bg: string }> = {
+    UNDERWEIGHT: { label: 'Thiếu cân', color: 'text-yellow-600', bg: 'bg-yellow-100' },
+    NORMAL: { label: 'Bình thường', color: 'text-emerald-600', bg: 'bg-emerald-100' },
+    OVERWEIGHT: { label: 'Thừa cân', color: 'text-orange-600', bg: 'bg-orange-100' },
+    OBESE: { label: 'Béo phì', color: 'text-red-600', bg: 'bg-red-100' },
+};
+
+function MetricCard({
+    icon,
+    label,
+    value,
+    unit,
+    subtitle,
+    colorClass
+}: {
+    icon: React.ReactNode;
+    label: string;
+    value: string | number;
+    unit?: string;
+    subtitle?: string;
+    colorClass: string;
+}) {
+    return (
+        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-shadow">
+            <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center mb-3", colorClass)}>
+                {icon}
+            </div>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
+                {label}
+            </p>
+            <p className="text-2xl font-bold text-slate-800">
+                {value}<span className="text-sm font-normal text-slate-500 ml-1">{unit}</span>
+            </p>
+            {subtitle && <p className="text-xs text-slate-500 mt-2 font-medium bg-slate-50 px-2 py-1 rounded-lg">{subtitle}</p>}
+        </div>
+    );
+}
+
+// ===================================
+// MAIN VIEW COMPONENT
+// ===================================
 
 interface HealthAnalysisViewProps {
     data: AIAnalysisResponse;
 }
 
-interface MetricCardProps {
-    icon: React.ReactNode;
-    label: string;
-    value: string | number;
-    unit?: string;
-    color: string;
-}
-
-function MetricCard({ icon, label, value, unit, color }: MetricCardProps) {
-    return (
-        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-lg ${color} flex items-center justify-center`}>
-                    {icon}
-                </div>
-                <span className="text-sm font-medium text-slate-500">{label}</span>
-            </div>
-            <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold text-slate-900">{value}</span>
-                {unit && <span className="text-sm text-slate-500">{unit}</span>}
-            </div>
-        </div>
-    );
-}
-
-function MonthCard({ month, title, calories, note }: { month: number; title: string; calories: number; note: string }) {
-    return (
-        <div className="relative pl-8 pb-8 last:pb-0">
-            {/* Timeline line */}
-            <div className="absolute left-3 top-3 bottom-0 w-0.5 bg-emerald-200 last:hidden" />
-
-            {/* Timeline dot */}
-            <div className="absolute left-0 top-1 w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
-                {month}
-            </div>
-
-            {/* Card content */}
-            <div className="bg-slate-50 rounded-xl p-4 ml-4">
-                <h4 className="font-semibold text-slate-900 mb-2">{title}</h4>
-                <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1.5">
-                        <Flame className="w-4 h-4 text-orange-500" />
-                        <span className="text-slate-600">{calories} kcal/ngày</span>
-                    </div>
-                </div>
-                <p className="text-sm text-slate-500 mt-2">{note}</p>
-            </div>
-        </div>
-    );
-}
-
 export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
-    const { analysis, threeMonthPlan } = data;
+    const { analysis, lifestyleInsights, threeMonthPlan } = data;
+    const [expandedMonth, setExpandedMonth] = useState<number>(1);
+
+    const statusInfo = HealthStatusMap[analysis.healthStatus] || { label: analysis.healthStatus, color: 'text-slate-600', bg: 'bg-slate-100' };
 
     return (
-        <div className="space-y-8">
-            {/* Health Metrics Grid */}
-            <section>
-                <h2 className="text-lg font-semibold text-slate-800 mb-4">📊 Chỉ số sức khỏe</h2>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    <MetricCard
-                        icon={<Activity className="w-5 h-5 text-white" />}
-                        label="BMI"
-                        value={analysis.bmi.toFixed(1)}
-                        color="bg-blue-500"
-                    />
-                    <MetricCard
-                        icon={<Flame className="w-5 h-5 text-white" />}
-                        label="BMR"
-                        value={Math.round(analysis.bmr)}
-                        unit="kcal"
-                        color="bg-orange-500"
-                    />
-                    <MetricCard
-                        icon={<TrendingUp className="w-5 h-5 text-white" />}
-                        label="TDEE"
-                        value={Math.round(analysis.tdee)}
-                        unit="kcal"
-                        color="bg-emerald-500"
-                    />
-                    <MetricCard
-                        icon={<Heart className="w-5 h-5 text-white" />}
-                        label="Tình trạng"
-                        value={analysis.healthStatus}
-                        color="bg-pink-500"
-                    />
-                </div>
-            </section>
+        <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
+            
+            {/* 1. KEY METRICS GRID */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <MetricCard 
+                    icon={<Activity className="w-6 h-6 text-blue-600" />}
+                    label="BMI"
+                    value={analysis.bmi.toFixed(1)}
+                    subtitle={statusInfo.label}
+                    colorClass="bg-blue-50"
+                />
+                <MetricCard 
+                    icon={<Flame className="w-6 h-6 text-orange-600" />}
+                    label="BMR"
+                    value={analysis.bmr}
+                    unit="kcal"
+                    subtitle="Trao đổi chất cơ bản"
+                    colorClass="bg-orange-50"
+                />
+                 <MetricCard 
+                    icon={<Zap className="w-6 h-6 text-emerald-600" />}
+                    label="TDEE"
+                    value={analysis.tdee}
+                    unit="kcal"
+                    subtitle="Tiêu hao hằng ngày"
+                    colorClass="bg-emerald-50"
+                />
+                <MetricCard 
+                    icon={<Heart className="w-6 h-6 text-pink-600" />}
+                    label="Tình trạng"
+                    value={statusInfo.label}
+                    subtitle="Dựa trên chỉ số BMI"
+                    colorClass="bg-pink-50"
+                />
+            </div>
 
-            {/* AI Summary */}
-            <section className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-100">
-                <h3 className="font-semibold text-slate-800 mb-2">💡 Nhận xét từ AI</h3>
-                <p className="text-slate-600 leading-relaxed">{analysis.summary}</p>
-            </section>
-
-            {/* Lifestyle Insights */}
-            {data.lifestyleInsights && (
-                <section>
-                    <h2 className="text-lg font-semibold text-slate-800 mb-4">🏃 Phân tích lối sống</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Activity Card */}
-                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-blue-500 flex items-center justify-center">
-                                    <Activity className="w-5 h-5 text-white" />
-                                </div>
-                                <span className="font-medium text-slate-700">Vận động</span>
-                            </div>
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                {data.lifestyleInsights.activity}
-                            </p>
+            {/* 2. SUMMARY & LIFESTYLE INSIGHTS */}
+            <div className="grid md:grid-cols-3 gap-6">
+                {/* Main Summary */}
+                <div className="md:col-span-2 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border border-emerald-100">
+                    <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <Brain className="w-6 h-6 text-emerald-600" />
                         </div>
-
-                        {/* Sleep Card */}
-                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-indigo-500 flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                    </svg>
-                                </div>
-                                <span className="font-medium text-slate-700">Giấc ngủ</span>
-                            </div>
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                {data.lifestyleInsights.sleep}
-                            </p>
-                        </div>
-
-                        {/* Stress Card */}
-                        <div className="bg-white rounded-xl border border-slate-200 p-5 hover:shadow-md transition-shadow">
-                            <div className="flex items-center gap-3 mb-3">
-                                <div className="w-10 h-10 rounded-lg bg-amber-500 flex items-center justify-center">
-                                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                                <span className="font-medium text-slate-700">Căng thẳng</span>
-                            </div>
-                            <p className="text-sm text-slate-600 leading-relaxed">
-                                {data.lifestyleInsights.stress}
-                            </p>
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-lg mb-2">Đánh giá tổng quan</h3>
+                            <p className="text-slate-600 leading-relaxed">{analysis.summary}</p>
                         </div>
                     </div>
-                </section>
-            )}
-
-            {/* 3-Month Plan Timeline */}
-            <section>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
-                        Lộ trình 3 tháng
-                    </h2>
-                    <span className="text-sm text-slate-500">
-                        Mục tiêu: {threeMonthPlan.goal}
-                    </span>
                 </div>
 
-                <div className="bg-white rounded-xl border border-slate-200 p-6">
-                    {threeMonthPlan.months.map((month) => (
-                        <MonthCard
-                            key={month.month}
-                            month={month.month}
-                            title={month.title}
-                            calories={month.dailyCalories}
-                            note={month.note}
-                        />
-                    ))}
+                {/* Lifestyle Insights List */}
+                <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm space-y-4">
+                    <h3 className="font-bold text-slate-800 text-sm uppercase tracking-wide flex items-center gap-2">
+                        <Heart className="w-4 h-4 text-red-500" />
+                        Lối sống & Thói quen
+                    </h3>
+                    
+                    {lifestyleInsights && (
+                        <div className="space-y-4">
+                            <div className="flex gap-3 items-start">
+                                <Dumbbell className="w-4 h-4 text-blue-500 mt-0.5" />
+                                <p className="text-sm text-slate-600">{lifestyleInsights.activity}</p>
+                            </div>
+                            <div className="flex gap-3 items-start">
+                                <Moon className="w-4 h-4 text-indigo-500 mt-0.5" />
+                                <p className="text-sm text-slate-600">{lifestyleInsights.sleep}</p>
+                            </div>
+                            <div className="flex gap-3 items-start">
+                                <Brain className="w-4 h-4 text-pink-500 mt-0.5" />
+                                <p className="text-sm text-slate-600">{lifestyleInsights.stress}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
-            </section>
+            </div>
+
+            {/* 3. 3-MONTH PLAN ROADMAP */}
+            <div>
+                <div className="flex items-center gap-2 mb-6">
+                    <Calendar className="w-6 h-6 text-emerald-600" />
+                    <h2 className="text-xl font-bold text-slate-800">Lộ trình 3 tháng</h2>
+                </div>
+
+                <div className="space-y-4">
+                    {threeMonthPlan?.months?.map((month) => {
+                        const isExpanded = expandedMonth === month.month;
+                        return (
+                            <motion.div 
+                                key={month.month}
+                                layout
+                                className={clsx(
+                                    "rounded-2xl border overflow-hidden transition-all",
+                                    isExpanded ? "border-emerald-200 bg-white shadow-lg ring-1 ring-emerald-100" : "border-slate-100 bg-white hover:bg-slate-50"
+                                )}
+                            >
+                                {/* Header (Clickable) */}
+                                <button 
+                                    onClick={() => setExpandedMonth(isExpanded ? 0 : month.month)}
+                                    className="w-full flex items-center p-5 text-left"
+                                >
+                                    <div className={clsx(
+                                        "w-12 h-12 rounded-xl flex flex-col items-center justify-center font-bold text-lg mr-4 flex-shrink-0 transition-colors",
+                                        isExpanded ? "bg-emerald-500 text-white" : "bg-slate-100 text-slate-500"
+                                    )}>
+                                        <span>T{month.month}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h3 className={clsx("font-bold text-lg", isExpanded ? "text-emerald-800" : "text-slate-700")}>
+                                            {month.title}
+                                        </h3>
+                                        <p className="text-sm text-slate-500 mt-0.5 flex items-center gap-3">
+                                            <span className="flex items-center gap-1"><Flame className="w-3 h-3" /> {month.dailyCalories} kcal</span>
+                                            {month.macronutrients && <span className="hidden sm:inline-flex items-center gap-1"> • {month.macronutrients.split('-')[0]}</span>}
+                                        </p>
+                                    </div>
+                                    <ChevronDown className={clsx("w-5 h-5 text-slate-400 transition-transform", isExpanded && "rotate-180")} />
+                                </button>
+
+                                {/* Expanded Content */}
+                                <AnimatePresence>
+                                    {isExpanded && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="border-t border-slate-100"
+                                        >
+                                            <div className="p-5 md:p-6 space-y-6 bg-slate-50/50">
+                                                
+                                                {/* Nutrition & Habits */}
+                                                <div className="grid md:grid-cols-2 gap-4">
+                                                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                                        <h4 className="font-semibold text-emerald-700 mb-2 flex items-center gap-2">
+                                                            <Utensils className="w-4 h-4" /> Dinh dưỡng
+                                                        </h4>
+                                                        <p className="text-sm text-slate-600 mb-2 font-medium">{month.macronutrients}</p>
+                                                        <ul className="text-sm text-slate-500 space-y-1 list-disc list-inside">
+                                                            {month.habitFocus && <li>{month.habitFocus}</li>}
+                                                            {month.mealTips && <li>{month.mealTips}</li>}
+                                                        </ul>
+                                                    </div>
+                                                    <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">
+                                                        <h4 className="font-semibold text-blue-700 mb-2 flex items-center gap-2">
+                                                            <Activity className="w-4 h-4" /> Hoạt động
+                                                        </h4>
+                                                        <p className="text-sm text-slate-600 mb-2">{month.specificActions}</p>
+                                                        <p className="text-xs text-slate-400 italic mt-2">{month.note}</p>
+                                                    </div>
+                                                </div>
+
+                                                {/* Weekly Detailed Breakdown */}
+                                                {month.weeks && month.weeks.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Chi tiết theo tuần</h4>
+                                                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                                                            {month.weeks.map((week) => (
+                                                                <div key={week.week} className="bg-white p-3 rounded-xl border border-slate-100 text-sm">
+                                                                    <div className="font-bold text-emerald-600 mb-1">Tuần {week.week}</div>
+                                                                    <div className="font-medium text-slate-800 mb-1">{week.title}</div>
+                                                                    <p className="text-slate-500 text-xs line-clamp-3">{week.nutritionFocus}</p>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* Sample Meal Plan (If available) */}
+                                                {month.sampleDailyMeals && month.sampleDailyMeals.length > 0 && (
+                                                    <div>
+                                                        <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Thực đơn mẫu 1 ngày</h4>
+                                                        <div className="space-y-2">
+                                                            {month.sampleDailyMeals.map((meal, idx) => (
+                                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-slate-100 gap-2">
+                                                                    <div className="flex items-center gap-3">
+                                                                        <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded w-16 text-center">{meal.type}</span>
+                                                                        <div>
+                                                                            <p className="font-medium text-slate-800">{meal.mealName}</p>
+                                                                            <p className="text-xs text-slate-500">{meal.quantity}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="text-sm font-semibold text-emerald-600 whitespace-nowrap">
+                                                                        {meal.calories} kcal
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </motion.div>
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }

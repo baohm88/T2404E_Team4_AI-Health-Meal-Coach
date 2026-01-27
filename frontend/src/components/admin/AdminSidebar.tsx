@@ -10,6 +10,7 @@
 import { ADMIN_BRAND, ADMIN_MENU_ITEMS, AdminMenuItem } from '@/lib/constants/admin.constants';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { ChevronLeft, LogOut, Menu, Shield, X } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
@@ -24,9 +25,17 @@ export function AdminSidebar() {
     const router = useRouter();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
+    const logout = useAuthStore((state) => state.logout);
+
     const handleLogout = async () => {
         try {
+            // 1. Clear Global Store (and localStorage via persist)
+            logout();
+            
+            // 2. Clear Cookie/Token Helper
             await authService.logout();
+            
+            // 3. Redirect
             router.push('/login');
         } catch (error) {
             console.error('Logout failed:', error);

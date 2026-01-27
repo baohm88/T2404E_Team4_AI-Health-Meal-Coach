@@ -30,10 +30,31 @@ export interface LifestyleInsights {
     stress: string;
 }
 
+export interface MealItem {
+    mealName: string;
+    quantity: string;
+    calories: number;
+    type: string;
+}
+
+export interface WeekPlan {
+    week: number;
+    title: string;
+    nutritionFocus: string;
+    mealTips: string;
+    note: string;
+}
+
 export interface MonthPlan {
     month: number;
     title: string;
     dailyCalories: number;
+    macronutrients?: string;
+    habitFocus?: string;
+    mealTips?: string;
+    specificActions?: string;
+    sampleDailyMeals?: MealItem[];
+    weeks?: WeekPlan[];
     note: string;
 }
 
