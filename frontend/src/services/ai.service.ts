@@ -35,6 +35,10 @@ export interface MonthPlan {
     title: string;
     dailyCalories: number;
     note: string;
+    habitFocus: string;
+    macronutrients: string;
+    mealTips: string;
+    specificActions: string;
 }
 
 export interface ThreeMonthPlan {
@@ -142,8 +146,8 @@ export const aiService = {
                 'Không thể kết nối server AI';
 
             // Check for Rate Limit (429) or specific error text
-            const isRateLimit = 
-                axiosError.response?.status === 429 || 
+            const isRateLimit =
+                axiosError.response?.status === 429 ||
                 (typeof errorMessage === 'string' && errorMessage.includes('Rate limit reached'));
 
             if (isRateLimit) {
@@ -279,7 +283,7 @@ export const aiService = {
         return new Promise((resolve) => {
             setTimeout(() => {
                 let response = 'Chào bạn, tôi là AI Health Coach. Hiện tại tính năng chat đang được bảo trì để nâng cấp.';
-                
+
                 if (message.toLowerCase().includes('giảm cân')) {
                     response = 'Để giảm cân hiệu quả, bạn nên tạo calorie deficit (tiêu thụ ít hơn 300-500 kcal so với nhu cầu). Kết hợp với tập luyện 3-4 buổi/tuần và uống đủ 2L nước mỗi ngày.';
                 } else if (message.toLowerCase().includes('protein')) {

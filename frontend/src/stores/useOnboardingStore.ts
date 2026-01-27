@@ -165,6 +165,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
                 const { formData } = get();
                 // Check required fields for both steps
                 return !!(
+                    formData.fullName &&
                     formData.gender &&
                     formData.height &&
                     formData.weight &&

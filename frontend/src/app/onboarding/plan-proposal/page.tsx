@@ -53,6 +53,11 @@ interface RoadmapPhase {
     targetCalories: number;
     focus: string;
     icon: string;
+    // New fields
+    macronutrients?: string;
+    habitFocus?: string;
+    mealTips?: string;
+    specificActions?: string;
 }
 
 interface AIProposal {
@@ -102,6 +107,10 @@ Lộ trình này sẽ ưu tiên **phục hồi năng lượng** trong tháng đ�
                 targetCalories: 1900,
                 focus: 'Giảm 1-2kg, ổn định giấc ngủ',
                 icon: '🌱',
+                macronutrients: 'Đạm 25% - Béo 30% - Bột 45%',
+                habitFocus: 'Ngủ đủ 7h/ngày',
+                mealTips: 'Ưu tiên tinh bột chậm (gạo lứt, khoai lang)',
+                specificActions: '- Ăn sáng trước 9h\n- Đi bộ 15p sau bữa tối'
             },
             {
                 month: 2,
@@ -111,6 +120,10 @@ Lộ trình này sẽ ưu tiên **phục hồi năng lượng** trong tháng đ�
                 targetCalories: 1750,
                 focus: 'Giảm 2-3kg, tăng sức bền',
                 icon: '🔥',
+                macronutrients: 'Đạm 30% - Béo 25% - Bột 45%',
+                habitFocus: 'Tập cardio 3 buổi/tuần',
+                mealTips: 'Tăng cường rau xanh, giảm dầu mỡ',
+                specificActions: '- Uống 2.5L nước/ngày\n- Không ăn vặt sau 20h'
             },
             {
                 month: 3,
@@ -120,6 +133,10 @@ Lộ trình này sẽ ưu tiên **phục hồi năng lượng** trong tháng đ�
                 targetCalories: 1800,
                 focus: 'Duy trì, định hình cơ thể',
                 icon: '💪',
+                macronutrients: 'Đạm 30% - Béo 30% - Bột 40%',
+                habitFocus: 'Tập kháng lực 2 buổi/tuần',
+                mealTips: 'Bổ sung protein sau tập',
+                specificActions: '- Tự chuẩn bị bữa trưa\n- Theo dõi cân nặng hàng tuần'
             },
         ],
     };
@@ -240,7 +257,7 @@ function StatCard({
 /** Roadmap Timeline */
 function RoadmapTimeline({ phases }: { phases: RoadmapPhase[] }) {
     return (
-        <div className="space-y-3">
+        <div className="space-y-6">
             {phases.map((phase, index) => (
                 <motion.div
                     key={phase.month}
@@ -248,44 +265,67 @@ function RoadmapTimeline({ phases }: { phases: RoadmapPhase[] }) {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.1 * index }}
                     className={clsx(
-                        'relative pl-12 py-4 pr-4 rounded-xl border',
+                        'relative pl-4 pt-4 pb-4 pr-4 rounded-xl border overflow-hidden',
                         index === 0
-                            ? 'bg-emerald-50 border-emerald-200'
-                            : 'bg-slate-50 border-slate-100'
+                            ? 'bg-emerald-50/50 border-emerald-200'
+                            : 'bg-white border-slate-100'
                     )}
                 >
-                    {/* Icon */}
-                    <div className={clsx(
-                        'absolute left-3 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg flex items-center justify-center text-lg',
-                        index === 0 ? 'bg-emerald-500' : 'bg-slate-300'
-                    )}>
-                        {phase.icon}
+                    {/* Month Header */}
+                    <div className="flex items-start gap-4 mb-4">
+                        <div className={clsx(
+                            'w-12 h-12 rounded-xl flex items-center justify-center text-2xl shadow-sm',
+                            index === 0 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-400'
+                        )}>
+                            {phase.icon}
+                        </div>
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                                <h3 className={clsx("font-bold text-lg", index === 0 ? "text-emerald-700" : "text-slate-800")}>
+                                    {phase.title}: {phase.subtitle}
+                                </h3>
+                                <div className="text-right">
+                                    <div className="text-sm font-bold text-slate-700">{phase.targetCalories}</div>
+                                    <div className="text-xs text-slate-500">kcal/ngày</div>
+                                </div>
+                            </div>
+
+                            {/* Tags */}
+                            <div className="flex flex-wrap gap-2 mt-2">
+                                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-white border border-slate-200 text-slate-600">
+                                    🎯 {phase.focus}
+                                </span>
+                                {phase.habitFocus && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-indigo-50 border border-indigo-100 text-indigo-600">
+                                        ⚡ {phase.habitFocus}
+                                    </span>
+                                )}
+                                {phase.macronutrients && (
+                                    <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-50 border border-blue-100 text-blue-600">
+                                        🥗 {phase.macronutrients}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-1">
-                                <span className={clsx(
-                                    'font-bold',
-                                    index === 0 ? 'text-emerald-700' : 'text-slate-600'
-                                )}>
-                                    {phase.title}:
-                                </span>
-                                <span className={clsx(
-                                    'text-sm font-medium',
-                                    index === 0 ? 'text-emerald-600' : 'text-slate-500'
-                                )}>
-                                    {phase.subtitle}
-                                </span>
+                    {/* Details content */}
+                    <div className="pl-16 space-y-3">
+                        {/* Specific Actions */}
+                        {phase.specificActions && (
+                            <div className="bg-white/50 rounded-lg p-3 text-sm text-slate-600 border border-slate-100">
+                                <p className="font-medium text-slate-800 mb-1">📋 Hành động cụ thể:</p>
+                                <p className="whitespace-pre-line leading-relaxed">{phase.specificActions}</p>
                             </div>
-                            <p className="text-sm text-slate-500">{phase.description}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                            <div className="text-sm font-semibold text-slate-700">
-                                {phase.targetCalories} kcal
+                        )}
+
+                        {/* Meal Tips/Description */}
+                        {(phase.mealTips || phase.description) && (
+                            <div className="text-sm text-slate-500 italic flex gap-2">
+                                <span>💡</span>
+                                <p>{phase.mealTips || phase.description}</p>
                             </div>
-                            <div className="text-xs text-slate-400">mỗi ngày</div>
-                        </div>
+                        )}
                     </div>
                 </motion.div>
             ))}

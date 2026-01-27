@@ -65,6 +65,7 @@ export enum SleepRange {
 
 export const onboardingSchema = z.object({
   // Core fields (required)
+  fullName: z.string().min(2, 'Vui lòng nhập họ tên đầy đủ'),
   goal: z.nativeEnum(Goal),
   height: z.coerce
     .number()

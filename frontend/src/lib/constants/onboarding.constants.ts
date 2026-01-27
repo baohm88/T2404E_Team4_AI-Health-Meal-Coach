@@ -56,10 +56,11 @@ export const LAST_STEP = 2;
  * These will be determined by AI analysis
  */
 export const INITIAL_FORM_DATA: Partial<OnboardingData> = {
+    fullName: undefined,
     goal: undefined,           // Will be set by AI
-    height: 170,
-    weight: 65,
-    age: 25,
+    height: undefined,
+    weight: undefined,
+    age: undefined,
     gender: undefined,
     activityLevel: undefined,
     targetWeight: undefined,   // Will be set by AI
@@ -73,13 +74,14 @@ export const INITIAL_FORM_DATA: Partial<OnboardingData> = {
  * Safe values for AI Coach calculations
  */
 export const SKIP_DEFAULT_VALUES: Required<OnboardingData> = {
+    fullName: 'Người dùng mới',
     goal: Goal.MAINTENANCE,
     gender: Gender.MALE,
-    height: 170,
-    weight: 65,
-    age: 30,
+    height: undefined,
+    weight: undefined,
+    age: undefined,
     activityLevel: ActivityLevel.LIGHT,
-    targetWeight: 65,
+    targetWeight: undefined,
     weeklyGoal: WeeklyGoal.NORMAL,
     stressLevel: StressLevel.MEDIUM,
     sleepRange: SleepRange.SEVEN_TO_9,

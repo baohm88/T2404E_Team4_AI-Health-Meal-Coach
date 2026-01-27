@@ -79,11 +79,28 @@ function MeasurementInput({
 export function StepInfo() {
     const { formData, setFormData, nextStep, skipStep } = useOnboardingStore();
 
-    const isValid = formData.age && formData.height && formData.weight && formData.gender;
+    const isValid = formData.fullName && formData.age && formData.height && formData.weight && formData.gender;
 
     return (
         <div className="flex flex-col h-full">
             <div className="flex flex-col gap-6">
+                {/* Full Name Input */}
+                <div className="flex flex-col">
+                    <span className="text-xs text-slate-500 font-medium mb-2">Họ và tên</span>
+                    <input
+                        type="text"
+                        value={formData.fullName || ''}
+                        onChange={(e) => setFormData({ fullName: e.target.value })}
+                        placeholder="Nhập tên của bạn"
+                        className={clsx(
+                            'w-full py-3 px-4 text-lg font-medium text-slate-800',
+                            'bg-slate-50/50 rounded-xl border-0',
+                            'focus:outline-none focus:bg-slate-100/70 focus:ring-2 focus:ring-primary/20',
+                            'transition-all placeholder:text-slate-300 placeholder:font-normal'
+                        )}
+                    />
+                </div>
+
                 {/* Age, Height, Weight - Grid layout */}
                 <div className="grid grid-cols-3 gap-4">
                     <MeasurementInput
@@ -93,7 +110,7 @@ export function StepInfo() {
                         onChange={(val) => setFormData({ age: val })}
                         min={10}
                         max={120}
-                        placeholder="25"
+                        placeholder=""
                     />
                     <MeasurementInput
                         label="Chiều cao"
@@ -102,7 +119,7 @@ export function StepInfo() {
                         onChange={(val) => setFormData({ height: val })}
                         min={100}
                         max={250}
-                        placeholder="170"
+                        placeholder=""
                     />
                     <MeasurementInput
                         label="Cân nặng"
@@ -111,7 +128,7 @@ export function StepInfo() {
                         onChange={(val) => setFormData({ weight: val })}
                         min={30}
                         max={250}
-                        placeholder="65"
+                        placeholder=""
                     />
                 </div>
 

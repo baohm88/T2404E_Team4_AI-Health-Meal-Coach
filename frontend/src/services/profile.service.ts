@@ -126,9 +126,9 @@ const mapOnboardingToApiRequest = (
     data: Partial<OnboardingData>
 ): CreateHealthProfileRequest => ({
     gender: mapGender(data.gender),
-    age: data.age ?? 25,
-    height: data.height ?? 170,
-    weight: data.weight ?? 65,
+    age: data.age,
+    height: data.height,
+    weight: data.weight,
     // NOTE: Backend HealthProfileRequest does NOT have 'goal' field
     // Goal is handled separately via AI analysis
     activityLevel: mapActivityLevel(data.activityLevel),

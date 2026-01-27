@@ -72,17 +72,17 @@ const BACKEND_ENUMS = {
 export function mapFrontendToBackend(data: Record<string, unknown>): Record<string, unknown> {
     const mapped = {
         // Integer fields
-        age: Number(data.age) || 25,
+        age: Number(data.age),
 
         // Double fields - Backend uses "height" and "weight" (NOT heightCm/weightKg)
-        height: Number(data.height) || 170.0,
-        weight: Number(data.weight) || 65.0,
+        height: Number(data.height),
+        weight: Number(data.weight),
 
         // Enum fields
-        gender: BACKEND_ENUMS.gender[data.gender as Gender] || 'MALE',
-        activityLevel: BACKEND_ENUMS.activityLevel[data.activityLevel as ActivityLevel] || 'LIGHT',
-        sleepDuration: BACKEND_ENUMS.sleepDuration[data.sleepRange as SleepRange] || 'SEVEN_TO_NINE',
-        stressLevel: BACKEND_ENUMS.stressLevel[data.stressLevel as StressLevel] || 'MEDIUM',
+        gender: BACKEND_ENUMS.gender[data.gender as Gender],
+        activityLevel: BACKEND_ENUMS.activityLevel[data.activityLevel as ActivityLevel],
+        sleepDuration: BACKEND_ENUMS.sleepDuration[data.sleepRange as SleepRange],
+        stressLevel: BACKEND_ENUMS.stressLevel[data.stressLevel as StressLevel],
 
         // NOTE: 'goal' is stored separately or derived from other data
         // Backend HealthProfileRequest does not include 'goal' field
