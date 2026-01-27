@@ -13,19 +13,15 @@
 
 'use client';
 
+import { HealthAnalysisView } from '@/components/health/HealthAnalysisView';
+import { getUserFromToken, TokenUser } from '@/lib/auth';
 import { getToken } from '@/lib/http';
 import { AIAnalysisResponse, aiService } from '@/services/ai.service';
-import { useAuthStore } from '@/stores/useAuthStore';
 import { motion } from 'framer-motion';
 import {
-  Activity,
   ArrowRight,
-  Calendar,
   CheckCircle2,
-  Crown,
-  Flame,
-  Target,
-  TrendingUp
+  Crown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -76,72 +72,15 @@ function ResultSkeleton() {
 }
 
 // ============================================================
-// METRIC CARD COMPONENT
-// ============================================================
-
-interface MetricCardProps {
-    icon: React.ReactNode;
-    label: string;
-    value: string | number;
-    unit?: string;
-    color: string;
-    subtitle?: string;
-}
-
-function MetricCard({ icon, label, value, unit, color, subtitle }: MetricCardProps) {
-    return (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl p-4 shadow-sm border border-slate-100"
-        >
-            <div className={`w-10 h-10 ${color} rounded-lg flex items-center justify-center mb-3`}>
-                {icon}
-            </div>
-            <p className="text-xs text-slate-500 uppercase tracking-wide">{label}</p>
-            <p className="text-2xl font-bold text-slate-800">
-                {value}
-                {unit && <span className="text-sm font-normal text-slate-500 ml-1">{unit}</span>}
-            </p>
-            {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
-        </motion.div>
-    );
-}
-
-// ============================================================
-// HEALTH STATUS HELPER
-// ============================================================
-
-function getHealthStatusLabel(status: string): string {
-    const statusMap: Record<string, string> = {
-        UNDERWEIGHT: 'Thiếu cân',
-        NORMAL: 'Bình thường',
-        OVERWEIGHT: 'Thừa cân',
-        OBESE: 'Béo phì',
-    };
-    return statusMap[status] || status;
-}
-
-function getHealthStatusColor(status: string): string {
-    const colorMap: Record<string, string> = {
-        UNDERWEIGHT: 'text-yellow-600',
-        NORMAL: 'text-emerald-600',
-        OVERWEIGHT: 'text-orange-600',
-        OBESE: 'text-red-600',
-    };
-    return colorMap[status] || 'text-slate-600';
-}
-
-// ============================================================
 // MAIN COMPONENT
 // ============================================================
 
 export default function OnboardingResultPage() {
     const router = useRouter();
-    const { user } = useAuthStore();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [user, setUser] = useState<TokenUser | null>(null);
     const [analysis, setAnalysis] = useState<AIAnalysisResponse | null>(null);
 
     // ---------------------------------------------------------------------
@@ -154,6 +93,12 @@ export default function OnboardingResultPage() {
 
         const auth = !!token;
         setIsAuthenticated(auth);
+
+        if (auth) {
+            const userData = getUserFromToken();
+            setUser(userData);
+        }
+
         console.log('✅ [OnboardingResult] Is authenticated:', auth);
 
         if (!auth) {
@@ -164,7 +109,6 @@ export default function OnboardingResultPage() {
         }
 
         console.log('📊 [OnboardingResult] Fetching analysis data...');
-        // Authenticated – fetch stored analysis
         // Authenticated – fetch stored analysis or create new one if pending
         const fetchAnalysis = async () => {
             try {
@@ -179,32 +123,22 @@ export default function OnboardingResultPage() {
                     console.warn('⚠️ [OnboardingResult] Analysis not found on server, checking local store...');
 
                     // 2. If not found, check if we have pending data in store (Post-Registration flow)
-                    // Dynamic import to avoid hydration issues if store uses persist
                     const { useOnboardingStore } = require('@/stores/useOnboardingStore');
-                    const { formData, hasPendingData } = useOnboardingStore.getState();
-                    
-                    // Check if we have data to submit
-                    const shouldSubmit = formData && formData.activityLevel; // Simple check
+                    const { formData } = useOnboardingStore.getState();
 
-                    if (shouldSubmit) {
+                    if (formData && formData.activityLevel) {
                         console.log('🚀 [OnboardingResult] Found pending data, submitting to AI service...');
-                        
-                        // Force authenticated analysis (token is already in localStorage)
                         const createRes = await aiService.analyzeHealth(formData);
 
                         if (createRes.success && createRes.data) {
                             console.log('✅ [OnboardingResult] Created new analysis successfully');
                             setAnalysis(createRes.data);
-                            
-                            // Optional: Clear guest data after successful sync
-                            // useOnboardingStore.getState().clearGuestData(); 
-                            // (Maybe keep it until explicitly cleared or user finishes onboarding?)
                         } else {
                             throw new Error(createRes.error || 'Không thể tạo phân tích mới');
                         }
                     } else {
-                        console.error('❌ [OnboardingResult] No pending data found in local store');
-                        setError(res.error || 'Không thể tải dữ liệu phân tích. Vui lòng thử lại quy trình.');
+                        console.error('❌ [OnboardingResult] No pending data found');
+                        setError(res.error || 'Không thể tải dữ liệu phân tích');
                     }
                 }
             } catch (e: any) {
@@ -269,10 +203,6 @@ export default function OnboardingResultPage() {
         );
     }
 
-    // Extract data
-    const { analysis: bodyAnalysis, threeMonthPlan } = analysis;
-    const currentMonthCalories = threeMonthPlan?.months?.[0]?.dailyCalories || 0;
-
     // ---------------------------------------------------------------------
     // Main content – display analysis summary and CTA buttons
     // ---------------------------------------------------------------------
@@ -288,106 +218,16 @@ export default function OnboardingResultPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
                         <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                     </div>
-                    <h2 className="text-xl font-medium text-slate-600 mb-6">
-                        Xin chào, <span className="font-bold text-emerald-600">{user?.fullName || 'Health Coach'}</span> 👋
-                    </h2>
-                    <h1 className="text-2xl font-bold text-slate-800">Kết quả phân tích sức khỏe</h1>
-                    <p className="text-slate-500 mt-1">Dựa trên thông tin bạn cung cấp</p>
-                </motion.div>
-
-                {/* Health Metrics Grid */}
-                <div className="grid grid-cols-2 gap-4">
-                    <MetricCard
-                        icon={<Activity className="w-5 h-5 text-white" />}
-                        label="BMI"
-                        value={bodyAnalysis.bmi.toFixed(1)}
-                        color="bg-blue-500"
-                        subtitle={getHealthStatusLabel(bodyAnalysis.healthStatus)}
-                    />
-                    <MetricCard
-                        icon={<Flame className="w-5 h-5 text-white" />}
-                        label="BMR"
-                        value={Math.round(bodyAnalysis.bmr)}
-                        unit="kcal"
-                        color="bg-orange-500"
-                        subtitle="Năng lượng cơ bản"
-                    />
-                    <MetricCard
-                        icon={<TrendingUp className="w-5 h-5 text-white" />}
-                        label="TDEE"
-                        value={Math.round(bodyAnalysis.tdee)}
-                        unit="kcal"
-                        color="bg-emerald-500"
-                        subtitle="Tiêu hao hàng ngày"
-                    />
-                    <MetricCard
-                        icon={<Target className="w-5 h-5 text-white" />}
-                        label="Mục tiêu"
-                        value={currentMonthCalories}
-                        unit="kcal"
-                        color="bg-purple-500"
-                        subtitle="Calo tháng 1"
-                    />
-                </div>
-
-                {/* AI Summary */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.1 }}
-                    className="bg-gradient-to-r from-emerald-50 to-green-50 rounded-xl p-5 border border-emerald-100"
-                >
-                    <h3 className="font-semibold text-slate-800 mb-2">💡 Nhận xét từ AI</h3>
-                    <p className="text-slate-600 text-sm leading-relaxed">
-                        {bodyAnalysis.summary}
+                    <h1 className="text-2xl font-bold text-slate-800">
+                        {user ? `Xin chào, ${user.fullName}!` : 'Kết quả phân tích sức khỏe'}
+                    </h1>
+                    <p className="text-slate-500 mt-1">
+                        {user ? 'Đây là kết quả phân tích sức khỏe của bạn' : 'Dựa trên thông tin bạn cung cấp'}
                     </p>
                 </motion.div>
 
-                {/* 3-Month Plan Roadmap */}
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="bg-white rounded-xl p-5 shadow-sm border border-slate-100"
-                >
-                    <div className="flex items-center gap-2 mb-4">
-                        <Calendar className="w-5 h-5 text-emerald-600" />
-                        <h3 className="font-semibold text-slate-800">Lộ trình 3 tháng</h3>
-                    </div>
-
-                    <div className="space-y-3">
-                        {threeMonthPlan?.months?.map((month, index) => (
-                            <div
-                                key={month.month}
-                                className={`flex items-start gap-3 p-3 rounded-lg ${index === 0 ? 'bg-emerald-50 border border-emerald-200' : 'bg-slate-50'
-                                    }`}
-                            >
-                                {/* Month Badge */}
-                                <div
-                                    className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${index === 0
-                                            ? 'bg-emerald-500 text-white'
-                                            : 'bg-slate-300 text-slate-600'
-                                        }`}
-                                >
-                                    {month.month}
-                                </div>
-
-                                {/* Month Info */}
-                                <div className="flex-1 min-w-0">
-                                    <p className={`font-medium ${index === 0 ? 'text-emerald-700' : 'text-slate-700'}`}>
-                                        {month.title}
-                                    </p>
-                                    <p className="text-xs text-slate-500 mt-0.5">
-                                        {month.dailyCalories} kcal/ngày
-                                    </p>
-                                    <p className="text-xs text-slate-400 mt-1 line-clamp-2">
-                                        {month.note}
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </motion.div>
+                {/* Health Metrics & Plan - Using Shared Component */}
+                <HealthAnalysisView data={analysis} />
 
                 {/* Action Buttons */}
                 <motion.div
@@ -406,7 +246,7 @@ export default function OnboardingResultPage() {
                         onClick={() => router.push('/pricing')}
                         className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-xl hover:from-amber-500 hover:to-orange-500 transition font-medium"
                     >
-                        <Crown className="w-4 h-4" /> Nâng cấp Premium
+                        <Crown className="w-4 h-4" /> Mở khóa Lộ trình Cá nhân
                     </button>
                 </motion.div>
             </div>
