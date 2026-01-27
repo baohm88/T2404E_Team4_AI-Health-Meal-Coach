@@ -7,9 +7,10 @@
 
 'use client';
 
-import React from 'react';
-import { useOnboardingStore } from '@/stores/useOnboardingStore';
+import { useState } from 'react';
+
 import { Gender } from '@/lib/schemas/onboarding.schema';
+import { useOnboardingStore } from '@/stores/useOnboardingStore';
 import clsx from 'clsx';
 
 // ============================================================
@@ -34,6 +35,7 @@ interface MeasurementInputProps {
     min: number;
     max: number;
     placeholder: string;
+    error?: string;
 }
 
 function MeasurementInput({
@@ -44,6 +46,7 @@ function MeasurementInput({
     min,
     max,
     placeholder,
+    error,
 }: MeasurementInputProps) {
     return (
         <div className="flex flex-col">
@@ -61,13 +64,17 @@ function MeasurementInput({
                         'bg-slate-50/50 rounded-xl border-0',
                         'focus:outline-none focus:bg-slate-100/70 focus:ring-2 focus:ring-primary/20',
                         'transition-all placeholder:text-slate-300 placeholder:font-normal placeholder:text-base',
-                        '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                        '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
+                        error && 'ring-2 ring-red-500/50 bg-red-50/50'
                     )}
                 />
                 <span className="absolute right-3 text-sm text-slate-400 font-medium pointer-events-none">
                     {unit}
                 </span>
             </div>
+            {error && (
+                <span className="text-xs text-red-500 mt-1">{error}</span>
+            )}
         </div>
     );
 }
@@ -78,8 +85,31 @@ function MeasurementInput({
 
 export function StepInfo() {
     const { formData, setFormData, nextStep, skipStep } = useOnboardingStore();
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
-    const isValid = formData.age && formData.height && formData.weight && formData.gender;
+    const validateField = (field: string, value: number) => {
+        // Simple manual validation or Zod schema check if preferred
+        // using schema definitions from constants/schema
+         if (field === 'age') {
+             if (!value || value < 10 || value > 120) return 'Tuổi từ 10-120';
+         }
+         if (field === 'height') {
+             if (!value || value < 100 || value > 250) return 'Cao 100-250cm';
+         }
+         if (field === 'weight') {
+             if (!value || value < 30 || value > 250) return 'Nặng 30-250kg';
+         }
+         return '';
+    };
+
+    const handleChange = (field: 'age' | 'height' | 'weight', value: number) => {
+        setFormData({ [field]: value });
+        const error = validateField(field, value);
+        setErrors(prev => ({ ...prev, [field]: error }));
+    };
+
+    const isValid = formData.age && formData.height && formData.weight && formData.gender && 
+                    !errors.age && !errors.height && !errors.weight;
 
     return (
         <div className="flex flex-col h-full">
@@ -90,28 +120,31 @@ export function StepInfo() {
                         label="Tuổi"
                         unit="tuổi"
                         value={formData.age}
-                        onChange={(val) => setFormData({ age: val })}
+                        onChange={(val) => handleChange('age', val)}
                         min={10}
                         max={120}
                         placeholder="25"
+                        error={errors.age}
                     />
                     <MeasurementInput
                         label="Chiều cao"
                         unit="cm"
                         value={formData.height}
-                        onChange={(val) => setFormData({ height: val })}
+                        onChange={(val) => handleChange('height', val)}
                         min={100}
                         max={250}
                         placeholder="170"
+                        error={errors.height}
                     />
                     <MeasurementInput
                         label="Cân nặng"
                         unit="kg"
                         value={formData.weight}
-                        onChange={(val) => setFormData({ weight: val })}
+                        onChange={(val) => handleChange('weight', val)}
                         min={30}
                         max={250}
                         placeholder="65"
+                        error={errors.weight}
                     />
                 </div>
 

@@ -54,6 +54,8 @@ export function Header() {
         setGreeting(getGreeting());
     }, []);
 
+    console.log(user);
+
     return (
         <header className="sticky top-0 z-30 bg-cream/80 backdrop-blur-xl border-b border-slate-100/50">
             <div className="flex items-center justify-between px-6 py-4">
