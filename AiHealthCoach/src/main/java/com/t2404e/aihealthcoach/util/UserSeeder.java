@@ -102,6 +102,6 @@ public class UserSeeder implements CommandLineRunner {
                     .build();
             healthAnalysisRepository.save(analysis);
         }
-        System.out.println("✅ 20 Test Users seeded successfully (user1@example.com -> user20@example.com / User@123)");
+        System.out.println("✅ 20 Test Users seeded successfully (user1@gmail.com -> user20@gmail.com / User@123)");
     }
 }

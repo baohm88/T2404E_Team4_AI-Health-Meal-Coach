@@ -10,10 +10,10 @@
 
 import http, { removeToken } from '@/lib/http';
 import {
-    ApiResponse,
-    LoginRequest,
-    RegisterRequest,
-    AuthData,
+  ApiResponse,
+  AuthData,
+  LoginRequest,
+  RegisterRequest,
 } from '@/types/api';
 
 // ============================================================
@@ -24,6 +24,7 @@ import {
 export interface AuthResponse {
     success: boolean;
     accessToken?: string;
+    user?: import('@/types/api').AuthUser;
     error?: string;
 }
 
@@ -45,7 +46,7 @@ export const authService = {
             console.log('🔐 Login API Response:', response); // Debug log
 
             if (response.success && response.data?.token) {
-                const { token } = response.data;
+                const { token, user } = response.data;
 
                 // ⚠️ NOTE: Token is saved in use-auth-form.ts hook, not here
                 // This keeps token management centralized in the UI layer
@@ -53,6 +54,7 @@ export const authService = {
                 return {
                     success: true,
                     accessToken: token,
+                    user: user,
                 };
             }
 

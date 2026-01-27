@@ -86,9 +86,10 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtUtil.generateToken(
                 user.getId(),
                 user.getEmail(),
-                user.getRole().name()
+                user.getRole().name(),
+                user.getFullName()
         );
 
-        return new AuthResponse(token);
+        return new AuthResponse(token, com.t2404e.aihealthcoach.dto.response.UserResponse.fromEntity(user));
     }
 }

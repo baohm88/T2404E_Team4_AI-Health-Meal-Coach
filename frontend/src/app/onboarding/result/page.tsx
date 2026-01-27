@@ -15,6 +15,7 @@
 
 import { getToken } from '@/lib/http';
 import { AIAnalysisResponse, aiService } from '@/services/ai.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { motion } from 'framer-motion';
 import {
   Activity,
@@ -137,6 +138,7 @@ function getHealthStatusColor(status: string): string {
 
 export default function OnboardingResultPage() {
     const router = useRouter();
+    const { user } = useAuthStore();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -165,12 +167,7 @@ export default function OnboardingResultPage() {
         // Authenticated – fetch stored analysis
         // Authenticated – fetch stored analysis or create new one if pending
         const fetchAnalysis = async () => {
-             // Import store dynamically or assume it's available (better to import at top, but here allows keeping diff small if I could, but I should add import at top. 
-             // Since I can't add top-level import easily with this tool without replacing widely, I will use require or rely on the fact that I will add import in a separate block? No I should replace the file content properly.)
-             // Actually, replace_file_content is fine with adding imports if I touch top of file.
-             // But for now, let's use the local logic.
-             
-             try {
+            try {
                 // 1. Try to get stored analysis
                 const res = await aiService.getStoredAnalysis();
                 console.log('📊 [OnboardingResult] Analysis response:', res);
@@ -180,24 +177,34 @@ export default function OnboardingResultPage() {
                     setAnalysis(res.data);
                 } else {
                     console.warn('⚠️ [OnboardingResult] Analysis not found on server, checking local store...');
-                    
+
                     // 2. If not found, check if we have pending data in store (Post-Registration flow)
+                    // Dynamic import to avoid hydration issues if store uses persist
                     const { useOnboardingStore } = require('@/stores/useOnboardingStore');
-                    const { formData } = useOnboardingStore.getState();
+                    const { formData, hasPendingData } = useOnboardingStore.getState();
                     
-                    if (formData && formData.activityLevel) {
-                         console.log('🚀 [OnboardingResult] Found pending data, submitting to AI service...');
-                         const createRes = await aiService.analyzeHealth(formData);
-                         
-                         if (createRes.success && createRes.data) {
-                             console.log('✅ [OnboardingResult] Created new analysis successfully');
-                             setAnalysis(createRes.data);
-                         } else {
-                             throw new Error(createRes.error || 'Không thể tạo phân tích mới');
-                         }
+                    // Check if we have data to submit
+                    const shouldSubmit = formData && formData.activityLevel; // Simple check
+
+                    if (shouldSubmit) {
+                        console.log('🚀 [OnboardingResult] Found pending data, submitting to AI service...');
+                        
+                        // Force authenticated analysis (token is already in localStorage)
+                        const createRes = await aiService.analyzeHealth(formData);
+
+                        if (createRes.success && createRes.data) {
+                            console.log('✅ [OnboardingResult] Created new analysis successfully');
+                            setAnalysis(createRes.data);
+                            
+                            // Optional: Clear guest data after successful sync
+                            // useOnboardingStore.getState().clearGuestData(); 
+                            // (Maybe keep it until explicitly cleared or user finishes onboarding?)
+                        } else {
+                            throw new Error(createRes.error || 'Không thể tạo phân tích mới');
+                        }
                     } else {
-                         console.error('❌ [OnboardingResult] No pending data found');
-                         setError(res.error || 'Không thể tải dữ liệu phân tích');
+                        console.error('❌ [OnboardingResult] No pending data found in local store');
+                        setError(res.error || 'Không thể tải dữ liệu phân tích. Vui lòng thử lại quy trình.');
                     }
                 }
             } catch (e: any) {
@@ -281,6 +288,9 @@ export default function OnboardingResultPage() {
                     <div className="inline-flex items-center justify-center w-16 h-16 bg-emerald-100 rounded-full mb-4">
                         <CheckCircle2 className="w-8 h-8 text-emerald-600" />
                     </div>
+                    <h2 className="text-xl font-medium text-slate-600 mb-6">
+                        Xin chào, <span className="font-bold text-emerald-600">{user?.fullName || 'Health Coach'}</span> 👋
+                    </h2>
                     <h1 className="text-2xl font-bold text-slate-800">Kết quả phân tích sức khỏe</h1>
                     <p className="text-slate-500 mt-1">Dựa trên thông tin bạn cung cấp</p>
                 </motion.div>

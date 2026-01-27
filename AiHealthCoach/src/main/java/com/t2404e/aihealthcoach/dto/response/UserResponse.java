@@ -19,4 +19,16 @@ public class UserResponse {
     private Integer status;
     private Boolean isPremium;
     private LocalDateTime createdAt;
+
+    public static UserResponse fromEntity(com.t2404e.aihealthcoach.entity.User user) {
+        return UserResponse.builder()
+                .id(user.getId())
+                .fullName(user.getFullName())
+                .email(user.getEmail())
+                .role(user.getRole())
+                .status(user.getStatus())
+                .isPremium(user.getIsPremium())
+                .createdAt(user.getCreatedAt())
+                .build();
+    }
 }

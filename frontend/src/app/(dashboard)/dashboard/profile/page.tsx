@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Edit3, Save, X, UserCircle2, Loader2 } from 'lucide-react';
+import { Edit3, Loader2, Save, UserCircle2, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { getUserFromToken, TokenUser } from '@/lib/auth';
-import { profileService } from '@/services/profile.service';
 import { OnboardingData } from '@/lib/schemas/onboarding.schema';
+import { profileService } from '@/services/profile.service';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 // ============================================================
 // TYPES
@@ -97,6 +98,7 @@ const ProfileSkeleton = () => (
 // ============================================================
 
 export default function ProfilePage() {
+    const { user: authUser } = useAuthStore();
     const [user, setUser] = useState<TokenUser | null>(null);
     const [formData, setFormData] = useState<ProfileFormData>(DEFAULT_PROFILE);
     const [isLoading, setIsLoading] = useState(true);
@@ -107,8 +109,13 @@ export default function ProfilePage() {
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         try {
-            const tokenUser = getUserFromToken();
-            setUser(tokenUser);
+            // Prefer data from store if available, otherwise token
+            if (authUser) {
+                 setUser(authUser as unknown as TokenUser);
+            } else {
+                 const tokenUser = getUserFromToken();
+                 setUser(tokenUser);
+            }
 
             const result = await profileService.getProfile();
 
@@ -128,7 +135,7 @@ export default function ProfilePage() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [authUser]);
 
     useEffect(() => {
         fetchData();

@@ -12,13 +12,13 @@
  * @see /lib/schemas/onboarding.schema.ts - Zod schema & types
  */
 import {
-    Goal,
     ActivityLevel,
     Gender,
-    StressLevel,
-    WeeklyGoal,
+    Goal,
+    OnboardingData,
     SleepRange,
-    OnboardingData
+    StressLevel,
+    WeeklyGoal
 } from '@/lib/schemas/onboarding.schema';
 
 // ============================================================
@@ -57,9 +57,9 @@ export const LAST_STEP = 2;
  */
 export const INITIAL_FORM_DATA: Partial<OnboardingData> = {
     goal: undefined,           // Will be set by AI
-    height: 170,
-    weight: 65,
-    age: 25,
+    height: undefined,
+    weight: undefined,
+    age: undefined,
     gender: undefined,
     activityLevel: undefined,
     targetWeight: undefined,   // Will be set by AI

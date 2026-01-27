@@ -138,9 +138,29 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
             
             if (role === UserRole.ADMIN) {
                  console.log('🛡️ User is ADMIN -> Redirecting to /admin');
+                 
+                 // Update Auth Store
+                 const { useAuthStore } = require('@/stores/useAuthStore');
+                 
+                 useAuthStore.getState().loginSuccess({
+                     id: loginRes.user?.id || '0',
+                     email: loginRes.user?.email || data.email,
+                     fullName: loginRes.user?.fullName || 'Admin',
+                 }, loginRes.accessToken || '');
+
                  router.push('/admin');
             } else {
                  console.log('👤 User is MEMBER -> Checking onboarding data');
+                 
+                 // Update Auth Store
+                 const { useAuthStore } = require('@/stores/useAuthStore');
+                 
+                 useAuthStore.getState().loginSuccess({
+                     id: loginRes.user?.id || '0',
+                     email: loginRes.user?.email || data.email,
+                     fullName: loginRes.user?.fullName || 'User',
+                 }, loginRes.accessToken || '');
+
                  await syncGuestDataAndRedirect(loginRes.accessToken ?? '', router);
             }
         } catch (err) {
