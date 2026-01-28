@@ -60,8 +60,7 @@ export function DataTable<TData, TValue>({
             columnVisibility,
             rowSelection,
             pagination,
-            sorting, // Pass external sorting state if provided? No, useReactTable expects internal or external.
-            // If I want to control it, I should pass `onSortingChange` and `state.sorting`.
+            sorting: sorting ?? [], // Đảm bảo không bao giờ undefined
         },
         enableRowSelection: true,
         onRowSelectionChange: setRowSelection,

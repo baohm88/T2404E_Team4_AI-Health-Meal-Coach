@@ -139,10 +139,10 @@ export default function AdminUsersPage() {
                 return (
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs uppercase">
-                            {user.fullName.substring(0, 2)}
+                            {(user?.fullName?.trim() ? user.fullName.trim().substring(0, 2).toUpperCase() : "US")}
                         </div>
                         <div>
-                            <p className="font-medium text-slate-900">{user.fullName}</p>
+                            <p className="font-medium text-slate-900">{user.fullName || "Tên không xác định"}</p>
                             <p className="text-xs text-slate-500">{user.email}</p>
                         </div>
                     </div>
@@ -189,9 +189,12 @@ export default function AdminUsersPage() {
             accessorKey: "createdAt",
             header: "Ngày tham gia",
             cell: ({ row }) => {
+                const dateStr = row.original.createdAt;
                 try {
-                    return <span className="text-slate-600">{format(new Date(row.original.createdAt), 'dd/MM/yyyy')}</span>
+                    const date = new Date(dateStr);
+                    return <span className="text-slate-600">{isNaN(date.getTime()) ? "N/A" : format(date, 'dd/MM/yyyy')}</span>
                 } catch (e) {
+                    console.error("Lỗi định dạng ngày:", e);
                     return <span className="text-slate-400">N/A</span>
                 }
             },
