@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-table";
 import { useState } from "react";
 
+import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/admin/DataTableUI";
 import { DataTablePagination } from "./data-table-pagination";
 import { DataTableToolbar } from "./data-table-toolbar";
@@ -75,9 +76,12 @@ export function DataTable<TData, TValue>({
         // Sorting
         manualSorting: !!onSortingChange,
         onSortingChange: (updater) => {
-            if (!onSortingChange) return; // Bảo vệ nếu prop bị thiếu
-            const nextSorting = typeof updater === 'function' ? updater(sorting ?? []) : updater;
-            onSortingChange(nextSorting);
+            if (typeof updater === 'function' && onSortingChange && sorting) {
+                const newSorting = updater(sorting);
+                onSortingChange(newSorting);
+            } else if (onSortingChange && typeof updater !== 'function') {
+                onSortingChange(updater as SortingState);
+            }
         },
     });
 
@@ -90,14 +94,14 @@ export function DataTable<TData, TValue>({
                 onSearchChange={onSearchChange}
                 onDateRangeChange={onDateRangeChange}
             />
-            <div className="rounded-2xl border bg-white overflow-hidden shadow-sm">
+            <div className="bg-white/50 backdrop-blur-sm overflow-hidden relative">
                 <Table>
-                    <TableHeader className="bg-slate-50/50">
+                    <TableHeader className="bg-slate-900 shadow-lg relative z-10">
                         {table.getHeaderGroups().map((headerGroup) => (
-                            <TableRow key={headerGroup.id}>
+                            <TableRow key={headerGroup.id} className="hover:bg-slate-900 border-none h-16">
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id} className="font-semibold text-slate-600">
+                                        <TableHead key={header.id} className="text-white/90 first:pl-8 last:pr-8">
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
@@ -112,14 +116,17 @@ export function DataTable<TData, TValue>({
                     </TableHeader>
                     <TableBody>
                         {table.getRowModel().rows?.length ? (
-                            table.getRowModel().rows.map((row) => (
+                            table.getRowModel().rows.map((row, idx) => (
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
-                                    className="hover:bg-slate-50/50 transition-colors"
+                                    className={cn(
+                                        "transition-all duration-300 border-slate-100",
+                                        idx % 2 === 0 ? "bg-white" : "bg-slate-50/30"
+                                    )}
                                 >
                                     {row.getVisibleCells().map((cell) => (
-                                        <TableCell key={cell.id} className="text-slate-700">
+                                        <TableCell key={cell.id} className="first:pl-8 last:pr-8 py-5">
                                             {flexRender(
                                                 cell.column.columnDef.cell,
                                                 cell.getContext()
@@ -132,16 +139,21 @@ export function DataTable<TData, TValue>({
                             <TableRow>
                                 <TableCell
                                     colSpan={columns.length}
-                                    className="h-24 text-center text-slate-500"
+                                    className="h-32 text-center text-slate-400 font-medium"
                                 >
-                                    Không có dữ liệu.
+                                    <div className="flex flex-col items-center justify-center gap-2">
+                                        <div className="w-12 h-12 rounded-full bg-slate-50 flex items-center justify-center text-2xl">📭</div>
+                                        Không tìm thấy dữ liệu phù hợp.
+                                    </div>
                                 </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
                 </Table>
             </div>
-            <DataTablePagination table={table} />
+            <div className="p-6 bg-slate-50/50 border-t border-slate-100">
+                <DataTablePagination table={table} />
+            </div>
         </div>
     );
 }

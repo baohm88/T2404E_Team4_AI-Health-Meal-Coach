@@ -55,7 +55,6 @@ export function middleware(request: NextRequest) {
             const role = decoded?.role || 'USER';
 
             // ⛔ ADMIN trying to access CLIENT Pages -> Redirect to Admin
-            // (Optional: Prevent Admin from accidentally using user features)
             if (role === 'ADMIN' && pathname.startsWith('/dashboard')) {
                 return NextResponse.redirect(new URL('/admin', request.url));
             }

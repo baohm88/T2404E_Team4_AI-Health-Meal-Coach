@@ -67,7 +67,22 @@ public class DishServiceImpl implements DishService {
     @Override
     public void toggleDishStatus(Long id) {
         DishLibrary dish = getDishById(id);
-        dish.setIsDeleted(!Boolean.TRUE.equals(dish.getIsDeleted())); // Toggle status
+        dish.setIsDeleted(!Boolean.TRUE.equals(dish.getIsDeleted()));
         dishRepository.save(dish);
+    }
+
+    @Override
+    public void toggleVerifyStatus(Long id) {
+        DishLibrary dish = getDishById(id);
+        dish.setIsVerified(!Boolean.TRUE.equals(dish.getIsVerified()));
+        dishRepository.save(dish);
+    }
+
+    @Override
+    public void deleteDish(Long id) {
+        if (!dishRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Món ăn không tồn tại: " + id);
+        }
+        dishRepository.deleteById(id);
     }
 }

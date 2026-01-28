@@ -43,6 +43,7 @@ export interface DishLibrary {
     isAiSuggested: boolean;
     isDeleted: boolean;
     isVerified: boolean;
+    imageUrl?: string;
     createdAt: string;
 }
 
@@ -54,7 +55,7 @@ export interface CreateDishRequest {
     description?: string;
 }
 
-export interface UpdateDishRequest extends CreateDishRequest {}
+export interface UpdateDishRequest extends CreateDishRequest { }
 
 // ============================================================
 // PAGINATION
@@ -87,4 +88,33 @@ export interface PageResponse<T> {
     first: boolean;
     numberOfElements: number;
     empty: boolean;
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+
+export interface AdminDashboardActivity {
+    id: string;
+    type: 'user_register' | 'food_added' | 'report_created' | 'user_banned';
+    description: string;
+    user: string;
+    timestamp: string;
+}
+
+export interface AdminDashboardResponse {
+    totalUsers: number;
+    activeToday: number;
+    totalFoods: number;
+    totalReports: number;
+    userTypeStats: Record<string, number>;
+    systemOverview: {
+        users: { active: number; locked: number };
+        foods: { verified: number; unverified: number };
+        accounts: { premium: number; free: number };
+    };
+    registrationStats: { day: string; users: number }[];
+    premiumRegistrationStats: { day: string; premium: number }[];
+    foodGrowthStats: { day: string; foods: number }[];
+    recentActivities: AdminDashboardActivity[];
 }

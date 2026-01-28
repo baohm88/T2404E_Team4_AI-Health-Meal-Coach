@@ -43,4 +43,28 @@ public class AiMealVisionService {
                 .call()
                 .entity(MealAnalysisResponse.class);
     }
+
+    public MealAnalysisResponse analyzeMealText(String text) {
+        String systemPrompt = """
+                Bạn là một chuyên gia dinh dưỡng có khả năng phân tích tên hoặc mô tả món ăn.
+                Nhiệm vụ của bạn là nhận text mô tả bữa ăn và trả về kết quả dưới dạng JSON.
+
+                QUY TẮC:
+                1. TRẢ JSON DUY NHẤT. KHÔNG CÓ TEXT BÊN NGOÀI.
+                2. Ngôn ngữ: TIẾNG VIỆT.
+                3. Ước lượng Calo phải dựa trên kiến thức dinh dưỡng thực tế.
+                4. Field names giữ nguyên bằng tiếng Anh theo cấu trúc:
+                {
+                  "foodName": "string (Tên món ăn chính xác nhất)",
+                  "estimatedCalories": number,
+                  "nutritionDetails": "string (Phân tích chi tiết protein, carb, fat, vitamin...)"
+                }
+                """;
+
+        return chatClient.prompt()
+                .system(systemPrompt)
+                .user(text)
+                .call()
+                .entity(MealAnalysisResponse.class);
+    }
 }

@@ -4,16 +4,17 @@ import { AIAnalysisResponse } from '@/services/ai.service';
 import clsx from 'clsx';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Activity,
-  Brain,
-  Calendar,
-  ChevronDown,
-  Dumbbell,
-  Flame,
-  Heart,
-  Moon,
-  Utensils,
-  Zap
+    Activity,
+    Brain,
+    Calendar,
+    ChevronDown,
+    Dumbbell,
+    Flame,
+    Heart,
+    Info,
+    Moon,
+    Utensils,
+    Zap
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -34,7 +35,8 @@ function MetricCard({
     value,
     unit,
     subtitle,
-    colorClass
+    colorClass,
+    tooltip
 }: {
     icon: React.ReactNode;
     label: string;
@@ -42,19 +44,49 @@ function MetricCard({
     unit?: string;
     subtitle?: string;
     colorClass: string;
+    tooltip?: string;
 }) {
+    const [isHovered, setIsHovered] = useState(false);
+
     return (
-        <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-shadow">
+        <div
+            className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm flex flex-col items-center text-center hover:shadow-md transition-shadow relative"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+        >
             <div className={clsx("w-12 h-12 rounded-xl flex items-center justify-center mb-3", colorClass)}>
                 {icon}
             </div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                {label}
-            </p>
+            <div className="flex items-center gap-1 mb-1">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    {label}
+                </p>
+                {tooltip && (
+                    <div className="text-slate-300 hover:text-slate-500 cursor-help transition-colors">
+                        <Info className="w-3 h-3" />
+                    </div>
+                )}
+            </div>
+
             <p className="text-2xl font-bold text-slate-800">
                 {value}<span className="text-sm font-normal text-slate-500 ml-1">{unit}</span>
             </p>
             {subtitle && <p className="text-xs text-slate-500 mt-2 font-medium bg-slate-50 px-2 py-1 rounded-lg">{subtitle}</p>}
+
+            {/* Tooltip Popup */}
+            <AnimatePresence>
+                {isHovered && tooltip && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                        className="absolute z-10 bottom-full mb-3 w-48 p-3 bg-slate-800 text-white text-[11px] rounded-xl shadow-xl pointer-events-none text-left leading-relaxed"
+                    >
+                        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-800 rotate-45" />
+                        {tooltip}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
@@ -75,38 +107,42 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700 slide-in-from-bottom-4">
-            
+
             {/* 1. KEY METRICS GRID */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <MetricCard 
+                <MetricCard
                     icon={<Activity className="w-6 h-6 text-blue-600" />}
                     label="BMI"
                     value={analysis.bmi.toFixed(1)}
                     subtitle={statusInfo.label}
                     colorClass="bg-blue-50"
+                    tooltip="Chỉ số khối cơ thể, giúp xác định tình trạng cân nặng so với chiều cao. BMI từ 18.5 - 24.9 được coi là lý tưởng."
                 />
-                <MetricCard 
+                <MetricCard
                     icon={<Flame className="w-6 h-6 text-orange-600" />}
                     label="BMR"
                     value={analysis.bmr}
                     unit="kcal"
                     subtitle="Trao đổi chất cơ bản"
                     colorClass="bg-orange-50"
+                    tooltip="Lượng calo tối thiểu cơ thể cần để duy trì các chức năng sống (thở, tim đập, não bộ...) khi ở trạng thái nghỉ ngơi hoàn toàn."
                 />
-                 <MetricCard 
+                <MetricCard
                     icon={<Zap className="w-6 h-6 text-emerald-600" />}
                     label="TDEE"
                     value={analysis.tdee}
                     unit="kcal"
                     subtitle="Tiêu hao hằng ngày"
                     colorClass="bg-emerald-50"
+                    tooltip="Tổng năng lượng bạn đốt cháy thực tế trong 24 giờ, bao gồm cả BMR và các hoạt động đi lại, làm việc, tập luyện."
                 />
-                <MetricCard 
+                <MetricCard
                     icon={<Heart className="w-6 h-6 text-pink-600" />}
                     label="Tình trạng"
                     value={statusInfo.label}
                     subtitle="Dựa trên chỉ số BMI"
                     colorClass="bg-pink-50"
+                    tooltip="Phân loại sức khỏe của bạn dựa trên các tiêu chuẩn y khoa quốc tế, giúp xác định lộ trình tăng/giảm cân phù hợp."
                 />
             </div>
 
@@ -131,7 +167,7 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
                         <Heart className="w-4 h-4 text-red-500" />
                         Lối sống & Thói quen
                     </h3>
-                    
+
                     {lifestyleInsights && (
                         <div className="space-y-4">
                             <div className="flex gap-3 items-start">
@@ -162,7 +198,7 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
                     {threeMonthPlan?.months?.map((month) => {
                         const isExpanded = expandedMonth === month.month;
                         return (
-                            <motion.div 
+                            <motion.div
                                 key={month.month}
                                 layout
                                 className={clsx(
@@ -171,7 +207,7 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
                                 )}
                             >
                                 {/* Header (Clickable) */}
-                                <button 
+                                <button
                                     onClick={() => setExpandedMonth(isExpanded ? 0 : month.month)}
                                     className="w-full flex items-center p-5 text-left"
                                 >
@@ -203,7 +239,7 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
                                             className="border-t border-slate-100"
                                         >
                                             <div className="p-5 md:p-6 space-y-6 bg-slate-50/50">
-                                                
+
                                                 {/* Nutrition & Habits */}
                                                 <div className="grid md:grid-cols-2 gap-4">
                                                     <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm">

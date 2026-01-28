@@ -61,16 +61,14 @@ public class SecurityConfig {
 
                                 // Authorization rules
                                 .authorizeHttpRequests(auth -> auth
-                                                // Cho phép OPTIONS (Preflight request) đi qua mà không cần token - ƯU
-                                                // TIÊN
-                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
-                                                .permitAll()
                                                 .requestMatchers(SWAGGER_WHITELIST).permitAll()
                                                 .requestMatchers("/auth/**").permitAll()
                                                 .requestMatchers("/ai/**").permitAll()
                                                 .requestMatchers("/payment/**").permitAll() // Cho phép tạo link và
                                                                                             // callback
-                                                .requestMatchers("/admin/**").hasRole("ADMIN")
+                                                // Cho phép OPTIONS (Preflight request) đi qua mà không cần token
+                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                                                .permitAll()
                                                 .anyRequest().authenticated())
 
                                 // Disable default auth mechanisms
@@ -93,11 +91,10 @@ public class SecurityConfig {
 
                 CorsConfiguration config = new CorsConfiguration();
 
-                // Frontend origin (Next.js) - Sử dụng pattern để chấp nhận localhost và
-                // 127.0.0.1
-                config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+                // Frontend origin (Next.js)
+                config.setAllowedOrigins(List.of("http://localhost:3000"));
 
-                // Allowed HTTP methods - Bao gồm PATCH
+                // Allowed HTTP methods
                 config.setAllowedMethods(List.of(
                                 "GET",
                                 "POST",

@@ -37,7 +37,20 @@ public interface DishLibraryRepository extends JpaRepository<DishLibrary, Long> 
     Page<DishLibrary> findByCategoryAndIsVerifiedTrueAndIsDeletedFalse(MealTimeSlot category, Pageable pageable);
 
     /**
+     * Tìm kiếm món ăn theo tên và category (phân trang) - Chỉ lấy món chưa xóa
+     */
+    Page<DishLibrary> findByNameContainingIgnoreCaseAndCategoryAndIsDeletedFalse(String name, MealTimeSlot category,
+            Pageable pageable);
+
+    /**
      * Lấy tất cả món ăn chưa xóa
      */
     Page<DishLibrary> findAllByIsDeletedFalse(Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(d) FROM DishLibrary d WHERE d.createdAt >= :startDate AND d.createdAt <= :endDate")
+    long countByCreatedAtBetween(java.time.LocalDateTime startDate, java.time.LocalDateTime endDate);
+
+    long countByIsVerifiedTrueAndIsDeletedFalse();
+
+    long countByIsVerifiedFalseAndIsDeletedFalse();
 }

@@ -51,26 +51,30 @@ function MeasurementInput({
     return (
         <div className="flex flex-col">
             <span className="text-xs text-slate-500 font-medium mb-2">{label}</span>
-            <div className="relative flex items-center">
-                <input
-                    type="number"
-                    min={min}
-                    max={max}
-                    value={value || ''}
-                    onChange={(e) => onChange(Number(e.target.value))}
-                    placeholder={placeholder}
-                    className={clsx(
-                        'w-full py-3 pr-12 text-xl font-medium text-slate-800',
-                        'bg-slate-50/50 rounded-xl border-0',
-                        'focus:outline-none focus:bg-slate-100/70 focus:ring-2 focus:ring-primary/20',
-                        'transition-all placeholder:text-slate-300 placeholder:font-normal placeholder:text-base',
-                        '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none',
-                        error && 'ring-2 ring-red-500/50 bg-red-50/50'
-                    )}
-                />
-                <span className="absolute right-3 text-sm text-slate-400 font-medium pointer-events-none">
-                    {unit}
-                </span>
+            <div className={clsx(
+                "flex items-center justify-center h-16 px-2 rounded-2xl border-2 transition-all duration-300 group",
+                "bg-white border-slate-200",
+                "focus-within:border-primary focus-within:bg-primary/5 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary",
+                error && "border-red-500/30 bg-red-50/50 focus-within:border-red-500/50 focus-within:ring-red-500/10"
+            )}>
+                <div className="grid grid-cols-2 w-full items-center gap-1">
+                    <input
+                        type="number"
+                        min={min}
+                        max={max}
+                        value={value || ''}
+                        onChange={(e) => onChange(Number(e.target.value))}
+                        placeholder={placeholder}
+                        className={clsx(
+                            'w-full bg-transparent text-lg font-bold text-slate-800 text-right focus:outline-none transition-all',
+                            'placeholder:text-slate-300 placeholder:font-normal placeholder:text-sm',
+                            '[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none'
+                        )}
+                    />
+                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tight group-focus-within:text-primary transition-colors text-left pt-1 truncate">
+                        {unit}
+                    </span>
+                </div>
             </div>
             {error && (
                 <span className="text-xs text-red-500 mt-1">{error}</span>
@@ -90,16 +94,16 @@ export function StepInfo() {
     const validateField = (field: string, value: number) => {
         // Simple manual validation or Zod schema check if preferred
         // using schema definitions from constants/schema
-         if (field === 'age') {
-             if (!value || value < 10 || value > 120) return 'Tuổi từ 10-120';
-         }
-         if (field === 'height') {
-             if (!value || value < 100 || value > 250) return 'Cao 100-250cm';
-         }
-         if (field === 'weight') {
-             if (!value || value < 30 || value > 250) return 'Nặng 30-250kg';
-         }
-         return '';
+        if (field === 'age') {
+            if (!value || value < 10 || value > 120) return 'Tuổi từ 10-120';
+        }
+        if (field === 'height') {
+            if (!value || value < 100 || value > 250) return 'Cao 100-250cm';
+        }
+        if (field === 'weight') {
+            if (!value || value < 30 || value > 250) return 'Nặng 30-250kg';
+        }
+        return '';
     };
 
     const handleChange = (field: 'age' | 'height' | 'weight', value: number) => {
@@ -108,15 +112,16 @@ export function StepInfo() {
         setErrors(prev => ({ ...prev, [field]: error }));
     };
 
-    const isValid = formData.age && formData.height && formData.weight && formData.gender && 
-                    !errors.age && !errors.height && !errors.weight;
+    const isValid = formData.age && formData.height && formData.weight && formData.gender &&
+        !errors.age && !errors.height && !errors.weight;
 
     return (
-        <div className="flex flex-col h-full">
-            <div className="flex flex-col gap-6">
+        <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex flex-col gap-8">
                 {/* Age, Height, Weight - Grid layout */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                     <MeasurementInput
+                        key="input-age"
                         label="Tuổi"
                         unit="tuổi"
                         value={formData.age}
@@ -127,6 +132,7 @@ export function StepInfo() {
                         error={errors.age}
                     />
                     <MeasurementInput
+                        key="input-height"
                         label="Chiều cao"
                         unit="cm"
                         value={formData.height}
@@ -137,6 +143,7 @@ export function StepInfo() {
                         error={errors.height}
                     />
                     <MeasurementInput
+                        key="input-weight"
                         label="Cân nặng"
                         unit="kg"
                         value={formData.weight}

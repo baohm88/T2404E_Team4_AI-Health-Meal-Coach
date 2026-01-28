@@ -20,6 +20,11 @@ public interface MealLogService {
     MealAnalysisResponse analyzeAndLog(MultipartFile file, Long userId, Long plannedMealId, String category)
             throws IOException;
 
+    /**
+     * Phân tích văn bản/giọng nói và lưu log
+     */
+    MealAnalysisResponse analyzeTextAndLog(String text, Long userId, Long plannedMealId, String category);
+
     UserMealLog confirmCheckIn(MealAnalysisResponse checkInData, Long userId);
 
     /**
@@ -30,4 +35,10 @@ public interface MealLogService {
      * @return Log đã cập nhật
      */
     UserMealLog checkInLog(Long logId, Long userId);
+
+    /**
+     * Tìm kiếm món ăn từ thư viện (cho người dùng)
+     */
+    org.springframework.data.domain.Page<com.t2404e.aihealthcoach.entity.DishLibrary> searchDishes(String keyword,
+            String category, int page, int size);
 }

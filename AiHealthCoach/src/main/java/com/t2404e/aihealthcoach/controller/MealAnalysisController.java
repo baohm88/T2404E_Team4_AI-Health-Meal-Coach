@@ -2,7 +2,10 @@ package com.t2404e.aihealthcoach.controller;
 
 import java.io.IOException;
 
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -37,7 +40,6 @@ public class MealAnalysisController {
             @RequestParam(value = "category", required = false) String category,
             HttpServletRequest request) {
         try {
-            System.out.println("DEBUG: Received analyze request");
             Long userId = RequestUtil.getUserId(request);
             if (userId == null)
                 return ApiResponse.error("User not authenticated");
@@ -47,12 +49,41 @@ public class MealAnalysisController {
 
             return ApiResponse.success("Phân tích bữa ăn thành công", result);
         } catch (IOException e) {
-            System.out.println("ERROR: Upload failed: " + e.getMessage());
             return ApiResponse.error("Lỗi khi tải ảnh lên: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("ERROR: Analysis failed: " + e.getMessage());
             return ApiResponse.error("Lỗi khi phân tích ảnh: " + e.getMessage());
         }
+    }
+
+    @PostMapping("/analyze-text")
+    @Operation(summary = "Phân tích bữa ăn qua văn bản/giọng nói", description = "Gửi text mô tả món ăn để AI nhận diện và tính toán dinh dưỡng.")
+    public ApiResponse<MealAnalysisResponse> analyzeMealText(
+            @RequestParam("text") String text,
+            @RequestParam(value = "plannedMealId", required = false) Long plannedMealId,
+            @RequestParam(value = "category", required = false) String category,
+            HttpServletRequest request) {
+        try {
+            Long userId = RequestUtil.getUserId(request);
+            if (userId == null)
+                return ApiResponse.error("User not authenticated");
+
+            MealAnalysisResponse result = mealLogService.analyzeTextAndLog(text, userId, plannedMealId, category);
+            return ApiResponse.success("Phân tích bữa ăn thành công", result);
+        } catch (Exception e) {
+            return ApiResponse.error("Lỗi khi phân tích văn bản: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/search-dishes")
+    @Operation(summary = "Tìm kiếm món ăn trong thư viện", description = "Dành cho người dùng tìm kiếm món ăn để đổi bữa.")
+    public ApiResponse<Page<com.t2404e.aihealthcoach.entity.DishLibrary>> searchDishes(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Page<com.t2404e.aihealthcoach.entity.DishLibrary> result = mealLogService.searchDishes(keyword, category, page,
+                size);
+        return ApiResponse.success("Tìm kiếm thành công", result);
     }
 
     @PostMapping("/check-in")
@@ -81,7 +112,7 @@ public class MealAnalysisController {
     @PostMapping("/{logId}/check-in")
     @Operation(summary = "Đánh dấu một bữa ăn trong kế hoạch là đã hoàn thành")
     public ApiResponse<UserMealLog> checkInById(
-            @org.springframework.web.bind.annotation.PathVariable Long logId,
+            @PathVariable Long logId,
             HttpServletRequest request) {
 
         Long userId = RequestUtil.getUserId(request);

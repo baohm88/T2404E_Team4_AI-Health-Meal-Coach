@@ -1,7 +1,8 @@
 "use client";
 
 import { ColumnDef, SortingState } from "@tanstack/react-table";
-import { Coffee, Edit, Moon, Plus, Sun, Trash2, Undo2, Utensils } from "lucide-react";
+import { format } from "date-fns";
+import { Coffee, Edit, Moon, Plus, Sun, Trash2, Undo2, Utensils, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -9,7 +10,8 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/admin/data-table/data-table";
 import { FoodFormModal } from "@/components/admin/FoodFormModal";
 import { Button } from "@/components/ui/Button";
-import { createDish, getDishes, toggleDishStatus, updateDish } from "@/services/admin.service";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { createDish, deleteDish, getDishes, toggleDishStatus, toggleVerifyStatus, updateDish } from "@/services/admin.service";
 import { CreateDishRequest, DishLibrary, MealTimeSlot } from "@/types/admin";
 
 // Category Badge Helper
@@ -35,16 +37,33 @@ export default function FoodDatabasePage() {
     // State
     const [data, setData] = useState<DishLibrary[]>([]);
     const [loading, setLoading] = useState(true);
-    
+
     // Pagination & Sort
     const [pageIndex, setPageIndex] = useState(0);
     const [pageSize, setPageSize] = useState(10);
     const [pageCount, setPageCount] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
     const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: true }]);
-    
+
     // Filters
     const [keyword, setKeyword] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<MealTimeSlot | undefined>(undefined);
+
+    // Confirm Dialog State
+    const [confirmConfig, setConfirmConfig] = useState<{
+        isOpen: boolean;
+        title: string;
+        description: string;
+        onConfirm: () => void;
+        type: 'danger' | 'warning' | 'info' | 'success';
+        confirmText?: string;
+    }>({
+        isOpen: false,
+        title: '',
+        description: '',
+        onConfirm: () => { },
+        type: 'info'
+    });
 
     // Modal
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -60,15 +79,16 @@ export default function FoodDatabasePage() {
             const sortParam = `${sortField},${sortDir}`;
 
             const result = await getDishes(
-                pageIndex, 
-                pageSize, 
-                keyword, 
-                selectedCategory, 
+                pageIndex,
+                pageSize,
+                keyword,
+                selectedCategory,
                 sortParam
             );
-            
+
             setData(result.content);
             setPageCount(result.totalPages);
+            setTotalElements(result.totalElements);
         } catch (error) {
             console.error("Failed to fetch dishes:", error);
             toast.error("Không thể tải danh sách món ăn");
@@ -85,17 +105,66 @@ export default function FoodDatabasePage() {
     }, [fetchData]);
 
     // Handlers
-    const handleToggleStatus = async (dish: DishLibrary) => {
-        const action = dish.isDeleted ? 'khôi phục' : 'ẩn';
-        if (window.confirm(`Bạn chắc chắn muốn ${action} món "${dish.name}"?`)) {
-            try {
-                await toggleDishStatus(dish.id);
-                toast.success(`Đã ${action} món ăn`);
-                fetchData();
-            } catch (error) {
-                toast.error('Lỗi cập nhật trạng thái');
+    const handleToggleStatus = (dish: DishLibrary) => {
+        const action = dish.isDeleted ? 'hiển thị lại' : 'ẩn';
+        setConfirmConfig({
+            isOpen: true,
+            title: `${dish.isDeleted ? 'Hiển thị' : 'Ẩn'} món ăn`,
+            description: `Bạn có chắc chắn muốn ${action} món "${dish.name}"?`,
+            type: dish.isDeleted ? 'success' : 'warning',
+            confirmText: dish.isDeleted ? 'Hiển thị' : 'Ẩn món',
+            onConfirm: async () => {
+                try {
+                    await toggleDishStatus(dish.id);
+                    toast.success(`Đã ${action} món ăn`);
+                    fetchData();
+                } catch (error) {
+                    toast.error('Lỗi cập nhật trạng thái');
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
             }
-        }
+        });
+    };
+
+    const handleToggleVerify = (dish: DishLibrary) => {
+        const action = dish.isVerified ? 'hủy xác nhận' : 'xác nhận';
+        setConfirmConfig({
+            isOpen: true,
+            title: `${dish.isVerified ? 'Hủy' : 'Xác nhận'} món chuẩn`,
+            description: `Bạn có chắc chắn muốn ${action} món "${dish.name}" không?`,
+            type: dish.isVerified ? 'warning' : 'info',
+            confirmText: dish.isVerified ? 'Hủy xác nhận' : 'Xác nhận',
+            onConfirm: async () => {
+                try {
+                    await toggleVerifyStatus(dish.id);
+                    toast.success(`Đã ${action} món ăn`);
+                    fetchData();
+                } catch (error) {
+                    toast.error('Lỗi cập nhật trạng thái xác thực');
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleDeletePermanent = (dish: DishLibrary) => {
+        setConfirmConfig({
+            isOpen: true,
+            title: 'Xóa vĩnh viễn',
+            description: `CẢNH BÁO: Hành động này sẽ xóa hoàn toàn món "${dish.name}" khỏi hệ thống và không thể hoàn tác. Bạn vẫn muốn tiếp tục?`,
+            type: 'danger',
+            confirmText: 'Xóa vĩnh viễn',
+            onConfirm: async () => {
+                try {
+                    await deleteDish(dish.id);
+                    toast.success(`Đã xóa vĩnh viễn món ăn`);
+                    fetchData();
+                } catch (error) {
+                    toast.error('Lỗi khi xóa món ăn');
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
     };
 
     const handleEdit = (dish: DishLibrary) => {
@@ -142,11 +211,11 @@ export default function FoodDatabasePage() {
                     <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 relative overflow-hidden flex-shrink-0 flex items-center justify-center text-lg">
                             {dish.imageUrl ? (
-                                <Image 
-                                    src={dish.imageUrl} 
+                                <Image
+                                    src={dish.imageUrl}
                                     alt={dish.name}
                                     fill
-                                    className="object-cover" 
+                                    className="object-cover"
                                 />
                             ) : (
                                 <span>🍽️</span>
@@ -168,21 +237,33 @@ export default function FoodDatabasePage() {
             enableSorting: true,
         },
         {
-            accessorKey: "calories",
+            accessorKey: "baseCalories",
             header: "Calo",
-            cell: ({ row }) => <span className="font-bold text-slate-700">{row.original.calories} kcal</span>,
+            cell: ({ row }) => <span className="font-bold text-slate-700">{row.original.baseCalories} kcal</span>,
             enableSorting: true,
         },
         {
-            accessorKey: "isDeleted",
+            accessorKey: "isVerified",
             header: "Trạng thái",
             cell: ({ row }) => (
-                row.original.isDeleted ? (
-                    <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium border border-red-100">Đã xóa</span>
+                row.original.isVerified ? (
+                    <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-medium border border-emerald-100">Đã xác nhận</span>
                 ) : (
-                    <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-600 font-medium border border-emerald-100">Hiện</span>
+                    <span className="text-xs px-2 py-1 rounded bg-red-50 text-red-600 font-medium border border-red-100">Chưa xác nhận</span>
                 )
             ),
+            enableSorting: true,
+        },
+        {
+            accessorKey: "createdAt",
+            header: "Ngày tạo",
+            cell: ({ row }) => {
+                try {
+                    return <span className="text-slate-600 font-medium">{format(new Date(row.original.createdAt), 'dd/MM/yyyy')}</span>
+                } catch (e) {
+                    return <span className="text-slate-400">N/A</span>
+                }
+            },
             enableSorting: true,
         },
         {
@@ -191,20 +272,41 @@ export default function FoodDatabasePage() {
             cell: ({ row }) => {
                 const dish = row.original;
                 return (
-                    <div className="flex items-center gap-2">
-                        <button 
+                    <div className="flex items-center gap-1">
+                        {/* Verify Toggle */}
+                        <button
+                            onClick={() => handleToggleVerify(dish)}
+                            className={`p-2 rounded-lg transition-colors ${dish.isVerified ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100'}`}
+                            title={dish.isVerified ? "Hủy xác nhận" : "Xác nhận món chuẩn"}
+                        >
+                            <Utensils className="w-4 h-4" />
+                        </button>
+
+                        {/* Edit */}
+                        <button
                             onClick={() => handleEdit(dish)}
-                            className="p-2 hover:bg-slate-100 rounded-lg text-slate-600 transition-colors"
+                            className="p-2 hover:bg-slate-100 rounded-lg text-blue-600 transition-colors"
                             title="Chỉnh sửa"
                         >
                             <Edit className="w-4 h-4" />
                         </button>
-                        <button 
+
+                        {/* Toggle Visibility (Soft Delete) */}
+                        <button
                             onClick={() => handleToggleStatus(dish)}
-                            className={`p-2 rounded-lg transition-colors ${dish.isDeleted ? 'text-emerald-600 hover:bg-emerald-50' : 'text-red-400 hover:bg-red-50'}`}
-                            title={dish.isDeleted ? "Khôi phục" : "Xóa"}
+                            className={`p-2 rounded-lg transition-colors ${dish.isDeleted ? 'text-emerald-600 hover:bg-emerald-50' : 'text-amber-500 hover:bg-amber-50'}`}
+                            title={dish.isDeleted ? "Hiển thị lại" : "Ẩn món ăn"}
                         >
                             {dish.isDeleted ? <Undo2 className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
+                        </button>
+
+                        {/* Permanent Delete */}
+                        <button
+                            onClick={() => handleDeletePermanent(dish)}
+                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
+                            title="Xóa vĩnh viễn"
+                        >
+                            <X className="w-4 h-4" />
                         </button>
                     </div>
                 )
@@ -213,58 +315,102 @@ export default function FoodDatabasePage() {
     ];
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Quản lý món ăn</h1>
-                    <p className="text-slate-500">Cơ sở dữ liệu món ăn và thông tin dinh dưỡng</p>
+        <div className="space-y-8 animate-in fade-in duration-700">
+            {/* Premium Header Section */}
+            <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-10 shadow-2xl border border-slate-700/50">
+                <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-emerald-500/20 rounded-full blur-[120px] animate-pulse" />
+                <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-72 h-72 bg-blue-500/10 rounded-full blur-[100px]" />
+
+                <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+                    <div className="space-y-4">
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold uppercase tracking-widest">
+                            <Utensils className="w-4 h-4" /> Food Intelligence
+                        </div>
+                        <h1 className="text-4xl md:text-5xl font-black text-white tracking-tighter leading-tight">
+                            Thư viện <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-blue-400">Dinh dưỡng</span>
+                        </h1>
+                        <p className="text-slate-400 text-lg max-w-xl font-medium leading-relaxed">
+                            Quản lý cơ sở dữ liệu món ăn, thông tin calo và trạng thái xác thực dữ liệu chuẩn cho hệ thống AI.
+                        </p>
+                    </div>
+
+                    <Button
+                        onClick={handleOpenCreate}
+                        className="h-16 px-8 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-xl shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 gap-3"
+                    >
+                        <Plus className="w-6 h-6" /> Thêm món mới
+                    </Button>
                 </div>
-                <Button onClick={handleOpenCreate} className="gap-2">
-                    <Plus className="w-4 h-4" /> Thêm món mới
-                </Button>
             </div>
 
-            {/* Additional Custom Filter Logic for Category can be injected via Toolbar or separate UI above table 
-                For now, we can put a simple Select above or modify Helper to accept children?
-                Or update DataTableToolbar to accept extra filters. 
-                Let's put the Category select ABOVE the table for now for simplicity, 
-                or pass it as a custom filter if we had time to refactor Toolbar.
-            */}
-            <div className="bg-white p-4 rounded-2xl border border-slate-200 flex flex-wrap gap-4 items-center">
-                 <span className="text-sm font-medium text-slate-700">Lọc theo:</span>
-                 <select 
-                    value={selectedCategory || ''}
-                    onChange={(e) => {
-                        setSelectedCategory(e.target.value ? e.target.value as MealTimeSlot : undefined);
-                        setPageIndex(0);
-                    }}
-                    className="h-9 px-3 rounded-lg border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                >
-                    <option value="">Tất cả bữa ăn</option>
-                    <option value="BREAKFAST">Sáng</option>
-                    <option value="LUNCH">Trưa</option>
-                    <option value="DINNER">Tối</option>
-                    <option value="SNACK">Phụ</option>
-                 </select>
+            {/* Designer Filter Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-3 bg-white/70 backdrop-blur-2xl p-6 rounded-[32px] border border-white shadow-2xl flex flex-col md:flex-row gap-6 items-end">
+                    <div className="flex-1 w-full space-y-3">
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            Tìm kiếm món ăn
+                        </label>
+                        <div className="relative group">
+                            <input
+                                type="text"
+                                placeholder="Ví dụ: Phở bò, Cơm tấm..."
+                                value={keyword}
+                                onChange={(e) => setKeyword(e.target.value)}
+                                className="w-full h-14 pl-6 pr-12 rounded-2xl border border-slate-200 focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all bg-slate-50/50 text-slate-800 font-medium"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="w-full md:w-64 space-y-3">
+                        <label className="text-xs font-black text-slate-400 uppercase tracking-widest ml-1">Lọc bữa ăn</label>
+                        <select
+                            value={selectedCategory || ''}
+                            onChange={(e) => {
+                                setSelectedCategory(e.target.value ? e.target.value as MealTimeSlot : undefined);
+                                setPageIndex(0);
+                            }}
+                            className="w-full h-14 px-5 rounded-2xl border border-slate-200 text-slate-700 font-bold focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 bg-white transition-all appearance-none cursor-pointer"
+                            style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 1.25rem center', backgroundSize: '1.25rem' }}
+                        >
+                            <option value="">Tất cả bữa ăn</option>
+                            <option value="BREAKFAST">☕ Bữa Sáng</option>
+                            <option value="LUNCH">☀️ Bữa Trưa</option>
+                            <option value="DINNER">🌙 Bữa Tối</option>
+                            <option value="SNACK">🍎 Bữa Phụ</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="bg-emerald-500 p-8 rounded-[32px] shadow-2xl shadow-emerald-500/20 flex flex-col justify-center items-center text-white relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -mr-16 -mt-16 transition-all group-hover:scale-125" />
+                    <p className="text-emerald-100 text-xs font-black uppercase tracking-widest mb-1 relative z-10">Thư viện hiện có</p>
+                    <p className="text-4xl font-black relative z-10 tracking-tighter">{totalElements}</p>
+                    <p className="text-[10px] text-emerald-100/60 mt-2 font-medium relative z-10 text-center uppercase tracking-tighter">Tổng số món ăn</p>
+                </div>
             </div>
 
-            <DataTable 
-                columns={columns} 
-                data={data}
-                searchKey="name"
-                searchValue={keyword}
-                onSearchChange={setKeyword}
-                // Pagination
-                pageCount={pageCount}
-                pagination={{ pageIndex, pageSize }}
-                onPaginationChange={({ pageIndex, pageSize }) => {
-                    setPageIndex(pageIndex);
-                    setPageSize(pageSize);
-                }}
-                // Sorting
-                sorting={sorting}
-                onSortingChange={setSorting}
-            />
+            {/* Table Container with Premium Styling */}
+            <div className="bg-white rounded-[40px] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-50/50 to-transparent pointer-events-none" />
+                <div className="relative">
+                    <DataTable
+                        columns={columns}
+                        data={data}
+                        // Pagination
+                        pageCount={pageCount}
+                        pagination={{ pageIndex, pageSize }}
+                        onPaginationChange={({ pageIndex, pageSize }) => {
+                            setPageIndex(pageIndex);
+                            setPageSize(pageSize);
+                        }}
+                        // Sorting
+                        sorting={sorting}
+                        onSortingChange={setSorting}
+                    />
+                </div>
+            </div>
+
+            <div className="h-20" />
 
             <FoodFormModal
                 isOpen={isModalOpen}
@@ -274,6 +420,16 @@ export default function FoodDatabasePage() {
                 }}
                 onSubmit={handleSubmit}
                 editingDish={editingDish}
+            />
+
+            <ConfirmDialog
+                isOpen={confirmConfig.isOpen}
+                onClose={() => setConfirmConfig(prev => ({ ...prev, isOpen: false }))}
+                onConfirm={confirmConfig.onConfirm}
+                title={confirmConfig.title}
+                description={confirmConfig.description}
+                type={confirmConfig.type}
+                confirmText={confirmConfig.confirmText}
             />
         </div>
     );
