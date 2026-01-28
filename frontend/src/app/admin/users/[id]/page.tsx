@@ -37,13 +37,26 @@ export default function AdminUserDetailPage() {
                 // Fetch Health Analysis (if exists)
                 try {
                     const planData = await getUserPlan(userId);
-                    if (planData && planData.analysisJson) {
-                         setHealthPlan(JSON.parse(planData.analysisJson));
+                    console.log('Plan data received:', planData);
+
+                    if (planData?.analysisJson) {
+                        // Handle both string (old format) and object (new format)
+                        const healthData = typeof planData.analysisJson === 'string'
+                            ? JSON.parse(planData.analysisJson)
+                            : planData.analysisJson;
+
+                        console.log('Parsed health data:', healthData);
+                        setHealthPlan(healthData);
+                    } else {
+                        console.log('No analysisJson found in response');
+                        setHealthPlan(null);
                     }
                 } catch (e) {
-                    // Ignore if no plan
-                    console.log("No health plan found");
+                    console.error("Lỗi parse dữ liệu sức khỏe:", e);
+                    setHealthPlan(null);
+                    toast.error("Dữ liệu phân tích sức khỏe không hợp lệ");
                 }
+
 
                 // Fetch Meal Plan (if exists)
                 try {
@@ -99,9 +112,9 @@ export default function AdminUserDetailPage() {
         <div className="space-y-6 max-w-7xl mx-auto">
             {/* Header */}
             <div>
-                <Button 
-                    variant="ghost" 
-                    onClick={() => router.back()} 
+                <Button
+                    variant="ghost"
+                    onClick={() => router.back()}
                     className="mb-4 pl-0 hover:bg-transparent text-slate-500 hover:text-slate-800"
                 >
                     <ArrowLeft className="w-4 h-4 mr-2" />
@@ -111,7 +124,7 @@ export default function AdminUserDetailPage() {
                 <div className="bg-white rounded-2xl border p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
                         <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-2xl font-bold text-slate-600">
-                            {user.fullName.substring(0, 2).toUpperCase()}
+                            {(user?.fullName?.trim() ? user.fullName.trim().substring(0, 2).toUpperCase() : "US")}
                         </div>
                         <div>
                             <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
@@ -132,12 +145,13 @@ export default function AdminUserDetailPage() {
 
                     <div className="flex items-center gap-3">
                         <StatusBadge status={user.status} className="px-3 py-1 text-sm" />
-                        
+
                         <Button variant="outline" onClick={handleTogglePremium}>
                             {user.isPremium ? 'Hủy Premium' : 'Cấp Premium'}
                         </Button>
-                        <Button 
-                            variant={user.status === 1 ? "destructive" : "primary"}
+                        <Button
+                            variant={user.status === 1 ? "secondary" : "primary"}
+                            className={user.status === 1 ? "bg-red-50 text-red-600 hover:bg-red-100" : ""}
                             onClick={handleToggleStatus}
                         >
                             {user.status === 1 ? 'Khóa tài khoản' : 'Mở khóa'}
@@ -151,22 +165,20 @@ export default function AdminUserDetailPage() {
                 <nav className="flex items-center gap-6">
                     <button
                         onClick={() => setActiveTab('overview')}
-                        className={`pb-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                            activeTab === 'overview'
-                                ? 'border-emerald-500 text-emerald-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
+                        className={`pb-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'overview'
+                            ? 'border-emerald-500 text-emerald-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
                     >
                         <FileText className="w-4 h-4" />
                         Hồ sơ sức khỏe
                     </button>
                     <button
                         onClick={() => setActiveTab('meal-plan')}
-                        className={`pb-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${
-                            activeTab === 'meal-plan'
-                                ? 'border-emerald-500 text-emerald-600'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
-                        }`}
+                        className={`pb-4 text-sm font-medium border-b-2 transition-colors flex items-center gap-2 ${activeTab === 'meal-plan'
+                            ? 'border-emerald-500 text-emerald-600'
+                            : 'border-transparent text-slate-500 hover:text-slate-700'
+                            }`}
                     >
                         <Calendar className="w-4 h-4" />
                         Lịch ăn uống
@@ -179,7 +191,7 @@ export default function AdminUserDetailPage() {
                 {activeTab === 'overview' && (
                     healthPlan ? (
                         <div className="bg-slate-50 p-6 rounded-2xl border">
-                             <HealthAnalysisView data={healthPlan} />
+                            <HealthAnalysisView data={healthPlan} />
                         </div>
                     ) : (
                         <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
@@ -191,13 +203,13 @@ export default function AdminUserDetailPage() {
                 {activeTab === 'meal-plan' && (
                     mealPlan ? (
                         <div className="bg-slate-50 p-6 rounded-2xl border">
-                            <WeeklyMealCalendar 
-                                initialData={mealPlan} 
-                                startDate={mealPlan.startDate} 
+                            <WeeklyMealCalendar
+                                initialData={mealPlan}
+                                startDate={mealPlan.startDate}
                             />
                         </div>
                     ) : (
-                         <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
+                        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-200">
                             <p className="text-slate-500">Người dùng chưa có kế hoạch ăn uống.</p>
                         </div>
                     )

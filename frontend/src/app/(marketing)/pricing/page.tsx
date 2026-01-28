@@ -121,7 +121,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
             transition={{ duration: 0.5, delay: index * 0.1 }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`relative rounded-2xl overflow-hidden flex flex-col h-full ${plan.popular
+            className={`relative rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 ${isHovered
                     ? 'ring-2 ring-emerald-500 shadow-xl shadow-emerald-500/20 scale-105 z-10'
                     : 'border border-slate-200 shadow-lg'
                 }`}
@@ -181,8 +181,8 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
                 <Link
                     href={`/checkout?plan=${plan.id}`}
                     className={`block w-full py-4 px-6 text-center rounded-xl font-bold text-lg transition-all duration-300 mt-auto ${plan.popular
-                            ? `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]`
-                            : 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02]'
+                        ? `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]`
+                        : 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02]'
                         }`}
                 >
                     <motion.span

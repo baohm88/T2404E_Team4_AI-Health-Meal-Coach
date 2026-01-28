@@ -15,7 +15,7 @@ import { motion } from 'framer-motion';
 import { ArrowRight, CheckCircle, Loader2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 
 // ============================================================
@@ -25,49 +25,63 @@ import { toast } from 'sonner';
 function SuccessContent() {
     const searchParams = useSearchParams();
     const transactionId = searchParams.get('transactionId') || 'N/A';
+    const audioContextRef = useRef<AudioContext | null>(null);
 
-    // Sound Effect
-    const playSuccessSound = () => {
-        try {
-            const audio = new Audio('/sounds/success.mp3'); // We need to ensure this file exists or use a CDN
-            // Fallback if local file doesn't exist, try a CDN or base64? 
-            // For now, let's assume valid URL or handle error silently.
-            // Using a simple short beep base64 for reliability if file missing is risky.
-            // But user asked for "music". Let's try a standard upbeat sound.
-            // Actually, I'll use a reliable external URL or placeholder.
-            // Better: I will assume the user puts a file in public/sounds, 
-            // OR I will create a simple synth beep using Web Audio API to avoid external deps.
-            
-            // Web Audio API Beep (Celebratory Chord)
+    // Initialize AudioContext on first user interaction
+    const initAudioContext = () => {
+        if (!audioContextRef.current) {
             const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
             if (AudioContext) {
-                const ctx = new AudioContext();
-                const playNote = (freq: number, delay: number, type: 'sine' | 'triangle' = 'triangle') => {
-                     const osc = ctx.createOscillator();
-                     const gain = ctx.createGain();
-                     osc.type = type;
-                     osc.frequency.value = freq;
-                     osc.connect(gain);
-                     gain.connect(ctx.destination);
-                     osc.start(ctx.currentTime + delay);
-                     gain.gain.setValueAtTime(0.1, ctx.currentTime + delay);
-                     gain.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + delay + 0.5);
-                     osc.stop(ctx.currentTime + delay + 0.5);
-                };
-                
-                // C Major Chord Arpeggio
-                playNote(523.25, 0); // C5
-                playNote(659.25, 0.1); // E5
-                playNote(783.99, 0.2); // G5
-                playNote(1046.50, 0.4); // C6
+                audioContextRef.current = new AudioContext();
             }
-            
+        }
+        return audioContextRef.current;
+    };
+
+    // Play success sound - guaranteed to work when called from user interaction
+    const playSuccessSound = () => {
+        try {
+            const ctx = initAudioContext();
+            if (!ctx) {
+                console.warn('AudioContext not available');
+                return;
+            }
+
+            // Resume if suspended
+            if (ctx.state === 'suspended') {
+                ctx.resume();
+            }
+
+            const playNote = (freq: number, delay: number, volume: number = 0.15) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+
+                const startTime = ctx.currentTime + delay;
+                osc.start(startTime);
+                gain.gain.setValueAtTime(volume, startTime);
+                gain.gain.exponentialRampToValueAtTime(0.00001, startTime + 0.6);
+                osc.stop(startTime + 0.6);
+            };
+
+            // C Major Chord Arpeggio (celebratory sound)
+            playNote(523.25, 0);     // C5
+            playNote(659.25, 0.1);   // E5
+            playNote(783.99, 0.2);   // G5
+            playNote(1046.50, 0.35); // C6
+
+            console.log('🎵 Success sound played!');
         } catch (e) {
-            console.error("Audio play failed", e);
+            console.error("Audio play failed:", e);
         }
     };
 
     useEffect(() => {
+        let soundPlayed = false;
+
         // 1. Verify Transaction
         if (transactionId && transactionId !== 'N/A') {
             paymentService.checkTransactionStatus(transactionId).then((result) => {
@@ -82,7 +96,7 @@ function SuccessContent() {
 
         const randomInRange = (min: number, max: number) => Math.random() * (max - min) + min;
 
-        const interval: any = setInterval(function() {
+        const interval: any = setInterval(function () {
             const timeLeft = animationEnd - Date.now();
 
             if (timeLeft <= 0) {
@@ -94,22 +108,50 @@ function SuccessContent() {
             confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
         }, 250);
 
-        // 3. Play Sound
-        playSuccessSound();
-
-        // 4. Toast Notification
+        // 3. Toast Notification
         toast.success('Nâng cấp Premium thành công!', {
-            description: 'Chúc mừng bạn! Bạn đã có thể tạo lộ trình dinh dưỡng chi tiết.',
-            duration: 5000,
+            description: 'Click vào màn hình để nghe âm thanh chúc mừng! 🎵',
+            duration: 6000,
             icon: <Sparkles className="w-5 h-5 text-amber-500" />
         });
 
-        return () => clearInterval(interval);
+        // 4. Simple click-to-play sound
+        const handleClick = async () => {
+            if (soundPlayed) return;
+
+            const ctx = initAudioContext();
+            if (!ctx) return;
+
+            // Try to resume if suspended
+            if (ctx.state === 'suspended') {
+                try {
+                    await ctx.resume();
+                } catch (e) {
+                    console.log('⏸️ Audio blocked - please try clicking again');
+                    return;
+                }
+            }
+
+            // Play if ready
+            if (ctx.state === 'running') {
+                soundPlayed = true;
+                playSuccessSound();
+                document.removeEventListener('click', handleClick);
+            }
+        };
+
+        // Simple click listener
+        document.addEventListener('click', handleClick);
+
+        return () => {
+            clearInterval(interval);
+            document.removeEventListener('click', handleClick);
+        };
     }, [transactionId]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-emerald-50 to-white relative overflow-hidden">
-            
+
             {/* Content */}
             <div className="relative z-10 flex flex-col items-center justify-center min-h-screen px-4 py-12">
                 {/* Success Icon */}
@@ -210,10 +252,6 @@ function SuccessContent() {
                                     window.location.href = '/dashboard/schedule';
                                 } else {
                                     toast.error('Có lỗi khi tạo lộ trình: ' + res.message, { id: toastId });
-                                    // Still redirect or stay? Let's stay so they can try again or go to dashboard manually.
-                                    // User said "call... + redirect". If fails, maybe we shouldn't redirect blindly.
-                                    // But to be safe, if fail, we might want to let them go to dashboard anyway.
-                                    // For now, let's stop on error.
                                 }
                             } catch (e) {
                                 toast.error('Lỗi kết nối.', { id: toastId });

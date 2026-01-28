@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  SortingState,
-  useReactTable,
-  VisibilityState,
+    ColumnDef,
+    flexRender,
+    getCoreRowModel,
+    SortingState,
+    useReactTable,
+    VisibilityState,
 } from "@tanstack/react-table";
 import { useState } from "react";
 
@@ -59,8 +59,7 @@ export function DataTable<TData, TValue>({
             columnVisibility,
             rowSelection,
             pagination,
-            sorting, // Pass external sorting state if provided? No, useReactTable expects internal or external.
-            // If I want to control it, I should pass `onSortingChange` and `state.sorting`.
+            sorting: sorting ?? [], // Đảm bảo không bao giờ undefined
         },
         enableRowSelection: true,
         onRowSelectionChange: setRowSelection,
@@ -76,19 +75,16 @@ export function DataTable<TData, TValue>({
         // Sorting
         manualSorting: !!onSortingChange,
         onSortingChange: (updater) => {
-             if (typeof updater === 'function' && onSortingChange && sorting) {
-                 const newSorting = updater(sorting);
-                 onSortingChange(newSorting);
-             } else if (onSortingChange && typeof updater !== 'function') {
-                 onSortingChange(updater as SortingState);
-             }
+            if (!onSortingChange) return; // Bảo vệ nếu prop bị thiếu
+            const nextSorting = typeof updater === 'function' ? updater(sorting ?? []) : updater;
+            onSortingChange(nextSorting);
         },
     });
 
     return (
         <div className="space-y-4">
-            <DataTableToolbar 
-                table={table} 
+            <DataTableToolbar
+                table={table}
                 searchKey={searchKey}
                 searchValue={searchValue}
                 onSearchChange={onSearchChange}
@@ -105,9 +101,9 @@ export function DataTable<TData, TValue>({
                                             {header.isPlaceholder
                                                 ? null
                                                 : flexRender(
-                                                      header.column.columnDef.header,
-                                                      header.getContext()
-                                                  )}
+                                                    header.column.columnDef.header,
+                                                    header.getContext()
+                                                )}
                                         </TableHead>
                                     );
                                 })}
