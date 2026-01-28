@@ -9,6 +9,7 @@ import {
     VisibilityState,
 } from "@tanstack/react-table";
 import { useState } from "react";
+import { ArrowDown, ArrowUp, ArrowUpDown } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/admin/DataTableUI";
@@ -34,6 +35,9 @@ interface DataTableProps<TData, TValue> {
     // Sorting (Server Side)
     sorting?: SortingState;
     onSortingChange?: (sorting: SortingState) => void;
+    // Selection
+    rowSelection?: Record<string, boolean>;
+    onRowSelectionChange?: (rowSelection: Record<string, boolean>) => void;
 }
 
 export function DataTable<TData, TValue>({
@@ -48,9 +52,14 @@ export function DataTable<TData, TValue>({
     onPaginationChange,
     sorting,
     onSortingChange,
+    rowSelection: externalRowSelection,
+    onRowSelectionChange: externalOnRowSelectionChange,
 }: DataTableProps<TData, TValue>) {
-    const [rowSelection, setRowSelection] = useState({});
+    const [internalRowSelection, setInternalRowSelection] = useState({});
     const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+
+    const rowSelection = externalRowSelection ?? internalRowSelection;
+    const onRowSelectionChange = externalOnRowSelectionChange ?? setInternalRowSelection;
 
     const table = useReactTable({
         data,
@@ -63,7 +72,7 @@ export function DataTable<TData, TValue>({
             sorting: sorting ?? [], // Đảm bảo không bao giờ undefined
         },
         enableRowSelection: true,
-        onRowSelectionChange: setRowSelection,
+        onRowSelectionChange,
         onColumnVisibilityChange: setColumnVisibility,
         getCoreRowModel: getCoreRowModel(),
         manualPagination: !!pagination,
@@ -101,13 +110,32 @@ export function DataTable<TData, TValue>({
                             <TableRow key={headerGroup.id} className="hover:bg-slate-900 border-none h-16">
                                 {headerGroup.headers.map((header) => {
                                     return (
-                                        <TableHead key={header.id} className="text-white/90 first:pl-8 last:pr-8">
-                                            {header.isPlaceholder
-                                                ? null
-                                                : flexRender(
-                                                    header.column.columnDef.header,
-                                                    header.getContext()
+                                        <TableHead
+                                            key={header.id}
+                                            className={cn(
+                                                "text-white/90 first:pl-8 last:pr-8",
+                                                header.column.getCanSort() && "cursor-pointer select-none"
+                                            )}
+                                            onClick={header.column.getToggleSortingHandler()}
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {header.isPlaceholder
+                                                    ? null
+                                                    : flexRender(
+                                                        header.column.columnDef.header,
+                                                        header.getContext()
+                                                    )}
+                                                {header.column.getCanSort() && (
+                                                    <span className="text-white/40">
+                                                        {{
+                                                            asc: <ArrowUp className="w-3 h-3 text-emerald-400" />,
+                                                            desc: <ArrowDown className="w-3 h-3 text-emerald-400" />,
+                                                        }[header.column.getIsSorted() as string] ?? (
+                                                                <ArrowUpDown className="w-3 h-3 group-hover:text-white transition-colors" />
+                                                            )}
+                                                    </span>
                                                 )}
+                                            </div>
                                         </TableHead>
                                     );
                                 })}

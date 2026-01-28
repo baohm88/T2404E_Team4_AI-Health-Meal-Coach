@@ -24,4 +24,10 @@ public interface DishService {
     void toggleVerifyStatus(Long id);
 
     void deleteDish(Long id);
+
+    void batchDelete(java.util.List<Long> ids);
+
+    void batchUpdateStatus(java.util.List<Long> ids, Boolean isDeleted);
+
+    void batchVerify(java.util.List<Long> ids, Boolean isVerified);
 }

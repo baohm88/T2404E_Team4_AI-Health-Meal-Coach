@@ -9,9 +9,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,7 +23,9 @@ import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.AdminDashboardResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
 import com.t2404e.aihealthcoach.service.AdminDashboardService;
+import com.t2404e.aihealthcoach.service.DishService;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
+import com.t2404e.aihealthcoach.service.MealPlanService;
 import com.t2404e.aihealthcoach.service.UserService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -36,9 +40,10 @@ public class AdminController {
 
     private final UserService userService;
     private final HealthAnalysisService healthAnalysisService;
-    private final com.t2404e.aihealthcoach.service.MealPlanService mealPlanService;
+    private final MealPlanService mealPlanService;
     private final AdminDashboardService adminDashboardService;
-    private final ObjectMapper objectMapper; // Add field
+    private final DishService dishService;
+    private final ObjectMapper objectMapper;
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
@@ -144,5 +149,64 @@ public class AdminController {
     public ResponseEntity<ApiResponse<Void>> togglePremiumStatus(@PathVariable Long id) {
         userService.togglePremiumStatus(id);
         return ResponseEntity.ok(ApiResponse.success("Thay đổi trạng thái Premium thành công", null));
+    }
+
+    @PatchMapping("/users/batch/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cập nhật trạng thái hàng loạt", description = "Cập nhật trạng thái cho nhiều người dùng cùng lúc.")
+    public ResponseEntity<ApiResponse<Void>> batchUpdateStatus(@RequestBody Map<String, Object> request) {
+        java.util.List<Long> ids = ((java.util.List<?>) request.get("ids")).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
+        Integer status = Integer.valueOf(request.get("status").toString());
+        userService.batchUpdateStatus(ids, status);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái hàng loạt thành công", null));
+    }
+
+    @PatchMapping("/users/batch/premium")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Cập nhật Premium hàng loạt", description = "Cập nhật gói Premium cho nhiều người dùng cùng lúc.")
+    public ResponseEntity<ApiResponse<Void>> batchUpdatePremium(@RequestBody Map<String, Object> request) {
+        java.util.List<Long> ids = ((java.util.List<?>) request.get("ids")).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
+        Boolean isPremium = Boolean.valueOf(request.get("isPremium").toString());
+        userService.batchUpdatePremium(ids, isPremium);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật Premium hàng loạt thành công", null));
+    }
+
+    @DeleteMapping("/dishes/batch")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xóa món ăn hàng loạt", description = "Xóa vĩnh viễn nhiều món ăn cùng lúc.")
+    public ResponseEntity<ApiResponse<Void>> batchDeleteDishes(@RequestBody Map<String, Object> request) {
+        java.util.List<Long> ids = ((java.util.List<?>) request.get("ids")).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
+        dishService.batchDelete(ids);
+        return ResponseEntity.ok(ApiResponse.success("Xóa món ăn hàng loạt thành công", null));
+    }
+
+    @PatchMapping("/dishes/batch/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Ẩn/Hiện món ăn hàng loạt", description = "Cập nhật trạng thái hiển thị cho nhiều món ăn.")
+    public ResponseEntity<ApiResponse<Void>> batchUpdateDishStatus(@RequestBody Map<String, Object> request) {
+        java.util.List<Long> ids = ((java.util.List<?>) request.get("ids")).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
+        Boolean isDeleted = Boolean.valueOf(request.get("isDeleted").toString());
+        dishService.batchUpdateStatus(ids, isDeleted);
+        return ResponseEntity.ok(ApiResponse.success("Cập nhật trạng thái món ăn hàng loạt thành công", null));
+    }
+
+    @PatchMapping("/dishes/batch/verify")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Xác nhận món ăn hàng loạt", description = "Cập nhật trạng thái xác nhận cho nhiều món ăn.")
+    public ResponseEntity<ApiResponse<Void>> batchVerifyDishes(@RequestBody Map<String, Object> request) {
+        java.util.List<Long> ids = ((java.util.List<?>) request.get("ids")).stream()
+                .map(id -> Long.valueOf(id.toString()))
+                .toList();
+        Boolean isVerified = Boolean.valueOf(request.get("isVerified").toString());
+        dishService.batchVerify(ids, isVerified);
+        return ResponseEntity.ok(ApiResponse.success("Xác nhận món ăn hàng loạt thành công", null));
     }
 }

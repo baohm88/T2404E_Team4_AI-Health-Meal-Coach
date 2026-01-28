@@ -10,7 +10,8 @@ public interface UserService {
     /**
      * Lấy danh sách user có phân trang, tìm kiếm và lọc
      */
-    Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDate, String endDate, Pageable pageable);
+    Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDate, String endDate,
+            Pageable pageable);
 
     /**
      * Lấy chi tiết user (Admin view)
@@ -32,5 +33,14 @@ public interface UserService {
      */
     void togglePremiumStatus(Long id);
 
+    /**
+     * Cập nhật trạng thái hàng loạt
+     */
+    void batchUpdateStatus(java.util.List<Long> ids, Integer status);
+
+    /**
+     * Cập nhật Premium hàng loạt
+     */
+    void batchUpdatePremium(java.util.List<Long> ids, Boolean isPremium);
 
 }

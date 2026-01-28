@@ -54,6 +54,14 @@ export const togglePremiumStatus = async (userId: number): Promise<void> => {
     await http.patch(`/admin/users/${userId}/toggle-premium`);
 };
 
+export const batchUpdateUserStatus = async (ids: number[], status: number): Promise<void> => {
+    await http.patch('/admin/users/batch/status', { ids, status });
+};
+
+export const batchUpdateUserPremium = async (ids: number[], isPremium: boolean): Promise<void> => {
+    await http.patch('/admin/users/batch/premium', { ids, isPremium });
+};
+
 export const getUserPlan = async (userId: number): Promise<any> => {
     const response = await http.get<any, ApiResponse<any>>(`/admin/users/${userId}/plan`);
     return response.data;
@@ -133,4 +141,17 @@ export const deleteDish = async (id: number): Promise<void> => {
 export const getDashboardStats = async (): Promise<AdminDashboardResponse> => {
     const response = await http.get<any, ApiResponse<AdminDashboardResponse>>('/admin/stats');
     return response.data;
+};
+
+// Batch Actions for Dishes
+export const batchDeleteDishes = async (ids: number[]): Promise<void> => {
+    await http.delete('/admin/dishes/batch', { data: { ids } });
+};
+
+export const batchUpdateDishStatus = async (ids: number[], isDeleted: boolean): Promise<void> => {
+    await http.patch('/admin/dishes/batch/status', { ids, isDeleted });
+};
+
+export const batchVerifyDishes = async (ids: number[], isVerified: boolean): Promise<void> => {
+    await http.patch('/admin/dishes/batch/verify', { ids, isVerified });
 };
