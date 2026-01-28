@@ -1,5 +1,8 @@
 package com.t2404e.aihealthcoach.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -13,17 +16,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper; // Add import
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.AdminDashboardResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
-import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.service.AdminDashboardService;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.UserService;
-import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -39,6 +38,7 @@ public class AdminController {
     private final HealthAnalysisService healthAnalysisService;
     private final com.t2404e.aihealthcoach.service.MealPlanService mealPlanService;
     private final AdminDashboardService adminDashboardService;
+    private final ObjectMapper objectMapper; // Add field
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
