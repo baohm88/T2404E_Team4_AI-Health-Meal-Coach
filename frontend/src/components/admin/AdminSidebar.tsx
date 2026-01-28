@@ -31,10 +31,10 @@ export function AdminSidebar() {
         try {
             // 1. Clear Global Store (and localStorage via persist)
             logout();
-            
+
             // 2. Clear Cookie/Token Helper
             await authService.logout();
-            
+
             // 3. Redirect
             router.push('/login');
         } catch (error) {
@@ -92,16 +92,8 @@ const DesktopSidebar = ({ pathname, onLogout }: NavProps) => (
             ))}
         </nav>
 
-        {/* Footer Actions */}
         <div className="pt-6 border-t border-slate-700 space-y-3">
-            <Link
-                href="/dashboard"
-                className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors text-sm"
-            >
-                <ChevronLeft className="w-4 h-4" />
-                Quay lại User App
-            </Link>
-            
+
             <button
                 onClick={onLogout}
                 className="w-full flex items-center gap-2 text-red-400 hover:text-red-300 transition-colors text-sm"
@@ -172,14 +164,6 @@ const MobileMenu = ({ pathname, isOpen, onClose, onLogout }: MobileMenuProps) =>
             </div>
 
             <div className="pt-6 border-t border-slate-700 space-y-4 pb-20">
-                <Link
-                    href="/dashboard"
-                    onClick={onClose}
-                    className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors p-2"
-                >
-                    <ChevronLeft className="w-5 h-5" />
-                    Quay lại User App
-                </Link>
                 <button
                     onClick={() => {
                         onClose();

@@ -1,8 +1,8 @@
 "use client";
 
-import { ColumnDef } from "@tanstack/react-table";
+import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Calendar, Eye, Shield, ShieldAlert, Star } from "lucide-react";
+import { Calendar, Eye, Shield, ShieldAlert, Star, Check, X, Ban, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -10,8 +10,15 @@ import { toast } from "sonner";
 import { DataTable } from "@/components/admin/data-table/data-table";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { getUsers, togglePremiumStatus, toggleUserStatus } from "@/services/admin.service";
+import {
+    getUsers,
+    togglePremiumStatus,
+    toggleUserStatus,
+    batchUpdateUserStatus,
+    batchUpdateUserPremium
+} from "@/services/admin.service";
 import { AdminUser } from "@/types/admin";
+import { Button } from "@/components/ui/Button";
 
 export default function AdminUsersPage() {
     // State
@@ -25,6 +32,8 @@ export default function AdminUsersPage() {
     const [selectedStatus, setSelectedStatus] = useState<number | undefined>(undefined);
     const [selectedPremium, setSelectedPremium] = useState<boolean | undefined>(undefined);
     const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+    const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: true }]);
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
 
     // Confirm Dialog State
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -49,11 +58,15 @@ export default function AdminUsersPage() {
             const startDate = dateRange.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined;
             const endDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
+            const sortParam = sorting.length > 0
+                ? `${sorting[0].id},${sorting[0].desc ? 'desc' : 'asc'}`
+                : 'id,desc';
+
             const result = await getUsers(
                 pageIndex,
                 pageSize,
                 keyword,
-                'id,desc',
+                sortParam,
                 selectedStatus,
                 selectedPremium,
                 startDate,
@@ -77,7 +90,7 @@ export default function AdminUsersPage() {
             fetchData();
         }, 300);
         return () => clearTimeout(timer);
-    }, [pageIndex, pageSize, keyword, dateRange, selectedStatus, selectedPremium]);
+    }, [pageIndex, pageSize, keyword, dateRange, selectedStatus, selectedPremium, sorting]);
 
     // Actions
     const handleToggleStatus = (user: AdminUser) => {
@@ -127,13 +140,38 @@ export default function AdminUsersPage() {
     // Columns
     const columns: ColumnDef<AdminUser>[] = [
         {
+            id: "select",
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    checked={table.getIsAllPageRowsSelected()}
+                    onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                    checked={row.getIsSelected()}
+                    onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
+        {
             accessorKey: "id",
             header: "ID",
+            enableSorting: true,
             cell: ({ row }) => <span className="font-mono text-xs text-slate-500">#{row.original.id}</span>,
         },
         {
             accessorKey: "fullName",
             header: "Người dùng",
+            enableSorting: true,
             cell: ({ row }) => {
                 const user = row.original;
                 return (
@@ -188,6 +226,7 @@ export default function AdminUsersPage() {
         {
             accessorKey: "createdAt",
             header: "Ngày tham gia",
+            enableSorting: true,
             cell: ({ row }) => {
                 const dateStr = row.original.createdAt;
                 try {
@@ -232,6 +271,57 @@ export default function AdminUsersPage() {
             },
         },
     ];
+
+    const selectedRows = Object.keys(rowSelection).filter(key => rowSelection[key]);
+    const selectedIds = selectedRows.map(index => data[parseInt(index)]?.id).filter(id => id !== undefined);
+
+    const handleBatchStatus = async (status: number) => {
+        if (selectedIds.length === 0) return;
+
+        const actionText = status === 1 ? 'mở khóa' : 'khóa';
+        setConfirmConfig({
+            isOpen: true,
+            title: `Cập nhật trạng thái hàng loạt`,
+            description: `Bạn có chắc muốn ${actionText} ${selectedIds.length} tài khoản đã chọn?`,
+            type: status === 1 ? 'success' : 'danger',
+            confirmText: 'Xác nhận',
+            onConfirm: async () => {
+                try {
+                    await batchUpdateUserStatus(selectedIds, status);
+                    toast.success(`Đã ${actionText} thành công ${selectedIds.length} người dùng`);
+                    setRowSelection({});
+                    fetchData();
+                } catch (error) {
+                    toast.error("Lỗi khi cập nhật hàng loạt");
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleBatchPremium = async (isPremium: boolean) => {
+        if (selectedIds.length === 0) return;
+
+        const actionText = isPremium ? 'nâng cấp Premium' : 'hủy gói Premium';
+        setConfirmConfig({
+            isOpen: true,
+            title: `Cập nhật gói hàng loạt`,
+            description: `Bạn có chắc muốn ${actionText} cho ${selectedIds.length} tài khoản đã chọn?`,
+            type: isPremium ? 'info' : 'warning',
+            confirmText: 'Xác nhận',
+            onConfirm: async () => {
+                try {
+                    await batchUpdateUserPremium(selectedIds, isPremium);
+                    toast.success(`Đã ${actionText} thành công`);
+                    setRowSelection({});
+                    fetchData();
+                } catch (error) {
+                    toast.error("Lỗi khi cập nhật hàng loạt");
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
 
     return (
         <div className="space-y-8 animate-in fade-in duration-700">
@@ -353,8 +443,66 @@ export default function AdminUsersPage() {
                         setPageIndex(pageIndex);
                         setPageSize(pageSize);
                     }}
+                    sorting={sorting}
+                    onSortingChange={setSorting}
+                    rowSelection={rowSelection}
+                    onRowSelectionChange={setRowSelection}
                 />
             </div>
+
+            {/* Bulk Action Bar - Floating */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 duration-500">
+                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-2xl flex items-center gap-6">
+                        <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white text-xs font-bold">
+                                {selectedIds.length}
+                            </div>
+                            <span className="text-white text-sm font-medium">Đã chọn</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => handleBatchStatus(1)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-emerald-500/20 text-emerald-400 text-sm font-medium transition-all"
+                                title="Mở khóa tất cả"
+                            >
+                                <Shield className="w-4 h-4" /> Mở khóa
+                            </button>
+                            <button
+                                onClick={() => handleBatchStatus(0)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-rose-500/20 text-rose-400 text-sm font-medium transition-all"
+                                title="Khóa tất cả"
+                            >
+                                <Ban className="w-4 h-4" /> Khóa
+                            </button>
+                            <div className="w-px h-6 bg-white/10 mx-1" />
+                            <button
+                                onClick={() => handleBatchPremium(true)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-amber-500/20 text-amber-400 text-sm font-medium transition-all"
+                                title="Nâng cấp Premium"
+                            >
+                                <Star className="w-4 h-4" /> Premium
+                            </button>
+                            <button
+                                onClick={() => handleBatchPremium(false)}
+                                className="flex items-center gap-2 px-4 py-2 rounded-full hover:bg-white/10 text-white/60 text-sm font-medium transition-all"
+                                title="Hủy Premium"
+                            >
+                                <Star className="w-4 h-4" /> Hủy Premium
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setRowSelection({})}
+                            className="ml-4 p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all"
+                            title="Bỏ chọn"
+                        >
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* Footer shadow/decoration */}
             <div className="h-20 w-full" />
