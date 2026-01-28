@@ -22,99 +22,97 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private static final String[] SWAGGER_WHITELIST = {
-            "/swagger-ui.html",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/v3/api-docs.yaml"
-    };
+        private static final String[] SWAGGER_WHITELIST = {
+                        "/swagger-ui.html",
+                        "/swagger-ui/**",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs.yaml"
+        };
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final CustomAuthenticationEntryPoint authenticationEntryPoint;
-    private final CustomAccessDeniedHandler accessDeniedHandler;
+        private final JwtAuthenticationFilter jwtAuthenticationFilter;
+        private final CustomAuthenticationEntryPoint authenticationEntryPoint;
+        private final CustomAccessDeniedHandler accessDeniedHandler;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          CustomAuthenticationEntryPoint authenticationEntryPoint,
-                          CustomAccessDeniedHandler accessDeniedHandler) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.authenticationEntryPoint = authenticationEntryPoint;
-        this.accessDeniedHandler = accessDeniedHandler;
-    }
+        public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                        CustomAuthenticationEntryPoint authenticationEntryPoint,
+                        CustomAccessDeniedHandler accessDeniedHandler) {
+                this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+                this.authenticationEntryPoint = authenticationEntryPoint;
+                this.accessDeniedHandler = accessDeniedHandler;
+        }
 
-    /**
-     * Main Security Filter Chain
-     */
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        /**
+         * Main Security Filter Chain
+         */
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
-        http
-                // Disable CSRF (REST API + JWT)
-                .csrf(csrf -> csrf.disable())
+                http
+                                // Disable CSRF (REST API + JWT)
+                                .csrf(csrf -> csrf.disable())
 
-                // Enable CORS with custom configuration
-                .cors(Customizer.withDefaults())
+                                // Enable CORS with custom configuration
+                                .cors(Customizer.withDefaults())
 
-                // Exception handling
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler)
-                )
+                                // Exception handling
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint(authenticationEntryPoint)
+                                                .accessDeniedHandler(accessDeniedHandler))
 
-                // Authorization rules
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                        .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/ai/**").permitAll()
-                        .requestMatchers("/payment/**").permitAll() // Cho phép tạo link và callback
-                        // Cho phép OPTIONS (Preflight request) đi qua mà không cần token
-                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
-                        .anyRequest().authenticated()
-                )
+                                // Authorization rules
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers(SWAGGER_WHITELIST).permitAll()
+                                                .requestMatchers("/auth/**").permitAll()
+                                                .requestMatchers("/ai/**").permitAll()
+                                                .requestMatchers("/payment/**").permitAll() // Cho phép tạo link và
+                                                                                            // callback
+                                                // Cho phép OPTIONS (Preflight request) đi qua mà không cần token
+                                                .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
+                                                .permitAll()
+                                                .anyRequest().authenticated())
 
-                // Disable default auth mechanisms
-                .httpBasic(basic -> basic.disable())
-                .formLogin(form -> form.disable())
+                                // Disable default auth mechanisms
+                                .httpBasic(basic -> basic.disable())
+                                .formLogin(form -> form.disable())
 
-                // JWT filter
-                .addFilterBefore(
-                        jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class
-                );
+                                // JWT filter
+                                .addFilterBefore(
+                                                jwtAuthenticationFilter,
+                                                UsernamePasswordAuthenticationFilter.class);
 
-        return http.build();
-    }
+                return http.build();
+        }
 
-    /**
-     * CORS Configuration for Spring Security
-     */
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+        /**
+         * CORS Configuration for Spring Security
+         */
+        @Bean
+        public CorsConfigurationSource corsConfigurationSource() {
 
-        CorsConfiguration config = new CorsConfiguration();
+                CorsConfiguration config = new CorsConfiguration();
 
-        // Frontend origin (Next.js)
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+                // Frontend origin (Next.js)
+                config.setAllowedOrigins(List.of("http://localhost:3000"));
 
-        // Allowed HTTP methods
-        config.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "DELETE",
-                "OPTIONS"
-        ));
+                // Allowed HTTP methods
+                config.setAllowedMethods(List.of(
+                                "GET",
+                                "POST",
+                                "PUT",
+                                "PATCH",
+                                "DELETE",
+                                "OPTIONS"));
 
-        // Allowed headers
-        config.setAllowedHeaders(List.of("*"));
+                // Allowed headers
+                config.setAllowedHeaders(List.of("*"));
 
-        // Allow cookies / Authorization header
-        config.setAllowCredentials(true);
+                // Allow cookies / Authorization header
+                config.setAllowCredentials(true);
 
-        UrlBasedCorsConfigurationSource source =
-                new UrlBasedCorsConfigurationSource();
+                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 
-        source.registerCorsConfiguration("/**", config);
+                source.registerCorsConfiguration("/**", config);
 
-        return source;
-    }
+                return source;
+        }
 }

@@ -14,8 +14,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.t2404e.aihealthcoach.common.ApiResponse;
+import com.t2404e.aihealthcoach.dto.response.AdminDashboardResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
+import com.t2404e.aihealthcoach.service.AdminDashboardService;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.UserService;
 
@@ -32,12 +34,20 @@ public class AdminController {
     private final UserService userService;
     private final HealthAnalysisService healthAnalysisService;
     private final com.t2404e.aihealthcoach.service.MealPlanService mealPlanService;
+    private final AdminDashboardService adminDashboardService;
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Kiểm tra quyền Admin", description = "API chỉ dành cho Admin để kiểm tra kết nối và quyền truy cập.")
     public ResponseEntity<ApiResponse<?>> ping() {
         return ResponseEntity.ok(ApiResponse.success("Admin access granted", null));
+    }
+
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lấy thống kê Dashboard", description = "Lấy các chỉ số tổng quan, biểu đồ tăng trưởng và hoạt động gần đây.")
+    public ResponseEntity<ApiResponse<AdminDashboardResponse>> getStats() {
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", adminDashboardService.getStats()));
     }
 
     @GetMapping("/users")
@@ -51,8 +61,7 @@ public class AdminController {
             @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id,desc") String sort
-    ) {
+            @RequestParam(defaultValue = "id,desc") String sort) {
         // Xử lý sort format "field,asc"
         String[] sortParams = sort.split(",");
         Sort sortObj = Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]);
@@ -84,7 +93,9 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xem thực đơn của User", description = "Admin xem chi tiết thực đơn 7 ngày của một user cụ thể.")
     public ResponseEntity<ApiResponse<?>> getUserMealPlan(@PathVariable Long userId) {
-        return ResponseEntity.ok(ApiResponse.success("Lấy thực đơn user thành công", mealPlanService.getByUserId(userId)));
+
+        return ResponseEntity
+                .ok(ApiResponse.success("Lấy thực đơn user thành công", mealPlanService.getByUserId(userId)));
     }
 
     @PatchMapping("/users/{id}/toggle-status")
@@ -102,6 +113,4 @@ public class AdminController {
         userService.togglePremiumStatus(id);
         return ResponseEntity.ok(ApiResponse.success("Thay đổi trạng thái Premium thành công", null));
     }
-
-
 }

@@ -7,12 +7,13 @@
 
 import { http } from '@/lib/http';
 import {
-  AdminUser,
-  CreateDishRequest,
-  DishLibrary,
-  MealTimeSlot,
-  PageResponse,
-  UpdateDishRequest
+    AdminUser,
+    AdminDashboardResponse,
+    CreateDishRequest,
+    DishLibrary,
+    MealTimeSlot,
+    PageResponse,
+    UpdateDishRequest
 } from '@/types/admin';
 import { ApiResponse } from '@/types/api';
 
@@ -21,8 +22,8 @@ import { ApiResponse } from '@/types/api';
 // ============================================================
 
 export const getUsers = async (
-    page: number = 0, 
-    size: number = 10, 
+    page: number = 0,
+    size: number = 10,
     keyword: string = '',
     sort: string = 'id,desc',
     status?: number,
@@ -119,4 +120,17 @@ export const updateDish = async (id: number, data: UpdateDishRequest): Promise<D
 
 export const toggleDishStatus = async (id: number): Promise<void> => {
     await http.patch(`/admin/dishes/${id}/toggle-status`);
+};
+
+export const toggleVerifyStatus = async (id: number): Promise<void> => {
+    await http.patch(`/admin/dishes/${id}/toggle-verify`);
+};
+
+export const deleteDish = async (id: number): Promise<void> => {
+    await http.delete(`/admin/dishes/${id}`);
+};
+
+export const getDashboardStats = async (): Promise<AdminDashboardResponse> => {
+    const response = await http.get<any, ApiResponse<AdminDashboardResponse>>('/admin/stats');
+    return response.data;
 };

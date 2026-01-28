@@ -20,4 +20,8 @@ public interface DishService {
     DishLibrary updateDish(Long id, DishRequest request);
 
     void toggleDishStatus(Long id);
+
+    void toggleVerifyStatus(Long id);
+
+    void deleteDish(Long id);
 }

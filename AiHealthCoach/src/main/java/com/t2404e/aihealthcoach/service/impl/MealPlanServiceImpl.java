@@ -55,7 +55,9 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 .orElseThrow(() -> new IllegalStateException("User not found"));
 
                 if (!Boolean.TRUE.equals(user.getIsPremium())) {
-                        throw new PremiumRequiredException("FEATURE_LOCKED_PREMIUM: Vui lòng nâng cấp Premium để tạo lộ trình chi tiết.");
+
+                        throw new PremiumRequiredException(
+                                        "FEATURE_LOCKED_PREMIUM: Vui lòng nâng cấp Premium để tạo lộ trình chi tiết.");
                 }
 
                 Optional<MealPlan> existingPlan = mealPlanRepo.findByUserId(userId);

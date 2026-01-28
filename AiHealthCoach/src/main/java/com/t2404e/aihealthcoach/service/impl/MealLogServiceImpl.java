@@ -23,6 +23,7 @@ public class MealLogServiceImpl implements MealLogService {
     private final AiMealVisionService aiMealVisionService;
     private final UserMealLogRepository logRepository;
     private final PlannedMealRepository plannedMealRepository;
+    private final com.t2404e.aihealthcoach.repository.DishLibraryRepository dishLibraryRepo;
 
     @Override
     public MealAnalysisResponse analyzeAndLog(MultipartFile file, Long userId, Long plannedMealId, String categoryParam)
@@ -49,9 +50,6 @@ public class MealLogServiceImpl implements MealLogService {
         }
 
         // 3. Đối chiếu xem món đó đã có trong dish_library chưa
-        com.t2404e.aihealthcoach.repository.DishLibraryRepository dishLibraryRepo = com.t2404e.aihealthcoach.util.SpringContextUtil
-                .getBean(com.t2404e.aihealthcoach.repository.DishLibraryRepository.class);
-
         com.t2404e.aihealthcoach.entity.DishLibrary matchedDish = dishLibraryRepo
                 .findByNameContainingIgnoreCase(analysis.getFoodName())
                 .stream().findFirst().orElse(null);
@@ -70,6 +68,7 @@ public class MealLogServiceImpl implements MealLogService {
                     .category(com.t2404e.aihealthcoach.util.MealCategoryMapper.mapVietnameseToEnum(finalCategory))
                     .isVerified(false)
                     .isAiSuggested(true)
+                    .isDeleted(false)
                     .description("AI nhận diện món từ hình ảnh người dùng.")
                     .build();
             newDish = dishLibraryRepo.save(newDish);
@@ -106,6 +105,73 @@ public class MealLogServiceImpl implements MealLogService {
         System.out.println("DEBUG: Meal log updated/saved with ID: " + log.getId());
 
         analysis.setType(log.getCategory()); // Trả về category đã map cho UI
+        return analysis;
+    }
+
+    @Override
+    public MealAnalysisResponse analyzeTextAndLog(String text, Long userId, Long plannedMealId, String categoryParam) {
+        // 1. Gọi AI Vision phân tích văn bản
+        MealAnalysisResponse analysis = aiMealVisionService.analyzeMealText(text);
+        System.out.println("DEBUG: AI Text Analysis result: " + analysis.getFoodName());
+
+        // Xác định category (tương tự analyzeAndLog)
+        String finalCategory = categoryParam;
+        if (finalCategory == null || finalCategory.isEmpty()) {
+            finalCategory = (plannedMealId != null)
+                    ? logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
+                            .map(UserMealLog::getCategory)
+                            .orElse("PHỤ")
+                    : "PHỤ";
+        }
+
+        // 2. Đối chiếu thư viện món ăn
+        com.t2404e.aihealthcoach.entity.DishLibrary matchedDish = dishLibraryRepo
+                .findByNameContainingIgnoreCase(analysis.getFoodName())
+                .stream().findFirst().orElse(null);
+
+        Long dishId = null;
+        if (matchedDish != null) {
+            dishId = matchedDish.getId();
+            analysis.setEstimatedCalories(matchedDish.getBaseCalories());
+        } else {
+            com.t2404e.aihealthcoach.entity.DishLibrary newDish = com.t2404e.aihealthcoach.entity.DishLibrary.builder()
+                    .name(analysis.getFoodName())
+                    .baseCalories(analysis.getEstimatedCalories())
+                    .category(com.t2404e.aihealthcoach.util.MealCategoryMapper.mapVietnameseToEnum(finalCategory))
+                    .isVerified(false)
+                    .isAiSuggested(true)
+                    .isDeleted(false)
+                    .description("AI nhận diện món từ văn bản/giọng nói người dùng.")
+                    .build();
+            newDish = dishLibraryRepo.save(newDish);
+            dishId = newDish.getId();
+        }
+
+        // 3. Lưu log
+        UserMealLog log;
+        if (plannedMealId != null) {
+            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
+                    .orElseGet(() -> UserMealLog.builder()
+                            .userId(userId)
+                            .plannedMealId(plannedMealId)
+                            .build());
+        } else {
+            log = UserMealLog.builder()
+                    .userId(userId)
+                    .build();
+        }
+
+        log.setFoodName(analysis.getFoodName());
+        log.setEstimatedCalories(analysis.getEstimatedCalories());
+        log.setNutritionDetails(analysis.getNutritionDetails());
+        log.setDishId(dishId);
+        log.setCategory(mapToVietnameseCategory(finalCategory));
+        log.setCheckedIn(true);
+        log.setIsPlanCompliant(plannedMealId != null);
+        log.setImageUrl(""); // Không có ảnh cho text input
+
+        logRepository.save(log);
+        analysis.setType(log.getCategory());
         return analysis;
     }
 
@@ -159,6 +225,31 @@ public class MealLogServiceImpl implements MealLogService {
 
         log.setCheckedIn(true);
         return logRepository.save(log);
+    }
+
+    @Override
+    public org.springframework.data.domain.Page<com.t2404e.aihealthcoach.entity.DishLibrary> searchDishes(
+            String keyword, String category, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size);
+        com.t2404e.aihealthcoach.enums.MealTimeSlot slot = null;
+        if (category != null && !category.isEmpty()) {
+            try {
+                slot = com.t2404e.aihealthcoach.util.MealCategoryMapper.mapVietnameseToEnum(category);
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+
+        // Cần dùng các method có IsDeletedFalse để đảm bảo không lấy món đã ẩn
+        if (keyword == null || keyword.isEmpty()) {
+            if (slot != null)
+                return dishLibraryRepo.findByCategoryAndIsDeletedFalse(slot, pageable);
+            return dishLibraryRepo.findAllByIsDeletedFalse(pageable);
+        }
+
+        if (slot != null)
+            return dishLibraryRepo.findByNameContainingIgnoreCaseAndCategoryAndIsDeletedFalse(keyword, slot, pageable);
+        return dishLibraryRepo.findByNameContainingIgnoreCaseAndIsDeletedFalse(keyword, pageable);
     }
 
     private String mapToVietnameseCategory(String category) {

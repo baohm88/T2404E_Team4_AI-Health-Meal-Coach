@@ -31,10 +31,10 @@ const TEAM_MEMBERS = [
     },
     {
         name: 'Trần Văn Đức',
-        role: 'Frontend Architect',
-        bio: 'Tập trung vào tính thẩm mỹ và hiệu năng giao diện, kiến tạo trải nghiệm người dùng đẳng cấp.',
+        role: 'Fullstack AI Engineer',
+        bio: 'Phát triển toàn diện hệ thống từ mô hình AI, kiến trúc Backend đến trải nghiệm Frontend mượt mà.',
         avatar: 'https://ui-avatars.com/api/?name=Tran+Van+Duc&background=22c55e&color=fff&size=200',
-        icon: Code,
+        icon: Zap,
     },
     {
         name: 'Lưu Thanh',
