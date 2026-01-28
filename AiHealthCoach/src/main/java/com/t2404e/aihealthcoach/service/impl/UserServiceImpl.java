@@ -19,7 +19,8 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
-    public Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDateStr, String endDateStr, Pageable pageable) {
+    public Page<UserResponse> getUsers(String keyword, Integer status, Boolean isPremium, String startDateStr,
+            String endDateStr, Pageable pageable) {
         java.time.LocalDateTime startDate = null;
         java.time.LocalDateTime endDate = null;
 
@@ -58,7 +59,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public void toggleUserStatus(Long id) {
         User user = findUserEntityById(id);
-        
+
         // Toggle: If 1 (ACTIVE) -> 0 (INACTIVE), otherwise -> 1
         if (user.getStatus() != null && user.getStatus() == 1) {
             user.setStatus(0);
@@ -75,7 +76,19 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
+    @Override
+    public void batchUpdateStatus(java.util.List<Long> ids, Integer status) {
+        java.util.List<User> users = userRepository.findAllById(ids);
+        users.forEach(user -> user.setStatus(status));
+        userRepository.saveAll(users);
+    }
 
+    @Override
+    public void batchUpdatePremium(java.util.List<Long> ids, Boolean isPremium) {
+        java.util.List<User> users = userRepository.findAllById(ids);
+        users.forEach(user -> user.setIsPremium(isPremium));
+        userRepository.saveAll(users);
+    }
 
     private UserResponse convertToDTO(User user) {
         return UserResponse.builder()

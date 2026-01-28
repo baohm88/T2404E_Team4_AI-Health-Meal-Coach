@@ -85,4 +85,23 @@ public class DishServiceImpl implements DishService {
         }
         dishRepository.deleteById(id);
     }
+
+    @Override
+    public void batchDelete(java.util.List<Long> ids) {
+        dishRepository.deleteAllById(ids);
+    }
+
+    @Override
+    public void batchUpdateStatus(java.util.List<Long> ids, Boolean isDeleted) {
+        java.util.List<DishLibrary> dishes = dishRepository.findAllById(ids);
+        dishes.forEach(dish -> dish.setIsDeleted(isDeleted));
+        dishRepository.saveAll(dishes);
+    }
+
+    @Override
+    public void batchVerify(java.util.List<Long> ids, Boolean isVerified) {
+        java.util.List<DishLibrary> dishes = dishRepository.findAllById(ids);
+        dishes.forEach(dish -> dish.setIsVerified(isVerified));
+        dishRepository.saveAll(dishes);
+    }
 }

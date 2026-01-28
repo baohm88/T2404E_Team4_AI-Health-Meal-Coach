@@ -2,7 +2,7 @@
 
 import { ColumnDef, SortingState } from "@tanstack/react-table";
 import { format } from "date-fns";
-import { Coffee, Edit, Moon, Plus, Sun, Trash2, Undo2, Utensils, X } from "lucide-react";
+import { Coffee, Edit, Moon, Plus, Sun, Trash2, Undo2, Utensils, X, ShieldCheck, Eye, EyeOff, Check } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -11,7 +11,15 @@ import { DataTable } from "@/components/admin/data-table/data-table";
 import { FoodFormModal } from "@/components/admin/FoodFormModal";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import { createDish, deleteDish, getDishes, toggleDishStatus, toggleVerifyStatus, updateDish } from "@/services/admin.service";
+import {
+    createDish,
+    getDishes,
+    toggleDishStatus,
+    toggleVerifyStatus,
+    updateDish,
+    batchUpdateDishStatus,
+    batchVerifyDishes
+} from "@/services/admin.service";
 import { CreateDishRequest, DishLibrary, MealTimeSlot } from "@/types/admin";
 
 // Category Badge Helper
@@ -46,8 +54,16 @@ export default function FoodDatabasePage() {
     const [sorting, setSorting] = useState<SortingState>([{ id: 'id', desc: true }]);
 
     // Filters
+    // Filters
     const [keyword, setKeyword] = useState("");
     const [selectedCategory, setSelectedCategory] = useState<MealTimeSlot | undefined>(undefined);
+
+    // Selection
+    const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({});
+
+    // Derived Selection Ids
+    const selectedRows = Object.keys(rowSelection).filter(key => rowSelection[key]);
+    const selectedIds = selectedRows.map(index => data[parseInt(index)]?.id).filter(id => id !== undefined);
 
     // Confirm Dialog State
     const [confirmConfig, setConfirmConfig] = useState<{
@@ -104,6 +120,11 @@ export default function FoodDatabasePage() {
         return () => clearTimeout(timer);
     }, [fetchData]);
 
+    // Reset selection when data changes (e.g. page change)
+    useEffect(() => {
+        setRowSelection({});
+    }, [data]);
+
     // Handlers
     const handleToggleStatus = (dish: DishLibrary) => {
         const action = dish.isDeleted ? 'hiển thị lại' : 'ẩn';
@@ -147,26 +168,6 @@ export default function FoodDatabasePage() {
         });
     };
 
-    const handleDeletePermanent = (dish: DishLibrary) => {
-        setConfirmConfig({
-            isOpen: true,
-            title: 'Xóa vĩnh viễn',
-            description: `CẢNH BÁO: Hành động này sẽ xóa hoàn toàn món "${dish.name}" khỏi hệ thống và không thể hoàn tác. Bạn vẫn muốn tiếp tục?`,
-            type: 'danger',
-            confirmText: 'Xóa vĩnh viễn',
-            onConfirm: async () => {
-                try {
-                    await deleteDish(dish.id);
-                    toast.success(`Đã xóa vĩnh viễn món ăn`);
-                    fetchData();
-                } catch (error) {
-                    toast.error('Lỗi khi xóa món ăn');
-                }
-                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
-            }
-        });
-    };
-
     const handleEdit = (dish: DishLibrary) => {
         setEditingDish(dish);
         setIsModalOpen(true);
@@ -194,8 +195,79 @@ export default function FoodDatabasePage() {
         }
     };
 
+    const handleBatchStatus = async (isDeleted: boolean) => {
+        if (selectedIds.length === 0) return;
+
+        const actionText = isDeleted ? 'ẩn' : 'hiển thị lại';
+        setConfirmConfig({
+            isOpen: true,
+            title: `Cập nhật trạng thái hiển thị`,
+            description: `Bạn có chắc muốn ${actionText} ${selectedIds.length} món ăn đã chọn?`,
+            type: isDeleted ? 'warning' : 'success',
+            confirmText: 'Xác nhận',
+            onConfirm: async () => {
+                try {
+                    await batchUpdateDishStatus(selectedIds, isDeleted);
+                    toast.success(`Đã ${actionText} thành công ${selectedIds.length} món ăn`);
+                    setRowSelection({});
+                    fetchData();
+                } catch (error) {
+                    toast.error("Lỗi khi cập nhật trạng thái hàng loạt");
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
+    const handleBatchVerify = async (isVerified: boolean) => {
+        if (selectedIds.length === 0) return;
+
+        const actionText = isVerified ? 'xác nhận chuẩn' : 'hủy xác nhận';
+        setConfirmConfig({
+            isOpen: true,
+            title: `Xác nhận dữ liệu chuẩn`,
+            description: `Bạn có chắc muốn ${actionText} cho ${selectedIds.length} món ăn đã chọn?`,
+            type: isVerified ? 'success' : 'warning',
+            confirmText: 'Xác nhận',
+            onConfirm: async () => {
+                try {
+                    await batchVerifyDishes(selectedIds, isVerified);
+                    toast.success(`Đã ${actionText} thành công ${selectedIds.length} món ăn`);
+                    setRowSelection({});
+                    fetchData();
+                } catch (error) {
+                    toast.error("Lỗi khi xác nhận hàng loạt");
+                }
+                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+            }
+        });
+    };
+
     // Columns
     const columns: ColumnDef<DishLibrary>[] = [
+        {
+            id: "select",
+            header: ({ table }) => (
+                <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    checked={table.getIsAllPageRowsSelected()}
+                    onChange={(e) => table.toggleAllPageRowsSelected(!!e.target.checked)}
+                    aria-label="Select all"
+                />
+            ),
+            cell: ({ row }) => (
+                <input
+                    type="checkbox"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+                    checked={row.getIsSelected()}
+                    onChange={(e) => row.toggleSelected(!!e.target.checked)}
+                    aria-label="Select row"
+                />
+            ),
+            enableSorting: false,
+            enableHiding: false,
+        },
         {
             accessorKey: "id",
             header: "ID",
@@ -299,15 +371,6 @@ export default function FoodDatabasePage() {
                         >
                             {dish.isDeleted ? <Undo2 className="w-4 h-4" /> : <Trash2 className="w-4 h-4" />}
                         </button>
-
-                        {/* Permanent Delete */}
-                        <button
-                            onClick={() => handleDeletePermanent(dish)}
-                            className="p-2 hover:bg-red-50 rounded-lg text-red-600 transition-colors"
-                            title="Xóa vĩnh viễn"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
                     </div>
                 )
             },
@@ -406,9 +469,66 @@ export default function FoodDatabasePage() {
                         // Sorting
                         sorting={sorting}
                         onSortingChange={setSorting}
+                        // Selection
+                        rowSelection={rowSelection}
+                        onRowSelectionChange={setRowSelection}
                     />
                 </div>
             </div>
+
+            {/* Bulk Action Toolbar */}
+            {selectedIds.length > 0 && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-bottom-10 duration-500">
+                    <div className="bg-slate-900/90 backdrop-blur-xl border border-white/10 rounded-full px-6 py-3 shadow-2xl flex items-center gap-6">
+                        <div className="flex items-center gap-3 pr-6 border-r border-white/10">
+                            <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-sm">
+                                {selectedIds.length}
+                            </div>
+                            <span className="text-white font-bold text-sm whitespace-nowrap">Đang chọn</span>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                            {/* Verify Actions */}
+                            <button
+                                onClick={() => handleBatchVerify(true)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-emerald-500/20 rounded-full text-emerald-400 text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                <ShieldCheck className="w-4 h-4" /> Xác nhận chuẩn
+                            </button>
+
+                            <button
+                                onClick={() => handleBatchVerify(false)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-amber-500/20 rounded-full text-amber-400 text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                <ShieldCheck className="w-4 h-4 opacity-50" /> Hủy xác nhận
+                            </button>
+
+                            {/* Visibility Actions */}
+                            <button
+                                onClick={() => handleBatchStatus(false)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-blue-500/20 rounded-full text-blue-400 text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                <Eye className="w-4 h-4" /> Hiển thị
+                            </button>
+
+                            <button
+                                onClick={() => handleBatchStatus(true)}
+                                className="flex items-center gap-2 px-4 py-2 hover:bg-slate-500/20 rounded-full text-slate-400 text-xs font-black uppercase tracking-widest transition-all"
+                            >
+                                <EyeOff className="w-4 h-4" /> Ẩn đi
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => setRowSelection({})}
+                            className="ml-4 p-2 hover:bg-white/10 rounded-full text-white/40 hover:text-white transition-all"
+                            title="Bỏ chọn"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <div className="h-20" />
 

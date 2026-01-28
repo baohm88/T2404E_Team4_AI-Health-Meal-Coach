@@ -4,7 +4,7 @@
  * Menu items and brand info for Admin Portal.
  */
 
-import { LayoutDashboard, Users, Database, Flag, LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Users, Database, Flag, Settings, Bot, FileText, LucideIcon, Settings2 } from 'lucide-react';
 
 // ============================================================
 // TYPES
@@ -45,6 +45,24 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
         label: 'Báo cáo',
         icon: Flag,
         description: 'Reports',
+    },
+    {
+        href: '/admin/ai-config',
+        label: 'Cấu hình AI',
+        icon: Bot,
+        description: 'AI System Configuration',
+    },
+    {
+        href: '/admin/logs',
+        label: 'Nhật ký hệ thống',
+        icon: FileText,
+        description: 'System Logs & Activity',
+    },
+    {
+        href: '/admin/settings',
+        label: 'Cài đặt',
+        icon: Settings2,
+        description: 'Global Settings',
     },
 ];
 
