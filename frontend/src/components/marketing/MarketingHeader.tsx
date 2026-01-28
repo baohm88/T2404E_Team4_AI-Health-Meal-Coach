@@ -23,7 +23,7 @@ export function MarketingHeader() {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
-    console.log(isAuthenticated);
+    // console.log(isAuthenticated); // Debug removed
     return (
         <nav
             className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
@@ -43,7 +43,7 @@ export function MarketingHeader() {
                             className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${scrolled
                                 ? 'bg-primary text-white hover:bg-green-600'
                                 : 'border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
-                            }`}
+                                }`}
                         >
                             Dashboard
                         </Link>
@@ -60,7 +60,7 @@ export function MarketingHeader() {
                                 className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${scrolled
                                     ? 'bg-primary text-white hover:bg-green-600'
                                     : 'border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
-                                }`}
+                                    }`}
                             >
                                 GET STARTED
                             </Link>

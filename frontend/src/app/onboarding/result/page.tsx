@@ -14,14 +14,16 @@
 'use client';
 
 import { HealthAnalysisView } from '@/components/health/HealthAnalysisView';
+import { RegisterPromptModal } from '@/components/modals/RegisterPromptModal';
 import { getUserFromToken, TokenUser } from '@/lib/auth';
 import { getToken } from '@/lib/http';
 import { AIAnalysisResponse, aiService } from '@/services/ai.service';
+import confetti from 'canvas-confetti';
 import { motion } from 'framer-motion';
 import {
-  ArrowRight,
-  CheckCircle2,
-  Crown
+    ArrowRight,
+    CheckCircle2,
+    Crown
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -82,6 +84,7 @@ export default function OnboardingResultPage() {
     const [error, setError] = useState<string | null>(null);
     const [user, setUser] = useState<TokenUser | null>(null);
     const [analysis, setAnalysis] = useState<AIAnalysisResponse | null>(null);
+    const [showRegisterModal, setShowRegisterModal] = useState(false);
 
     // ---------------------------------------------------------------------
     // Authentication check & data fetch
@@ -102,9 +105,10 @@ export default function OnboardingResultPage() {
         console.log('✅ [OnboardingResult] Is authenticated:', auth);
 
         if (!auth) {
-            // Guest – redirect to register page
-            console.log('🚫 [OnboardingResult] Not authenticated, redirecting to /register');
-            router.replace('/register?from=onboarding');
+            // Guest – show registration modal instead of immediate redirect
+            console.log('🚫 [OnboardingResult] Not authenticated, showing registration modal');
+            setShowRegisterModal(true);
+            setLoading(false);
             return;
         }
 
@@ -153,10 +157,69 @@ export default function OnboardingResultPage() {
     }, [router]);
 
     // ---------------------------------------------------------------------
+    // Confetti Effect
+    // ---------------------------------------------------------------------
+    useEffect(() => {
+        if (analysis) {
+            const duration = 3000;
+            const end = Date.now() + duration;
+
+            const frame = () => {
+                confetti({
+                    particleCount: 2,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.8 }, // Bottom left
+                    colors: ['#34D399', '#10B981', '#F59E0B', '#FBBF24'] // Emerald & Amber
+                });
+                confetti({
+                    particleCount: 2,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.8 }, // Bottom right
+                    colors: ['#34D399', '#10B981', '#F59E0B', '#FBBF24']
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            };
+
+            frame();
+        }
+    }, [analysis]);
+
+    // ---------------------------------------------------------------------
     // Loading State
     // ---------------------------------------------------------------------
     if (loading) {
         return <ResultSkeleton />;
+    }
+
+    // ---------------------------------------------------------------------
+    // Modal Handlers
+    // ---------------------------------------------------------------------
+    const handleRegister = () => {
+        console.log('✅ [OnboardingResult] User chose to register');
+        router.push('/register?from=onboarding');
+    };
+
+    const handleCancel = () => {
+        console.log('❌ [OnboardingResult] User chose to skip registration');
+        router.push('/');
+    };
+
+    // ---------------------------------------------------------------------
+    // Show Modal for Guest Users
+    // ---------------------------------------------------------------------
+    if (showRegisterModal) {
+        return (
+            <RegisterPromptModal
+                isOpen={showRegisterModal}
+                onRegister={handleRegister}
+                onCancel={handleCancel}
+            />
+        );
     }
 
     // ---------------------------------------------------------------------

@@ -30,16 +30,16 @@ export default function AdminUsersPage() {
             const endDate = dateRange.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined;
 
             const result = await getUsers(
-                pageIndex, 
-                pageSize, 
-                keyword, 
-                'id,desc', 
+                pageIndex,
+                pageSize,
+                keyword,
+                'id,desc',
                 undefined, // status 
                 undefined, // isPremium
                 startDate,
                 endDate
             );
-            
+
             setData(result.content);
             setPageCount(result.totalPages);
         } catch (error) {
@@ -94,10 +94,10 @@ export default function AdminUsersPage() {
                 return (
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-xs uppercase">
-                            {user.fullName.substring(0, 2)}
+                            {(user?.fullName?.trim() ? user.fullName.trim().substring(0, 2).toUpperCase() : "US")}
                         </div>
                         <div>
-                            <p className="font-medium text-slate-900">{user.fullName}</p>
+                            <p className="font-medium text-slate-900">{user.fullName || "Tên không xác định"}</p>
                             <p className="text-xs text-slate-500">{user.email}</p>
                         </div>
                     </div>
@@ -144,9 +144,12 @@ export default function AdminUsersPage() {
             accessorKey: "createdAt",
             header: "Ngày tham gia",
             cell: ({ row }) => {
+                const dateStr = row.original.createdAt;
                 try {
-                    return <span className="text-slate-600">{format(new Date(row.original.createdAt), 'dd/MM/yyyy')}</span>
+                    const date = new Date(dateStr);
+                    return <span className="text-slate-600">{isNaN(date.getTime()) ? "N/A" : format(date, 'dd/MM/yyyy')}</span>
                 } catch (e) {
+                    console.error("Lỗi định dạng ngày:", e);
                     return <span className="text-slate-400">N/A</span>
                 }
             },
@@ -163,8 +166,8 @@ export default function AdminUsersPage() {
                                 <Eye className="w-4 h-4" />
                             </button>
                         </Link>
-                        
-                        <button 
+
+                        <button
                             onClick={() => handleTogglePremium(user)}
                             className={`p-2 rounded-lg transition-colors ${user.isPremium ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:bg-slate-100 hover:text-amber-500'}`}
                             title="Toggle Premium"
@@ -172,7 +175,7 @@ export default function AdminUsersPage() {
                             <Star className={`w-4 h-4 ${user.isPremium ? 'fill-amber-500' : ''}`} />
                         </button>
 
-                        <button 
+                        <button
                             onClick={() => handleToggleStatus(user)}
                             className={`p-2 rounded-lg transition-colors ${user.status === 1 ? 'text-emerald-600 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-100 hover:text-emerald-600'}`}
                             title="Toggle Status"
@@ -192,8 +195,8 @@ export default function AdminUsersPage() {
                 <p className="text-slate-500">Xem và quản lý tài khoản thành viên</p>
             </div>
 
-            <DataTable 
-                columns={columns} 
+            <DataTable
+                columns={columns}
                 data={data}
                 searchKey="fullName"
                 searchValue={keyword}

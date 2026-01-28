@@ -13,11 +13,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
 import com.t2404e.aihealthcoach.exception.ResourceNotFoundException;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.UserService;
+import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +36,7 @@ public class AdminController {
     private final UserService userService;
     private final HealthAnalysisService healthAnalysisService;
     private final com.t2404e.aihealthcoach.service.MealPlanService mealPlanService;
+    private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
 
     @GetMapping("/ping")
     @PreAuthorize("hasRole('ADMIN')")
@@ -51,8 +56,7 @@ public class AdminController {
             @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id,desc") String sort
-    ) {
+            @RequestParam(defaultValue = "id,desc") String sort) {
         // Xử lý sort format "field,asc"
         String[] sortParams = sort.split(",");
         Sort sortObj = Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]);
@@ -73,18 +77,51 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xem kế hoạch sức khỏe của User", description = "Admin xem chi tiết phân tích sức khỏe (Roadmap) của một user cụ thể.")
     public ResponseEntity<ApiResponse<?>> getUserPlan(@PathVariable Long userId) {
-        String plan = healthAnalysisService.getByUserId(userId);
-        if (plan == null) {
-            throw new ResourceNotFoundException("User has no health analysis plan yet.");
+        String analysisJson = healthAnalysisService.getByUserId(userId);
+
+        // DEBUG: Log raw data from database
+        System.out.println("========== DEBUG getUserPlan ==========");
+        System.out.println("User ID: " + userId);
+        System.out.println("Raw analysisJson from DB: " + analysisJson);
+
+        if (analysisJson == null) {
+            System.out.println("analysisJson is NULL - User has no health analysis");
+            return ResponseEntity.ok(ApiResponse.success("User chưa có phân tích sức khỏe", null));
         }
-        return ResponseEntity.ok(ApiResponse.success("Lấy kế hoạch user thành công", plan));
+
+        try {
+            // Parse JSON string to Object to prevent double-stringification
+            Object parsedJson = objectMapper.readValue(analysisJson, Object.class);
+
+            // DEBUG: Log parsed object
+            System.out.println("Parsed Object type: " + parsedJson.getClass().getName());
+            System.out.println("Parsed Object: " + objectMapper.writeValueAsString(parsedJson));
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("analysisJson", parsedJson);
+
+            // DEBUG: Log final response
+            System.out.println("Final response: " + objectMapper.writeValueAsString(response));
+            System.out.println("=======================================");
+
+            return ResponseEntity.ok(ApiResponse.success("Lấy thông tin phân tích người dùng thành công", response));
+        } catch (Exception e) {
+            System.err.println("ERROR parsing analysisJson: " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.ok(ApiResponse.success("Lỗi parse dữ liệu phân tích", null));
+        }
     }
 
     @GetMapping("/users/{userId}/meal-plan")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Xem thực đơn của User", description = "Admin xem chi tiết thực đơn 7 ngày của một user cụ thể.")
     public ResponseEntity<ApiResponse<?>> getUserMealPlan(@PathVariable Long userId) {
-        return ResponseEntity.ok(ApiResponse.success("Lấy thực đơn user thành công", mealPlanService.getByUserId(userId)));
+        MealPlanResponse mealPlan = mealPlanService.getByUserId(userId);
+        if (mealPlan == null) {
+            // Return null data instead of throwing exception
+            return ResponseEntity.ok(ApiResponse.success("User chưa có thực đơn", null));
+        }
+        return ResponseEntity.ok(ApiResponse.success("Lấy thực đơn user thành công", mealPlan));
     }
 
     @PatchMapping("/users/{id}/toggle-status")
@@ -102,6 +139,5 @@ public class AdminController {
         userService.togglePremiumStatus(id);
         return ResponseEntity.ok(ApiResponse.success("Thay đổi trạng thái Premium thành công", null));
     }
-
 
 }
