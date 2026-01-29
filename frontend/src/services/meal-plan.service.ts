@@ -62,6 +62,13 @@ export const mealPlanService = {
     },
 
     /**
+     * Mở rộng kế hoạch thêm 7 ngày
+     */
+    extendMealPlan: async (): Promise<ApiResponse<MealPlanResponse>> => {
+        return http.patch('/meal-plans/extend');
+    },
+
+    /**
      * Không còn cần parse phức tạp vì backend đã trả về object chuẩn
      */
     parsePlanJson: (data: any): MealPlanResponse => {

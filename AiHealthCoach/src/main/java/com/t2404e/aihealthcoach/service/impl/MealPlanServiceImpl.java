@@ -245,6 +245,48 @@ public class MealPlanServiceImpl implements MealPlanService {
                 return generateForUser(userId);
         }
 
+        @Override
+        @Transactional
+        public MealPlanResponse extendPlan(Long userId) {
+                MealPlan plan = mealPlanRepo.findByUserId(userId)
+                                .orElseThrow(() -> new IllegalStateException("Không tìm thấy lộ trình để mở rộng"));
+
+                int currentDays = plan.getTotalDays();
+                int newDays = currentDays + 7;
+                plan.setTotalDays(newDays);
+                mealPlanRepo.save(plan);
+
+                if (userId == null)
+                        throw new IllegalArgumentException("User ID cannot be null");
+                final Long uid = userId;
+
+                HealthProfile profile = profileRepo.findById(uid)
+                                .orElseThrow(() -> new IllegalStateException("Hồ sơ sức khỏe không tồn tại"));
+                HealthAnalysis analysis = analysisRepo.findByUserId(uid)
+                                .orElseThrow(() -> new IllegalStateException("Phân tích sức khỏe không tồn tại"));
+                List<DishLibrary> dishes = dishLibraryRepo.findByIsVerifiedTrueAndIsDeletedFalse();
+                ChatClient chatClient = chatClientBuilder.build();
+
+                try {
+                        System.out.println(
+                                        "DEBUG: Extending meal plan for days " + (currentDays + 1) + " to " + newDays);
+                        String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, currentDays + 1,
+                                        newDays);
+                        String finalPrompt = prompt != null ? prompt : "";
+                        String rawJson = chatClient.prompt()
+                                        .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
+                                        .user(finalPrompt)
+                                        .call()
+                                        .content();
+                        parseAndSaveChunk(plan, rawJson);
+                } catch (Exception e) {
+                        System.err.println("AI EXTEND ERROR: " + e.getMessage());
+                        throw new RuntimeException("Lỗi khi mở rộng lộ trình bằng AI: " + e.getMessage());
+                }
+
+                return convertToResponse(plan);
+        }
+
         private MealPlanResponse convertToResponse(MealPlan plan) {
                 List<PlannedMeal> plannedMeals = plannedMealRepo.findByMealPlanId(plan.getId());
                 java.util.Set<Long> currentPlannedMealIds = plannedMeals.stream()

@@ -22,9 +22,9 @@ export function MacrosBreakdown({
     fat = { current: 0, goal: 65 },
 }: MacrosBreakdownProps) {
     const macroData = [
-        { name: 'Protein', ...protein, unit: 'g', color: 'var(--color-protein)' },
-        { name: 'Carbs', ...carbs, unit: 'g', color: 'var(--color-carbs)' },
-        { name: 'Fat', ...fat, unit: 'g', color: 'var(--color-fat)' },
+        { name: 'Đạm (Protein)', ...protein, unit: 'g', color: 'var(--color-protein)' },
+        { name: 'Tinh bột (Carbs)', ...carbs, unit: 'g', color: 'var(--color-carbs)' },
+        { name: 'Chất béo (Fat)', ...fat, unit: 'g', color: 'var(--color-fat)' },
     ];
 
     return (

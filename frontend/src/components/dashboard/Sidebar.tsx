@@ -14,6 +14,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LogOut, UserCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/ui/Logo';
 import {
     DASHBOARD_MENU_ITEMS,
     BRAND,
@@ -83,11 +84,8 @@ interface NavProps {
 const DesktopSidebar = ({ pathname, onLogoutClick, isLoggingOut }: NavProps) => (
     <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-white/70 backdrop-blur-xl border-r border-slate-100 p-6 z-40">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl overflow-hidden shadow-lg shadow-emerald-500/20">
-                <img src="/assets/logo.png" alt="Logo" className="w-full h-full object-cover" />
-            </div>
-            <span className="font-bold text-xl text-slate-800">{BRAND.NAME.replace('AI ', '')}</span>
+        <Link href="/" className="mb-10 block transition-transform active:scale-95">
+            <Logo />
         </Link>
 
         {/* Navigation */}

@@ -7,9 +7,13 @@ import { CalorieCircle } from '@/components/dashboard/widgets/CalorieCircle';
 import { MacrosBreakdown } from '@/components/dashboard/widgets/MacrosBreakdown';
 import { WaterTracker } from '@/components/dashboard/widgets/WaterTracker';
 import { RecentMeals } from '@/components/dashboard/widgets/RecentMeals';
+import { StrategicMealCard } from '@/components/dashboard/widgets/StrategicMealCard';
+import { WeeklyGoalProgress } from '@/components/dashboard/widgets/WeeklyGoalProgress';
+import { HealthTrendChart } from '@/components/dashboard/widgets/HealthTrendChart';
 import { dashboardService } from '@/services/dashboard.service';
+import { mealLogService } from '@/services/meal-log.service';
 import { DashboardSummary, DEFAULT_DASHBOARD_SUMMARY } from '@/types/api';
-import { Footprints, Flame, RefreshCw } from 'lucide-react';
+import { Footprints, Flame, RefreshCw, PlusCircle, Droplets } from 'lucide-react';
 
 // ============================================================
 // LOADING SKELETON
@@ -84,6 +88,28 @@ export default function DashboardPage() {
             setIsLoading(false);
         }
     }, []);
+
+    const handleQuickCheckIn = async (mealId: number) => {
+        if (!data.nextMeal) return;
+
+        try {
+            const res = await mealLogService.checkInPlannedMeal({
+                foodName: data.nextMeal.mealName,
+                estimatedCalories: data.nextMeal.plannedCalories,
+                nutritionDetails: `AI Strategic Meal Check-in (${data.nextMeal.type})`,
+                plannedMealId: data.nextMeal.plannedMealId
+            });
+
+            if (res.success) {
+                toast.success('Bữa ăn đã được ghi nhận!');
+                fetchDashboardData();
+            } else {
+                toast.error('Không thể ghi nhận bữa ăn');
+            }
+        } catch (e) {
+            toast.error('Lỗi khi ghi nhận bữa ăn');
+        }
+    };
 
     useEffect(() => {
         fetchDashboardData();
@@ -196,9 +222,10 @@ export default function DashboardPage() {
                 </div>
             </div>
 
-            {/* Main Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left Column - Calories & Macros */}
+            {/* Main Grid V2 */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+                {/* 1. Calories & Macros (Col 1) */}
                 <div className="lg:col-span-1 space-y-6">
                     <CalorieCircle
                         eaten={data.calories.eaten}
@@ -212,28 +239,88 @@ export default function DashboardPage() {
                     />
                 </div>
 
-                {/* Center & Right - Water & Meals */}
+                {/* 2. Trends (Col 2) */}
+                <div className="lg:col-span-1">
+                    <HealthTrendChart data={data.trendData} />
+                </div>
+
+                {/* 3. Strategy (Col 3-4) */}
                 <div className="lg:col-span-2 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <WaterTracker
-                            current={data.water.current}
-                            goal={data.water.goal}
+                        <StrategicMealCard
+                            meal={data.nextMeal}
+                            currentDay={data.weeklyProgress?.currentDay}
+                            onCheckIn={handleQuickCheckIn}
+                            isLoading={isLoading}
                         />
-                        <div className="bg-gradient-to-br from-primary to-green-600 rounded-3xl p-6 text-white">
-                            <h3 className="text-sm font-semibold uppercase tracking-wide mb-2 opacity-80">
-                                AI Coach
+                        <WeeklyGoalProgress progress={data.weeklyProgress} />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="md:col-span-1">
+                            <WaterTracker
+                                current={data.water.current}
+                                goal={data.water.goal}
+                            />
+                        </div>
+                        <div className="md:col-span-2 bg-slate-900 rounded-3xl p-6 text-white relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 -mr-8 -mt-8 rounded-full blur-3xl transition-all group-hover:scale-110" />
+
+                            <h3 className="text-[10px] font-black uppercase tracking-[0.2em] mb-3 text-emerald-400">
+                                LỜI KHUYÊN TỪ AI COACH
                             </h3>
-                            <p className="text-lg font-medium mb-4">
+                            <p className="text-lg font-bold mb-6 relative z-10 leading-tight">
                                 {data.water.current < data.water.goal
-                                    ? `Bạn đang làm tốt! Hãy uống thêm ${data.water.goal - data.water.current} ly nước nữa để đạt mục tiêu.`
-                                    : 'Tuyệt vời! Bạn đã đạt mục tiêu uống nước hôm nay!'}
+                                    ? `Tiến triển rất tốt! Hãy uống thêm ${data.water.goal - data.water.current} ly nước nữa để đạt mục tiêu cấp nước.`
+                                    : 'Cấp nước hoàn hảo! Bạn đã đạt mục tiêu nước uống hàng ngày.'}
                             </p>
-                            <button className="px-4 py-2 bg-white/20 rounded-xl text-sm font-medium hover:bg-white/30 transition-all">
-                                Xem gợi ý
-                            </button>
+
+                            <div className="flex items-center gap-3">
+                                <button className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                                    Nhận lời khuyên
+                                </button>
+                                <div className="flex -space-x-2">
+                                    {[1, 2, 3].map(i => (
+                                        <div key={i} className="w-6 h-6 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center text-[8px] font-bold">
+                                            {i}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <RecentMeals />
+                </div>
+            </div>
+
+            {/* Bottom Section: Recent Logins & Quick Actions */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2">
+                    <RecentMeals meals={[]} />
+                </div>
+                <div className="lg:col-span-1 bg-white rounded-3xl p-6 shadow-sm border border-slate-100">
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-[0.2em] mb-4">
+                        Hành động nhanh
+                    </h3>
+                    <div className="space-y-3">
+                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-emerald-100 transition-colors">
+                                    <PlusCircle className="w-5 h-5" />
+                                </div>
+                                <span className="font-bold text-sm">Thêm món ăn</span>
+                            </div>
+                            <PlusCircle className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+                        </button>
+                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all group">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-blue-100 transition-colors">
+                                    <Droplets className="w-5 h-5 text-blue-500" />
+                                </div>
+                                <span className="font-bold text-sm">Thêm ly nước</span>
+                            </div>
+                            <PlusCircle className="w-4 h-4 opacity-0 group-hover:opacity-100" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

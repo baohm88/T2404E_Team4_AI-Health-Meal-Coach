@@ -3,7 +3,7 @@
 import { WeeklyMealCalendar } from "@/components/meals/WeeklyMealCalendar";
 import { MealPlanResponse, mealPlanService } from "@/services/meal-plan.service";
 import { motion } from "framer-motion";
-import { AlertCircle, Loader2, RefreshCcw } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
@@ -35,16 +35,16 @@ export default function SchedulePage() {
     const handleRegenerate = async () => {
         try {
             toast.loading("Đang khởi tạo lại thực đơn...", { id: 'regenerate-toasts' });
-            
+
             // Check if user is premium? Actually backend throws error if not.
             // We just need to catch it.
             const res = await mealPlanService.regenerateMealPlan();
-            
+
             if (res.success && res.data) {
                 setPlanData(res.data);
                 toast.success('Đã cập nhật thực đơn mới thành công!', { id: 'regenerate-toasts' });
             } else {
-                 toast.error(res.message || 'Lỗi khi tạo lại thực đơn.', { id: 'regenerate-toasts' });
+                toast.error(res.message || 'Lỗi khi tạo lại thực đơn.', { id: 'regenerate-toasts' });
             }
         } catch (error: any) {
             const msg = error.response?.data?.message || "";
@@ -60,6 +60,22 @@ export default function SchedulePage() {
             } else {
                 toast.error(msg || "Lỗi khi tạo lại thực đơn.", { id: 'regenerate-toasts' });
             }
+        }
+    };
+
+    const handleExtend = async () => {
+        try {
+            toast.loading("AI đang kiến tạo tuần tiếp theo...", { id: 'extend-toast' });
+            const res = await mealPlanService.extendMealPlan();
+
+            if (res.success && res.data) {
+                setPlanData(res.data);
+                toast.success('Lộ trình đã được mở rộng thêm 1 tuần!', { id: 'extend-toast' });
+            } else {
+                toast.error(res.message || 'Lỗi khi mở rộng lộ trình.', { id: 'extend-toast' });
+            }
+        } catch (error: any) {
+            toast.error(error.response?.data?.message || "Lỗi khi mở rộng lộ trình.", { id: 'extend-toast' });
         }
     };
 
@@ -93,7 +109,7 @@ export default function SchedulePage() {
                         <p className="text-slate-500">{error}</p>
                     </div>
                     {/* Add Create Button if no Plan exists - maybe redirect to onboarding or just generate? */}
-                     <button
+                    <button
                         onClick={handleRegenerate} // If generic error, maybe retry. If "Not found", regenerate?
                         className="w-full py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/30"
                     >
@@ -106,7 +122,7 @@ export default function SchedulePage() {
 
     return (
         <div className="space-y-6 max-w-[1600px] mx-auto">
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-1">
                     <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
                         Lộ trình <span className="text-emerald-500">Dinh Dưỡng</span>
@@ -116,13 +132,6 @@ export default function SchedulePage() {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleRegenerate}
-                    className="flex items-center gap-2 px-4 py-2 bg-white text-slate-600 rounded-xl text-sm font-bold border border-slate-200 hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-95"
-                >
-                    <RefreshCcw className="w-4 h-4" />
-                    Tạo lại
-                </button>
             </div>
 
             {/* Content */}
@@ -130,6 +139,7 @@ export default function SchedulePage() {
                 <WeeklyMealCalendar
                     initialData={planData}
                     startDate={planData?.startDate || "Chưa xác định"}
+                    onExtendPlan={handleExtend}
                 />
             ) : (
                 <div className="text-center py-20 text-slate-400 italic">

@@ -72,10 +72,13 @@ public class MealLogServiceImpl implements MealLogService {
                     .isDeleted(false)
                     .description("AI nhận diện món từ hình ảnh người dùng.")
                     .build();
-            newDish = dishLibraryRepo.save(newDish);
-            dishId = newDish.getId();
-            System.out.println(
-                    "DEBUG: Created new unverified dish in library: " + newDish.getName() + " (ID: " + dishId + ")");
+            com.t2404e.aihealthcoach.entity.DishLibrary savedDish = dishLibraryRepo.save(newDish);
+            if (savedDish != null) {
+                dishId = savedDish.getId();
+                System.out.println(
+                        "DEBUG: Created new unverified dish in library: " + savedDish.getName() + " (ID: " + dishId
+                                + ")");
+            }
         }
 
         // 4. Lưu vào DB (Cập nhật nếu đã có bản ghi từ sync thực đơn)
@@ -205,9 +208,12 @@ public class MealLogServiceImpl implements MealLogService {
         // Xử lý dishId tương tự như trên
         Long dishId = null;
         if (checkInData.getPlannedMealId() != null) {
-            dishId = plannedMealRepository.findById(checkInData.getPlannedMealId())
-                    .map(pm -> pm.getDish() != null ? pm.getDish().getId() : null)
-                    .orElse(null);
+            final Long pid = checkInData.getPlannedMealId();
+            if (pid != null) {
+                dishId = plannedMealRepository.findById(pid)
+                        .map(pm -> pm.getDish() != null ? pm.getDish().getId() : null)
+                        .orElse(null);
+            }
         }
 
         // Tạo log hoặc cập nhật log cũ cho việc check-in

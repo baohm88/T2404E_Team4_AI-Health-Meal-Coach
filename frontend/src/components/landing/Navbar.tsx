@@ -1,5 +1,6 @@
 'use client';
 
+import { Logo } from '@/components/ui/Logo';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -19,9 +20,8 @@ export function Navbar() {
             }`}>
             <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-slate-900 transition-transform active:scale-95">
-                    <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 rounded-lg shadow-sm" />
-                    AI Health Coach
+                <Link href="/" className="transition-transform active:scale-95">
+                    <Logo />
                 </Link>
 
                 {/* Right Nav */}
