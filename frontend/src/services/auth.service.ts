@@ -10,10 +10,10 @@
 
 import http, { removeToken } from '@/lib/http';
 import {
-  ApiResponse,
-  AuthData,
-  LoginRequest,
-  RegisterRequest,
+    ApiResponse,
+    AuthData,
+    LoginRequest,
+    RegisterRequest,
 } from '@/types/api';
 
 // ============================================================
@@ -159,6 +159,71 @@ export const authService = {
             return true;
         } catch {
             return false;
+        }
+    },
+
+    /**
+     * Verify OTP for email verification
+     * @param email - User email
+     * @param otp - 6-digit OTP code
+     * @returns Promise with success status
+     */
+    verifyOtp: async (email: string, otp: string): Promise<AuthResponse> => {
+        try {
+            const response = await http.post('/auth/verify-otp', { email, otp }) as unknown as ApiResponse<unknown>;
+
+            console.log('🔐 Verify OTP Response:', response);
+
+            if (response.success) {
+                return { success: true };
+            }
+
+            return {
+                success: false,
+                error: response.message || 'Xác thực OTP thất bại',
+            };
+        } catch (error) {
+            console.error('🔐 Verify OTP Error:', error);
+
+            const axiosError = error as { response?: { data?: ApiResponse<unknown> } };
+            const errorMessage = axiosError.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn';
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
+        }
+    },
+
+    /**
+     * Resend OTP to user email
+     * @param email - User email
+     * @returns Promise with success status
+     */
+    resendOtp: async (email: string): Promise<AuthResponse> => {
+        try {
+            const response = await http.post('/auth/resend-otp', { email }) as unknown as ApiResponse<unknown>;
+
+            console.log('📧 Resend OTP Response:', response);
+
+            if (response.success) {
+                return { success: true };
+            }
+
+            return {
+                success: false,
+                error: response.message || 'Gửi lại OTP thất bại',
+            };
+        } catch (error) {
+            console.error('📧 Resend OTP Error:', error);
+
+            const axiosError = error as { response?: { data?: ApiResponse<unknown> } };
+            const errorMessage = axiosError.response?.data?.message || 'Không thể gửi lại mã OTP';
+
+            return {
+                success: false,
+                error: errorMessage,
+            };
         }
     },
 };
