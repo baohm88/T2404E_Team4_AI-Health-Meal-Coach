@@ -19,7 +19,8 @@ export function Navbar() {
             }`}>
             <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="font-bold text-xl tracking-tight text-slate-900">
+                <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-slate-900 transition-transform active:scale-95">
+                    <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 rounded-lg shadow-sm" />
                     AI Health Coach
                 </Link>
 
@@ -34,8 +35,8 @@ export function Navbar() {
                     <Link
                         href="/onboarding"
                         className={`px-6 py-2.5 rounded-full font-semibold text-sm transition-all ${scrolled
-                                ? 'bg-primary text-white hover:bg-green-600'
-                                : 'border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
+                            ? 'bg-primary text-white hover:bg-green-600'
+                            : 'border-2 border-slate-900 text-slate-900 hover:bg-slate-900 hover:text-white'
                             }`}
                     >
                         GET STARTED

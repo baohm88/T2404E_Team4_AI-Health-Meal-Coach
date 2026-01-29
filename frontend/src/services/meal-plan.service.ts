@@ -3,9 +3,11 @@ import { ApiResponse } from '@/types/api';
 
 export interface Meal {
     id: number;
+    plannedMealId?: number;
     mealName: string;
     quantity: string;
     calories: number;
+    plannedCalories: number;
     type: string;
     checkedIn?: boolean;
 }
@@ -14,12 +16,27 @@ export interface DayPlan {
     day: number;
     meals: Meal[];
     totalCalories: number;
+    totalPlannedCalories: number;
+}
+
+export interface MonthDetail {
+    month: number;
+    title: string;
+    dailyCalories: number;
+    note: string;
+}
+
+export interface MonthlyPlan {
+    goal: string;
+    totalTargetWeightChangeKg: number;
+    months: MonthDetail[];
 }
 
 export interface MealPlanResponse {
     startDate: string;
     totalDays: number;
     mealPlan: DayPlan[];
+    monthlyPlan?: MonthlyPlan;
 }
 
 export const mealPlanService = {

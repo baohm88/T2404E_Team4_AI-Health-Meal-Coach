@@ -64,6 +64,8 @@ public class SecurityConfig {
                                                 .requestMatchers(SWAGGER_WHITELIST).permitAll()
                                                 .requestMatchers("/auth/**").permitAll()
                                                 .requestMatchers("/ai/**").permitAll()
+                                                .requestMatchers("/health-profile/**").permitAll()
+                                                .requestMatchers("/health-analysis/**").permitAll()
                                                 .requestMatchers("/payment/**").permitAll() // Cho phép tạo link và
                                                                                             // callback
                                                 // Cho phép OPTIONS (Preflight request) đi qua mà không cần token

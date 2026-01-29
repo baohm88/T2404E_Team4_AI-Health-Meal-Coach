@@ -11,4 +11,5 @@ public class DayPlanDTO {
     private Integer day;
     private List<MealDTO> meals;
     private Integer totalCalories;
+    private Integer totalPlannedCalories;
 }

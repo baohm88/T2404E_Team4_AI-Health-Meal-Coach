@@ -1,7 +1,6 @@
 package com.t2404e.aihealthcoach.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,7 +31,6 @@ public class HealthProfileController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Tạo hồ sơ sức khỏe", description = "Tạo mới thông tin sức khỏe cho người dùng.")
     public ResponseEntity<ApiResponse<?>> create(
             @Valid @RequestBody HealthProfileRequest request,
@@ -45,7 +43,6 @@ public class HealthProfileController {
     }
 
     @PutMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Cập nhật hồ sơ sức khỏe", description = "Cập nhật thông tin sức khỏe hiện tại.")
     public ResponseEntity<ApiResponse<?>> update(
             @Valid @RequestBody HealthProfileRequest request,
@@ -58,19 +55,19 @@ public class HealthProfileController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Lấy hồ sơ sức khỏe", description = "Xem thông tin sức khỏe hiện tại của người dùng.")
     public ResponseEntity<ApiResponse<HealthProfileResponse>> getProfile(
             HttpServletRequest request) {
 
         Long userId = RequestUtil.getUserId(request);
+        if (userId == null) {
+            return ResponseEntity.ok(ApiResponse.error("Vui lòng đăng nhập hoặc hoàn thành khảo sát để xem hồ sơ."));
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Health profile fetched successfully",
-                        service.getByUserId(userId)
-                )
-        );
+                        service.getByUserId(userId)));
     }
 
 }

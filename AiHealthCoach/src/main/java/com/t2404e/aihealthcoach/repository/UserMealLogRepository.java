@@ -14,6 +14,14 @@ public interface UserMealLogRepository extends JpaRepository<UserMealLog, Long> 
 
     java.util.Optional<UserMealLog> findFirstByPlannedMealIdOrderByLoggedAtDesc(Long plannedMealId);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByUserId(Long userId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    void deleteByPlannedMealIdIn(java.util.Collection<Long> plannedMealIds);
+
     @org.springframework.data.jpa.repository.Query("SELECT COUNT(DISTINCT l.userId) FROM UserMealLog l WHERE l.loggedAt >= :startOfDay")
     long countDistinctUserIdsByLoggedAtAfter(java.time.LocalDateTime startOfDay);
 }

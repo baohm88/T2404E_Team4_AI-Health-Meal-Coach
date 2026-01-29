@@ -31,7 +31,8 @@ export function MarketingHeader() {
         >
             <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                 {/* Logo */}
-                <Link href="/" className="font-bold text-xl tracking-tight text-slate-900">
+                <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight text-slate-900 transition-transform active:scale-95">
+                    <img src="/assets/logo.png" alt="Logo" className="w-8 h-8 rounded-lg shadow-sm" />
                     AI Health Coach
                 </Link>
 

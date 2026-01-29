@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.t2404e.aihealthcoach.dto.response.ai.MealAnalysisResponse;
+import com.t2404e.aihealthcoach.entity.PlannedMeal;
 import com.t2404e.aihealthcoach.entity.UserMealLog;
 import com.t2404e.aihealthcoach.repository.PlannedMealRepository;
 import com.t2404e.aihealthcoach.repository.UserMealLogRepository;
@@ -80,11 +81,17 @@ public class MealLogServiceImpl implements MealLogService {
         // 4. Lưu vào DB (Cập nhật nếu đã có bản ghi từ sync thực đơn)
         UserMealLog log;
         if (plannedMealId != null) {
+            final Long pid = plannedMealId;
             log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
-                    .orElseGet(() -> UserMealLog.builder()
-                            .userId(userId)
-                            .plannedMealId(plannedMealId)
-                            .build());
+                    .orElseGet(() -> {
+                        PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
+                        return UserMealLog.builder()
+                                .userId(userId)
+                                .plannedMealId(pid)
+                                .dayNumber(pm != null ? pm.getDayNumber() : null)
+                                .category(pm != null ? pm.getCategory() : null)
+                                .build();
+                    });
         } else {
             log = UserMealLog.builder()
                     .userId(userId)
@@ -97,7 +104,9 @@ public class MealLogServiceImpl implements MealLogService {
         log.setEstimatedCalories(analysis.getEstimatedCalories());
         log.setNutritionDetails(analysis.getNutritionDetails());
         log.setDishId(dishId);
-        log.setCategory(mapToVietnameseCategory(finalCategory));
+        if (log.getCategory() == null || log.getCategory().isEmpty() || categoryParam != null) {
+            log.setCategory(mapToVietnameseCategory(finalCategory));
+        }
         log.setCheckedIn(true); // Đã đổi món/phân tích ảnh thì coi như đã ăn
         log.setIsPlanCompliant(plannedMealId != null); // Nếu có plannedMealId thì coi như liên quan đến kế hoạch
 
@@ -150,11 +159,17 @@ public class MealLogServiceImpl implements MealLogService {
         // 3. Lưu log
         UserMealLog log;
         if (plannedMealId != null) {
-            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
-                    .orElseGet(() -> UserMealLog.builder()
-                            .userId(userId)
-                            .plannedMealId(plannedMealId)
-                            .build());
+            final Long pid = plannedMealId;
+            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
+                    .orElseGet(() -> {
+                        PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
+                        return UserMealLog.builder()
+                                .userId(userId)
+                                .plannedMealId(pid)
+                                .dayNumber(pm != null ? pm.getDayNumber() : null)
+                                .category(pm != null ? pm.getCategory() : null)
+                                .build();
+                    });
         } else {
             log = UserMealLog.builder()
                     .userId(userId)
@@ -165,7 +180,9 @@ public class MealLogServiceImpl implements MealLogService {
         log.setEstimatedCalories(analysis.getEstimatedCalories());
         log.setNutritionDetails(analysis.getNutritionDetails());
         log.setDishId(dishId);
-        log.setCategory(mapToVietnameseCategory(finalCategory));
+        if (log.getCategory() == null || log.getCategory().isEmpty() || categoryParam != null) {
+            log.setCategory(mapToVietnameseCategory(finalCategory));
+        }
         log.setCheckedIn(true);
         log.setIsPlanCompliant(plannedMealId != null);
         log.setImageUrl(""); // Không có ảnh cho text input
@@ -193,19 +210,36 @@ public class MealLogServiceImpl implements MealLogService {
                     .orElse(null);
         }
 
-        // Tạo log cho việc check-in (không có ảnh mới, nhưng có thể map với planned
-        // meal)
-        UserMealLog log = UserMealLog.builder()
-                .userId(userId)
-                .plannedMealId(checkInData.getPlannedMealId())
-                .dishId(dishId)
-                .foodName(checkInData.getFoodName())
-                .imageUrl("") // Không bắt buộc ảnh khi check-in nhanh
-                .estimatedCalories(checkInData.getEstimatedCalories())
-                .isPlanCompliant(true) // Check-in nghĩa là tuân thủ
-                .nutritionDetails(details)
-                .category(mapToVietnameseCategory(checkInData.getType())) // Map category từ request
-                .build();
+        // Tạo log hoặc cập nhật log cũ cho việc check-in
+        UserMealLog log;
+        if (checkInData.getPlannedMealId() != null) {
+            final Long pid = checkInData.getPlannedMealId();
+            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
+                    .orElseGet(() -> {
+                        PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
+                        return UserMealLog.builder()
+                                .userId(userId)
+                                .plannedMealId(pid)
+                                .dayNumber(pm != null ? pm.getDayNumber() : null)
+                                .category(pm != null ? pm.getCategory() : null)
+                                .build();
+                    });
+        } else {
+            log = UserMealLog.builder()
+                    .userId(userId)
+                    .build();
+        }
+
+        log.setDishId(dishId);
+        log.setFoodName(checkInData.getFoodName());
+        log.setImageUrl(checkInData.getImageUrl() != null ? checkInData.getImageUrl() : "");
+        log.setEstimatedCalories(checkInData.getEstimatedCalories());
+        log.setIsPlanCompliant(true); // Check-in nghĩa là tuân thủ
+        log.setNutritionDetails(details);
+        log.setCheckedIn(true);
+        if (log.getCategory() == null || log.getCategory().isEmpty()) {
+            log.setCategory(mapToVietnameseCategory(checkInData.getType()));
+        }
 
         UserMealLog saved = logRepository.save(log);
         System.out.println("DEBUG: Check-in saved successfully. Log ID: " + saved.getId());
