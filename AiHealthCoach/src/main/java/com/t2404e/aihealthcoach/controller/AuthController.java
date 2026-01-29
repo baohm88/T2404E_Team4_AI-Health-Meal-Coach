@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.request.LoginRequest;
 import com.t2404e.aihealthcoach.dto.request.RegisterRequest;
+import com.t2404e.aihealthcoach.dto.request.ResendOtpRequest;
+import com.t2404e.aihealthcoach.dto.request.VerifyOtpRequest;
 import com.t2404e.aihealthcoach.dto.response.AuthResponse;
 import com.t2404e.aihealthcoach.dto.response.RegisterResponse;
 import com.t2404e.aihealthcoach.service.AuthService;
@@ -53,8 +55,29 @@ public class AuthController {
         AuthResponse response = authService.login(request);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Login successful", response)
-        );
+                ApiResponse.success("Login successful", response));
+    }
+
+    @PostMapping("/verify-otp")
+    @Operation(summary = "Xác thực OTP", description = "Xác thực mã OTP từ email để kích hoạt tài khoản.")
+    public ResponseEntity<ApiResponse<Void>> verifyOtp(
+            @Valid @RequestBody VerifyOtpRequest request) {
+
+        authService.verifyOtp(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Email verified successfully", null));
+    }
+
+    @PostMapping("/resend-otp")
+    @Operation(summary = "Gửi lại OTP", description = "Gửi lại mã OTP mới đến email.")
+    public ResponseEntity<ApiResponse<Void>> resendOtp(
+            @Valid @RequestBody ResendOtpRequest request) {
+
+        authService.resendOtp(request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("OTP resent successfully", null));
     }
 
 }
