@@ -260,46 +260,6 @@ export function HealthAnalysisView({ data }: HealthAnalysisViewProps) {
                                                         <p className="text-xs text-slate-400 italic mt-2">{month.note}</p>
                                                     </div>
                                                 </div>
-
-                                                {/* Weekly Detailed Breakdown */}
-                                                {month.weeks && month.weeks.length > 0 && (
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Chi tiết theo tuần</h4>
-                                                        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
-                                                            {month.weeks.map((week) => (
-                                                                <div key={week.week} className="bg-white p-3 rounded-xl border border-slate-100 text-sm">
-                                                                    <div className="font-bold text-emerald-600 mb-1">Tuần {week.week}</div>
-                                                                    <div className="font-medium text-slate-800 mb-1">{week.title}</div>
-                                                                    <p className="text-slate-500 text-xs line-clamp-3">{week.nutritionFocus}</p>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Sample Meal Plan (If available) */}
-                                                {month.sampleDailyMeals && month.sampleDailyMeals.length > 0 && (
-                                                    <div>
-                                                        <h4 className="font-bold text-slate-700 mb-3 text-sm uppercase tracking-wide">Thực đơn mẫu 1 ngày</h4>
-                                                        <div className="space-y-2">
-                                                            {month.sampleDailyMeals.map((meal, idx) => (
-                                                                <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between bg-white p-3 rounded-lg border border-slate-100 gap-2">
-                                                                    <div className="flex items-center gap-3">
-                                                                        <span className="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded w-16 text-center">{meal.type}</span>
-                                                                        <div>
-                                                                            <p className="font-medium text-slate-800">{meal.mealName}</p>
-                                                                            <p className="text-xs text-slate-500">{meal.quantity}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                    <div className="text-sm font-semibold text-emerald-600 whitespace-nowrap">
-                                                                        {meal.calories} kcal
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-
                                             </div>
                                         </motion.div>
                                     )}

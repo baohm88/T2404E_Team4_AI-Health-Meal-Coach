@@ -2,6 +2,7 @@
  * Privacy Policy Page - AI Health Coach
  * 
  * Displays a professional, comprehensive privacy policy with premium UI styling.
+ * Enhanced with specific legal references (Decree 13/2023/ND-CP) and detailed sections.
  * Route: /privacy
  */
 
@@ -10,68 +11,101 @@
 import { PageHeader } from '@/components/marketing/PageHeader';
 import {
     ShieldCheck, Lock, Eye, Users,
-    Smartphone, Server, FileText, Mail,
-    ChevronRight, CheckCircle2, Info
+    Smartphone, Scale, FileText, Mail,
+    CheckCircle2, Info, Key, Globe, Cookie
 } from 'lucide-react';
 
 const PRIVACY_SECTIONS = [
     {
-        id: 'collection',
-        icon: Eye,
-        title: '1. Thu thập thông tin',
-        content: `Chúng tôi thu thập thông tin để cung cấp trải nghiệm AI Health Coach cá nhân hóa tốt nhất cho bạn. Thông tin bao gồm:`,
+        id: 'legal-basis',
+        icon: Scale,
+        title: '1. Cơ sở pháp lý & Tuân thủ',
+        content: `Chính sách bảo mật này được xây dựng dựa trên các quy định pháp luật hiện hành của Việt Nam, đặc biệt là:`,
+        highlight: true,
         items: [
-            'Thông tin cá nhân cơ bản (Tên, Email, Số điện thoại)',
-            'Chỉ số sinh trắc học (Chiều cao, cân nặng, tỷ lệ mỡ, độ tuổi)',
-            'Dữ liệu lối sống (Mức độ vận động, thói quen ăn uống, dị ứng thực phẩm)',
-            'Dữ liệu kỹ thuật (Địa chỉ IP, loại thiết bị, hệ điều hành)'
+            'Nghị định 13/2023/NĐ-CP về Bảo vệ dữ liệu cá nhân.',
+            'Luật An ninh mạng số 24/2018/QH14.',
+            'Luật Giao dịch điện tử số 51/2005/QH11 và các văn bản hướng dẫn thi hành.'
         ]
     },
     {
-        id: 'usage',
-        icon: Smartphone,
-        title: '2. Cách chúng tôi sử dụng dữ liệu',
-        content: `Dữ liệu của bạn được thuật toán AI của chúng tôi phân tích để:`,
+        id: 'collection',
+        icon: Eye,
+        title: '2. Thu thập thông tin',
+        content: `Chúng tôi chỉ thu thập những dữ liệu cần thiết tối thiểu để cung cấp dịch vụ (Nguyên tắc hạn chế dữ liệu):`,
         items: [
-            'Phát triển lộ trình dinh dưỡng và kế hoạch tập luyện cá nhân hóa.',
-            'Cải thiện độ chính xác của mô hình nhận diện thực phẩm qua hình ảnh.',
-            'Cảnh báo các rủi ro sức khỏe tiềm ẩn dựa trên thói quen ăn uống.',
-            'Hỗ trợ khách hàng và giải quyết các vấn đề kỹ thuật nhanh chóng.'
+            'Dữ liệu định danh: Họ tên, Email, Số điện thoại (chỉ khi đăng ký).',
+            'Dữ liệu sức khỏe (Special Category Data): Chiều cao, cân nặng, chỉ số BMI, thói quen ăn uống.',
+            'Dữ liệu hành vi: Lịch sử tương tác với AI, nhật ký bữa ăn.',
+            'Dữ liệu thiết bị: IP, Cookie ID, User-Agent để đảm bảo an ninh hệ thống.'
+        ]
+    },
+    {
+        id: 'controller',
+        icon: Key,
+        title: '3. Bên Kiểm soát & Xử lý dữ liệu',
+        content: `Mọi dữ liệu của bạn được quản lý trực tiếp bởi AI Health Coach Team. Chúng tôi cam kết:`,
+        items: [
+            'Không chuyển giao dữ liệu ra khỏi lãnh thổ Việt Nam trừ khi có sự đồng ý của bạn.',
+            'Chỉ nhân viên được ủy quyền mới có quyền truy cập vào dữ liệu nhạy cảm.',
+            'Mọi đối tác xử lý dữ liệu (nếu có) đều phải ký thỏa thuận bảo mật (NDA) nghiêm ngặt.'
         ]
     },
     {
         id: 'security',
         icon: Lock,
-        title: '3. Bảo mật thông tin tuyệt đối',
-        content: `Sự an toàn của dữ liệu sức khỏe là ưu tiên hàng đầu của chúng tôi. Chúng tôi áp dụng các tiêu chuẩn bảo mật ngân hàng:`,
+        title: '4. Biện pháp bảo mật kỹ thuật',
+        content: `Chúng tôi áp dụng mô hình bảo mật đa lớp (Defense in Depth) để bảo vệ dữ liệu của bạn:`,
         items: [
-            'Mã hóa toàn bộ dữ liệu truyền tải qua giao thức SSL/TLS mới nhất.',
-            'Lưu trữ dữ liệu trên hệ thống đám mây bảo mật với tường lửa đa lớp.',
-            'Hệ thống phát hiện xâm nhập và kiểm tra bảo mật định kỳ hàng tháng.',
-            'Nhân viên chỉ có quyền truy cập dữ liệu ở mức tối thiểu cần thiết (Principle of Least Privilege).'
+            'Mã hóa đầu cuối (End-to-End Encryption) cho mọi luồng dữ liệu truyền tải.',
+            'Lưu trữ dữ liệu nhạy cảm dưới dạng mã hóa (Encryption at Rest) trên máy chủ đám mây.',
+            'Xác thực đa yếu tố (MFA) cho quyền truy cập quản trị hệ thống.',
+            'Giám sát an ninh 24/7 để phát hiện và ngăn chặn các cuộc tấn công mạng.'
         ]
     },
     {
         id: 'sharing',
         icon: Users,
-        title: '4. Chia sẻ với bên thứ ba',
-        content: `AI Health cam kết KHÔNG BÁN dữ liệu cá nhân của bạn cho bất kỳ đơn vị quảng cáo nào. Chúng tôi chỉ chia sẻ thông tin khi:`,
+        title: '5. Chia sẻ dữ liệu với bên thứ ba',
+        content: `Chúng tôi KHÔNG bán dữ liệu của bạn. Việc chia sẻ thông tin chỉ diễn ra trong các trường hợp giới hạn:`,
         items: [
-            'Có sự đồng ý rõ ràng và bằng văn bản từ chính chủ sở hữu dữ liệu.',
-            'Cần thiết để tuân thủ các quy định pháp luật và yêu cầu từ cơ quan chức năng.',
-            'Hợp tác với các đối tác dịch vụ hạ tầng (AWS, Google Cloud) đã được ký kết thỏa thuận bảo mật nghiêm ngặt.'
+            'Các nhà cung cấp dịch vụ hạ tầng đám mây (Cloud Providers) uy tín.',
+            'Đối tác cổng thanh toán (Payment Gateways) để xử lý giao dịch - chúng tôi không lưu số thẻ của bạn.',
+            'Khi có yêu cầu hợp pháp từ cơ quan nhà nước có thẩm quyền theo quy định của pháp luật.'
+        ]
+    },
+    {
+        id: 'retention',
+        icon: FileText,
+        title: '6. Thời gian lưu trữ dữ liệu',
+        content: `Dữ liệu của bạn được lưu trữ trong suốt thời gian bạn sử dụng dịch vụ và thêm một khoảng thời gian cần thiết:`,
+        items: [
+            'Dữ liệu tài khoản: Lưu trữ cho đến khi bạn yêu cầu xóa tài khoản.',
+            'Dữ liệu giao dịch: Lưu trữ 10 năm theo quy định của Luật Kế toán.',
+            'Dữ liệu nhật ký hệ thống (Logs): Lưu trữ tối đa 12 tháng phục vụ mục đích an ninh.'
+        ]
+    },
+    {
+        id: 'cookies',
+        icon: Cookie,
+        title: '7. Chính sách Cookie & Tracking',
+        content: `Chúng tôi sử dụng Cookie để cải thiện trải nghiệm người dùng và phân tích hiệu suất:`,
+        items: [
+            'Cookie thiết yếu: Bắt buộc để ứng dụng hoạt động (đăng nhập, giỏ hàng).',
+            'Cookie phân tích: Giúp chúng tôi hiểu cách bạn sử dụng ứng dụng để cải tiến.',
+            'Bạn có quyền từ chối các Cookie không thiết yếu thông qua cài đặt trình duyệt.'
         ]
     },
     {
         id: 'rights',
         icon: ShieldCheck,
-        title: '5. Quyền lợi của bạn',
-        content: `Bạn có quyền kiểm soát hoàn toàn dữ liệu của mình bất cứ lúc nào:`,
+        title: '8. Quyền của chủ thể dữ liệu',
+        content: `Theo Nghị định 13/2023/NĐ-CP, bạn có các quyền sau đối với dữ liệu cá nhân của mình:`,
         items: [
-            'Quyền yêu cầu trích xuất toàn bộ dữ liệu cá nhân đang lưu trữ.',
-            'Quyền sửa đổi hoặc cập nhật các thông tin không chính xác.',
-            'Quyền "được quên" - yêu cầu xóa vĩnh viễn tài khoản và dữ liệu liên quan.',
-            'Quyền từ chối nhận các thông báo tiếp thị không thiết yếu.'
+            'Quyền được biết & Quyền đồng ý: Bạn được thông báo rõ ràng về cách xử lý dữ liệu.',
+            'Quyền truy cập & Chỉnh sửa: Xem và cập nhật thông tin cá nhân bất cứ lúc nào.',
+            'Quyền xóa dữ liệu (Right to be Forgotten): Yêu cầu xóa toàn bộ dữ liệu khỏi hệ thống.',
+            'Quyền rút lại sự đồng ý: Ngừng cho phép chúng tôi xử lý dữ liệu của bạn.'
         ]
     }
 ];
@@ -85,57 +119,62 @@ export default function PrivacyPage() {
 
             <PageHeader
                 title="Chính sách bảo mật"
-                subtitle="Chúng tôi bảo vệ dữ liệu của bạn bằng công nghệ hiện đại nhất và đạo đức nghề nghiệp cao nhất."
+                subtitle="Cam kết minh bạch và tuân thủ tuyệt đối các quy định pháp luật về bảo vệ dữ liệu cá nhân."
                 gradient={true}
             />
 
             <main className="flex-1 py-16 px-4 sm:px-6 lg:px-8">
                 <div className="max-w-5xl mx-auto">
                     {/* Intro Note */}
-                    <div className="bg-emerald-600 rounded-[2.5rem] p-8 md:p-12 text-white mb-16 shadow-2xl shadow-emerald-500/20 relative overflow-hidden">
-                        <div className="absolute top-0 right-0 p-12 opacity-10">
+                    <div className="bg-slate-900 rounded-[2.5rem] p-8 md:p-12 text-white mb-16 shadow-2xl shadow-slate-200 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150">
                             <ShieldCheck className="w-48 h-48" />
                         </div>
-                        <div className="relative z-10">
-                            <div className="flex items-center gap-3 mb-4">
-                                <Info className="w-5 h-5 text-emerald-200" />
-                                <span className="text-xs font-black uppercase tracking-[0.2em] text-emerald-100">Cập nhật lần cuối: 23/01/2026</span>
+                        <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
+                            <div className="flex-1">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <Globe className="w-5 h-5 text-emerald-400" />
+                                    <span className="text-xs font-black uppercase tracking-[0.2em] text-slate-300">Tuân thủ Nghị định 13/2023/NĐ-CP</span>
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black mb-4">Dữ liệu của bạn. Quyền của bạn.</h2>
+                                <p className="text-slate-300 leading-relaxed font-medium">
+                                    Tại AI Health Coach, chúng tôi coi trọng quyền riêng tư như sức khỏe của chính bạn.
+                                    Chính sách này giải thích minh bạch cách chúng tôi bảo vệ thông tin cá nhân của bạn theo tiêu chuẩn cao nhất.
+                                </p>
                             </div>
-                            <h2 className="text-2xl md:text-3xl font-black mb-4">Cam kết của AI Health</h2>
-                            <p className="text-emerald-50 leading-relaxed max-w-2xl font-medium">
-                                Chúng tôi hiểu rằng dữ liệu sức khỏe là thông tin cực kỳ nhạy cảm.
-                                Tại AI Health Coach, chúng tôi không chỉ tuân thủ các quy định pháp luật hiện hành
-                                mà còn đặt ra các tiêu chuẩn cao hơn về đạo đức AI để đảm bảo
-                                thông tin của bạn luôn an toàn và được sử dụng đúng mục đích.
-                            </p>
+                            <div className="shrink-0">
+                                <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10">
+                                    <p className="text-xs text-slate-300 mb-1 uppercase tracking-wider">Hiệu lực từ</p>
+                                    <p className="text-xl font-bold font-mono text-emerald-400">01/02/2026</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     {/* Policy Content Sections */}
-                    <div className="space-y-12">
+                    <div className="space-y-8">
                         {PRIVACY_SECTIONS.map((section, idx) => {
                             const Icon = section.icon;
                             return (
-                                <section key={section.id} className="bg-white rounded-[3rem] p-8 md:p-12 border border-slate-100 shadow-sm hover:shadow-xl hover:border-emerald-100 transition-all duration-500 group">
+                                <section key={section.id} className="bg-white rounded-[2.5rem] p-8 md:p-10 border border-slate-100/60 shadow-[0_2px_20px_-10px_rgba(0,0,0,0.05)] hover:shadow-xl hover:border-emerald-100 transition-all duration-300 group">
                                     <div className="flex flex-col md:flex-row gap-8">
-                                        <div className="md:w-1/3">
-                                            <div className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2.5xl flex items-center justify-center mb-6 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-500 shadow-sm">
-                                                <Icon className="w-8 h-8" />
+                                        <div className="md:w-1/3 shrink-0">
+                                            <div className={`w-14 h-14 ${section.highlight ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-50 text-slate-500'} rounded-2xl flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300`}>
+                                                <Icon className="w-7 h-7" />
                                             </div>
-                                            <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-tight mb-2">
+                                            <h3 className="text-xl font-bold text-slate-900 leading-tight">
                                                 {section.title}
                                             </h3>
-                                            <div className="h-1.5 w-12 bg-emerald-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                                         </div>
                                         <div className="md:w-2/3">
-                                            <p className="text-lg text-slate-700 font-medium mb-8 leading-relaxed">
+                                            <p className="text-slate-700 font-medium mb-6 leading-relaxed border-l-2 border-emerald-500/30 pl-4 py-1">
                                                 {section.content}
                                             </p>
-                                            <div className="grid grid-cols-1 gap-4">
+                                            <div className="grid grid-cols-1 gap-3">
                                                 {section.items.map((item, i) => (
-                                                    <div key={i} className="flex items-start gap-4 p-4 bg-slate-50 rounded-2xl border border-transparent group-hover:border-slate-100 transition-colors">
-                                                        <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0 mt-0.5" />
-                                                        <span className="text-slate-600 text-sm md:text-base font-medium leading-relaxed">{item}</span>
+                                                    <div key={i} className="flex items-start gap-3 text-sm text-slate-600">
+                                                        <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
+                                                        <span className="leading-relaxed">{item}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -147,27 +186,20 @@ export default function PrivacyPage() {
                     </div>
 
                     {/* Contact or Questions */}
-                    <div className="mt-20 text-center bg-white border border-slate-100 rounded-[3rem] p-12 md:p-16 shadow-inner relative overflow-hidden">
-                        <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(#10b981 1.5px, transparent 1.5px)', backgroundSize: '24px 24px' }} />
-                        <h3 className="text-2xl font-black text-slate-900 mb-6">Bạn có câu hỏi về quyền riêng tư?</h3>
-                        <p className="text-slate-500 mb-10 max-w-xl mx-auto font-medium leading-relaxed">
-                            Đội ngũ bảo mật dữ liệu của chúng tôi luôn sẵn sàng lắng nghe
-                            và giải đáp mọi nghi vấn của bạn liên quan đến cách thức xử lý thông tin.
-                        </p>
-                        <a
-                            href="mailto:privacy@aihealth.vn"
-                            className="inline-flex items-center gap-3 px-10 py-4 bg-slate-900 text-white rounded-full font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-600 transition-all shadow-xl shadow-slate-200"
-                        >
-                            <Mail className="w-4 h-4" /> Liên hệ Phòng Bảo Mật
-                        </a>
-                    </div>
-
-                    {/* Footer Legal Fine Print */}
-                    <div className="mt-12 text-center">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-loose">
-                            AI Health Coach tuân thủ quy định GDPR & các tiêu chuẩn bảo vệ dữ liệu cá nhân tại Việt Nam.<br />
-                            Việc sử dụng dịch vụ của bạn đồng nghĩa với việc bạn chấp thuận các điều khoản này.
-                        </p>
+                    <div className="mt-20">
+                        <div className="text-center bg-emerald-50 border border-emerald-100 rounded-[3rem] p-12 relative overflow-hidden">
+                            <h3 className="text-2xl font-black text-slate-900 mb-4">Bộ phận Bảo vệ Dữ liệu (DPO)</h3>
+                            <p className="text-slate-600 mb-8 max-w-2xl mx-auto">
+                                Nếu bạn muốn thực hiện các quyền của mình hoặc có bất kỳ câu hỏi nào về bảo mật,
+                                vui lòng liên hệ với Cán bộ Bảo vệ Dữ liệu của chúng tôi.
+                            </p>
+                            <a
+                                href="mailto:privacy@aihealth.vn"
+                                className="inline-flex items-center gap-3 px-8 py-4 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20"
+                            >
+                                <Mail className="w-4 h-4" /> Liên hệ DPO
+                            </a>
+                        </div>
                     </div>
                 </div>
             </main>
