@@ -12,6 +12,8 @@ import java.util.List;
 public interface PlannedMealRepository extends JpaRepository<PlannedMeal, Long> {
     List<PlannedMeal> findByMealPlanIdOrderByDayNumberAsc(Long mealPlanId);
 
+    List<PlannedMeal> findByMealPlanId(Long mealPlanId);
+
     List<PlannedMeal> findByMealPlanIdAndDayNumber(Long mealPlanId, Integer dayNumber);
 
     @Modifying

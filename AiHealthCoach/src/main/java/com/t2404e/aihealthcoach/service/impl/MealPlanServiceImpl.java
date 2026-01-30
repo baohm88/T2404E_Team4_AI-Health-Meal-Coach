@@ -17,6 +17,8 @@ import com.t2404e.aihealthcoach.ai.prompt.MealPlanPromptBuilder;
 import com.t2404e.aihealthcoach.dto.response.MealPlanResponse;
 import com.t2404e.aihealthcoach.dto.response.mealplan.DayPlanDTO;
 import com.t2404e.aihealthcoach.dto.response.mealplan.MealDTO;
+import com.t2404e.aihealthcoach.dto.response.mealplan.MonthDetailDTO;
+import com.t2404e.aihealthcoach.dto.response.mealplan.MonthlyPlanDTO;
 import com.t2404e.aihealthcoach.entity.DishLibrary;
 import com.t2404e.aihealthcoach.entity.HealthAnalysis;
 import com.t2404e.aihealthcoach.entity.HealthProfile;
@@ -62,6 +64,12 @@ public class MealPlanServiceImpl implements MealPlanService {
 
                 Optional<MealPlan> existingPlan = mealPlanRepo.findByUserId(userId);
                 if (existingPlan.isPresent()) {
+                        List<PlannedMeal> oldPlannedMeals = plannedMealRepo
+                                        .findByMealPlanId(existingPlan.get().getId());
+                        List<Long> oldPlannedMealIds = oldPlannedMeals.stream().map(PlannedMeal::getId).toList();
+                        if (!oldPlannedMealIds.isEmpty()) {
+                                logRepo.deleteByPlannedMealIdIn(oldPlannedMealIds);
+                        }
                         plannedMealRepo.deleteByMealPlanId(existingPlan.get().getId());
                         mealPlanRepo.delete(existingPlan.get());
                         mealPlanRepo.flush();
@@ -80,7 +88,6 @@ public class MealPlanServiceImpl implements MealPlanService {
 
                 MealPlan mealPlan = MealPlan.builder()
                                 .userId(userId)
-                                .startDate(LocalDate.now())
                                 .startDate(LocalDate.now())
                                 .totalDays(7)
                                 .build();
@@ -136,24 +143,31 @@ public class MealPlanServiceImpl implements MealPlanService {
                                         if (dayObj instanceof Map<?, ?> dayData) {
                                                 Integer dayNum = (Integer) dayData.get("day");
                                                 Object mealsObj = dayData.get("meals");
+                                                java.util.Set<String> processedCategories = new java.util.HashSet<>();
 
                                                 if (mealsObj instanceof List<?> mealsData) {
                                                         for (Object mealObj : mealsData) {
                                                                 if (mealObj instanceof Map<?, ?> mealData) {
+                                                                        String category = (String) mealData
+                                                                                        .get("category");
+                                                                        if (category == null)
+                                                                                category = (String) mealData
+                                                                                                .get("type");
+                                                                        category = mapToVietnameseCategory(category);
+
+                                                                        if (processedCategories.contains(category)) {
+                                                                                continue; // Skip duplicate category for
+                                                                                          // this day
+                                                                        }
+                                                                        processedCategories.add(category);
+
                                                                         Long dishId = ((Number) mealData.get("dishId"))
                                                                                         .longValue();
                                                                         DishLibrary dish = dishLibraryRepo
                                                                                         .findById(dishId).orElse(null);
 
-                                                                        String category = (String) mealData
-                                                                                        .get("category");
-                                                                        if (category == null) {
-                                                                                category = (String) mealData
-                                                                                                .get("type");
-                                                                        }
-                                                                        // Respect AI category choice. Do not override
-                                                                        // based on library default.
-                                                                        category = mapToVietnameseCategory(category);
+                                                                        // Respect AI category choice. Already formatted
+                                                                        // above
 
                                                                         // Hydrate missing fields from DishLibrary
                                                                         String mealName = (String) mealData
@@ -231,12 +245,65 @@ public class MealPlanServiceImpl implements MealPlanService {
                 return generateForUser(userId);
         }
 
-        private MealPlanResponse convertToResponse(MealPlan plan) {
-                List<UserMealLog> logs = logRepo.findByUserIdOrderByLoggedAtAsc(plan.getUserId());
+        @Override
+        @Transactional
+        public MealPlanResponse extendPlan(Long userId) {
+                MealPlan plan = mealPlanRepo.findByUserId(userId)
+                                .orElseThrow(() -> new IllegalStateException("Không tìm thấy lộ trình để mở rộng"));
 
-                // Group by day number
-                Map<Integer, List<UserMealLog>> groupedByDay = logs.stream()
+                int currentDays = plan.getTotalDays();
+                int newDays = currentDays + 7;
+                plan.setTotalDays(newDays);
+                mealPlanRepo.save(plan);
+
+                if (userId == null)
+                        throw new IllegalArgumentException("User ID cannot be null");
+                final Long uid = userId;
+
+                HealthProfile profile = profileRepo.findById(uid)
+                                .orElseThrow(() -> new IllegalStateException("Hồ sơ sức khỏe không tồn tại"));
+                HealthAnalysis analysis = analysisRepo.findByUserId(uid)
+                                .orElseThrow(() -> new IllegalStateException("Phân tích sức khỏe không tồn tại"));
+                List<DishLibrary> dishes = dishLibraryRepo.findByIsVerifiedTrueAndIsDeletedFalse();
+                ChatClient chatClient = chatClientBuilder.build();
+
+                try {
+                        System.out.println(
+                                        "DEBUG: Extending meal plan for days " + (currentDays + 1) + " to " + newDays);
+                        String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, currentDays + 1,
+                                        newDays);
+                        String finalPrompt = prompt != null ? prompt : "";
+                        String rawJson = chatClient.prompt()
+                                        .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
+                                        .user(finalPrompt)
+                                        .call()
+                                        .content();
+                        parseAndSaveChunk(plan, rawJson);
+                } catch (Exception e) {
+                        System.err.println("AI EXTEND ERROR: " + e.getMessage());
+                        throw new RuntimeException("Lỗi khi mở rộng lộ trình bằng AI: " + e.getMessage());
+                }
+
+                return convertToResponse(plan);
+        }
+
+        private MealPlanResponse convertToResponse(MealPlan plan) {
+                List<PlannedMeal> plannedMeals = plannedMealRepo.findByMealPlanId(plan.getId());
+                java.util.Set<Long> currentPlannedMealIds = plannedMeals.stream()
+                                .map(PlannedMeal::getId)
+                                .collect(java.util.stream.Collectors.toSet());
+
+                List<UserMealLog> allLogs = logRepo.findByUserIdOrderByLoggedAtAsc(plan.getUserId());
+                Map<Long, Integer> plannedCaloriesMap = plannedMeals.stream()
+                                .collect(Collectors.toMap(PlannedMeal::getId, PlannedMeal::getCalories));
+
+                // Group by day number, filtering out logs from previous plans
+                Map<Integer, List<UserMealLog>> groupedByDay = allLogs.stream()
                                 .filter(l -> l.getDayNumber() != null)
+                                .filter(l -> (l.getPlannedMealId() != null
+                                                && currentPlannedMealIds.contains(l.getPlannedMealId()))
+                                                || (l.getPlannedMealId() == null
+                                                                && Boolean.FALSE.equals(l.getIsPlanCompliant())))
                                 .collect(Collectors.groupingBy(UserMealLog::getDayNumber));
 
                 List<DayPlanDTO> dayPlans = groupedByDay.entrySet().stream()
@@ -263,6 +330,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                         .mealName("Chưa có món")
                                                                         .quantity("")
                                                                         .calories(0)
+                                                                        .plannedCalories(0)
                                                                         .type(categoryName)
                                                                         .checkedIn(false)
                                                                         .build();
@@ -270,18 +338,29 @@ public class MealPlanServiceImpl implements MealPlanService {
 
                                                 String combinedName = categoryLogs.stream()
                                                                 .map(UserMealLog::getFoodName)
+                                                                .distinct()
                                                                 .collect(Collectors.joining(" + "));
                                                 int totalCal = categoryLogs.stream()
                                                                 .mapToInt(UserMealLog::getEstimatedCalories)
+                                                                .sum();
+                                                java.util.Set<Long> seenPlannedIds = new java.util.HashSet<>();
+                                                int totalPlannedCal = categoryLogs.stream()
+                                                                .filter(l -> l.getPlannedMealId() != null)
+                                                                .filter(l -> seenPlannedIds.add(l.getPlannedMealId()))
+                                                                .mapToInt(l -> plannedCaloriesMap.getOrDefault(
+                                                                                l.getPlannedMealId(),
+                                                                                l.getEstimatedCalories()))
                                                                 .sum();
                                                 boolean anyCheckedIn = categoryLogs.stream()
                                                                 .anyMatch(l -> Boolean.TRUE.equals(l.getCheckedIn()));
 
                                                 return MealDTO.builder()
                                                                 .id(categoryLogs.get(0).getId())
+                                                                .plannedMealId(categoryLogs.get(0).getPlannedMealId())
                                                                 .mealName(combinedName)
                                                                 .quantity("")
                                                                 .calories(totalCal)
+                                                                .plannedCalories(totalPlannedCal)
                                                                 .type(categoryName)
                                                                 .checkedIn(anyCheckedIn)
                                                                 .build();
@@ -292,6 +371,9 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                         .meals(mealDTOs)
                                                         .totalCalories(mealDTOs.stream().mapToInt(MealDTO::getCalories)
                                                                         .sum())
+                                                        .totalPlannedCalories(mealDTOs.stream()
+                                                                        .mapToInt(MealDTO::getPlannedCalories)
+                                                                        .sum())
                                                         .build();
                                 })
                                 .sorted(Comparator.comparing(DayPlanDTO::getDay))
@@ -301,7 +383,53 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 .startDate(plan.getStartDate())
                                 .totalDays(plan.getTotalDays())
                                 .mealPlan(dayPlans)
+                                .monthlyPlan(extractMonthlyPlan(plan.getUserId()))
                                 .build();
+        }
+
+        private MonthlyPlanDTO extractMonthlyPlan(Long userId) {
+                try {
+                        Optional<HealthAnalysis> analysisOpt = analysisRepo.findByUserId(userId);
+                        if (analysisOpt.isEmpty())
+                                return null;
+
+                        String json = analysisOpt.get().getAnalysisJson();
+                        Map<String, Object> map = objectMapper.readValue(json,
+                                        new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
+                                        });
+
+                        Object planObj = map.get("threeMonthPlan");
+                        if (!(planObj instanceof Map<?, ?> planData))
+                                return null;
+
+                        List<MonthDetailDTO> months = new java.util.ArrayList<>();
+                        Object monthsObj = planData.get("months");
+                        if (monthsObj instanceof List<?> monthsList) {
+                                for (Object m : monthsList) {
+                                        if (m instanceof Map<?, ?> mData) {
+                                                months.add(MonthDetailDTO.builder()
+                                                                .month(((Number) mData.get("month")).intValue())
+                                                                .title((String) mData.get("title"))
+                                                                .dailyCalories(((Number) mData.get("dailyCalories"))
+                                                                                .intValue())
+                                                                .note((String) mData.get("note"))
+                                                                .build());
+                                        }
+                                }
+                        }
+
+                        return MonthlyPlanDTO.builder()
+                                        .goal((String) planData.get("goal"))
+                                        .totalTargetWeightChangeKg(planData.get("totalTargetWeightChangeKg") != null
+                                                        ? ((Number) planData.get("totalTargetWeightChangeKg"))
+                                                                        .doubleValue()
+                                                        : 0.0)
+                                        .months(months)
+                                        .build();
+                } catch (Exception e) {
+                        System.err.println("Error extracting monthly plan: " + e.getMessage());
+                        return null;
+                }
         }
 
         private String mapToVietnameseCategory(String category) {

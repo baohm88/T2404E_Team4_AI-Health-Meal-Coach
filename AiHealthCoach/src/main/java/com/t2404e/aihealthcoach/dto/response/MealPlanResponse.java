@@ -1,6 +1,7 @@
 package com.t2404e.aihealthcoach.dto.response;
 
 import com.t2404e.aihealthcoach.dto.response.mealplan.DayPlanDTO;
+import com.t2404e.aihealthcoach.dto.response.mealplan.MonthlyPlanDTO;
 import lombok.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -13,4 +14,5 @@ public class MealPlanResponse {
         private LocalDate startDate;
         private Integer totalDays;
         private List<DayPlanDTO> mealPlan;
+        private MonthlyPlanDTO monthlyPlan;
 }

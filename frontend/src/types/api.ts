@@ -141,10 +141,6 @@ export interface HealthProfileResponse {
     updatedAt: string;
 }
 
-// ============================================================
-// DASHBOARD TYPES
-// ============================================================
-
 export interface CaloriesSummary {
     eaten: number;
     burned: number;
@@ -168,10 +164,36 @@ export interface MacrosSummary {
     fat: MacroNutrient;
 }
 
+export interface TrendPoint {
+    date: string;
+    eaten: number;
+    goal: number;
+}
+
+export interface NextStrategicMeal {
+    id: number;
+    plannedMealId?: number;
+    mealName: string;
+    type: string;
+    calories: number;
+    plannedCalories: number;
+    day: number;
+    checkedIn: boolean;
+}
+
+export interface WeeklyProgress {
+    currentDay: number;
+    totalDays: number;
+    cumulativeDiff: number;
+}
+
 export interface DashboardSummary {
     calories: CaloriesSummary;
     water: WaterSummary;
     macros: MacrosSummary;
+    trendData?: TrendPoint[];
+    nextMeal?: NextStrategicMeal;
+    weeklyProgress?: WeeklyProgress;
 }
 
 /**
@@ -185,4 +207,5 @@ export const DEFAULT_DASHBOARD_SUMMARY: DashboardSummary = {
         carbs: { current: 0, goal: 250 },
         fat: { current: 0, goal: 65 },
     },
+    trendData: [],
 };
