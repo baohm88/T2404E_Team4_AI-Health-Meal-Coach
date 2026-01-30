@@ -24,8 +24,8 @@ import java.util.stream.Collectors;
  * Helpful for debugging frontend-backend communication.
  * 
  * Log format:
- *   ➡️ [REQUEST] POST /api/auth/login (from 127.0.0.1)
- *   ⬅️ [RESPONSE] POST /api/auth/login → 200 OK (45ms)
+ * ➡️ [REQUEST] POST /api/auth/login (from 127.0.0.1)
+ * ⬅️ [RESPONSE] POST /api/auth/login → 200 OK (45ms)
  */
 @Slf4j
 @Component
@@ -36,9 +36,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain
-    ) throws ServletException, IOException {
-        
+            FilterChain filterChain) throws ServletException, IOException {
+
         // Skip logging for static resources and health checks
         String path = request.getRequestURI();
         if (shouldSkip(path)) {
@@ -58,7 +57,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         // Log incoming request
         log.info("➡️ [REQUEST] {} {} (from {})", method, fullPath, clientIp);
-        
+
         // Log headers if debug enabled
         if (log.isDebugEnabled()) {
             logHeaders(request);
@@ -76,7 +75,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             // Log response
             if (status >= 400) {
                 log.warn("⬅️ [RESPONSE] {} {} → {} {} ({}ms)", method, path, status, statusText, duration);
-                
+
                 // Log error response body
                 String responseBody = getResponseBody(wrappedResponse);
                 if (!responseBody.isEmpty()) {
@@ -96,13 +95,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
      */
     private boolean shouldSkip(String path) {
         return path.startsWith("/favicon") ||
-               path.startsWith("/static") ||
-               path.startsWith("/actuator") ||
-               path.startsWith("/swagger") ||
-               path.startsWith("/v3/api-docs") ||
-               path.endsWith(".js") ||
-               path.endsWith(".css") ||
-               path.endsWith(".ico");
+                path.startsWith("/static") ||
+                path.startsWith("/actuator") ||
+                path.startsWith("/swagger") ||
+                path.startsWith("/v3/api-docs") ||
+                path.endsWith(".js") ||
+                path.endsWith(".css") ||
+                path.endsWith(".ico");
     }
 
     /**

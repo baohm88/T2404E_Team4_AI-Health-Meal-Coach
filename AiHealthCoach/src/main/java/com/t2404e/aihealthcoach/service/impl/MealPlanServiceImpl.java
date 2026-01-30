@@ -98,10 +98,13 @@ public class MealPlanServiceImpl implements MealPlanService {
                         for (int i = 1; i <= 7; i += 7) {
                                 int start = i;
                                 int end = Math.min(i + 6, 7);
+                                int targetCal = extractDailyCalorieTarget(userId, start);
                                 System.out.println(
-                                                "DEBUG: Generating meal plan chunk for days " + start + " to " + end);
+                                                "DEBUG: Generating meal plan chunk for days " + start + " to " + end
+                                                                + " with target " + targetCal);
 
-                                String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, start, end);
+                                String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, start, end,
+                                                targetCal);
                                 String rawJson = chatClient.prompt()
                                                 .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
                                                 .user(prompt)
@@ -124,14 +127,17 @@ public class MealPlanServiceImpl implements MealPlanService {
         @Transactional
         protected void parseAndSaveChunk(MealPlan plan, String rawJson) {
                 try {
-                        // Clean markdown backticks if present
-                        if (rawJson != null && rawJson.contains("```")) {
-                                int firstIndex = rawJson.indexOf("{");
-                                int lastIndex = rawJson.lastIndexOf("}");
-                                if (firstIndex != -1 && lastIndex != -1 && lastIndex > firstIndex) {
-                                        rawJson = rawJson.substring(firstIndex, lastIndex + 1);
-                                }
+                        if (rawJson == null)
+                                return;
+
+                        // Clean any preamble or trailing text by finding the outermost JSON brackets
+                        int firstIndex = rawJson.indexOf("{");
+                        int lastIndex = rawJson.lastIndexOf("}");
+                        if (firstIndex != -1 && lastIndex != -1 && lastIndex > firstIndex) {
+                                rawJson = rawJson.substring(firstIndex, lastIndex + 1);
                         }
+
+                        System.out.println("DEBUG AI RAW JSON: " + rawJson);
 
                         Map<String, Object> map = objectMapper.readValue(rawJson,
                                         new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
@@ -268,10 +274,12 @@ public class MealPlanServiceImpl implements MealPlanService {
                 ChatClient chatClient = chatClientBuilder.build();
 
                 try {
+                        int targetCal = extractDailyCalorieTarget(uid, currentDays + 1);
                         System.out.println(
-                                        "DEBUG: Extending meal plan for days " + (currentDays + 1) + " to " + newDays);
+                                        "DEBUG: Extending meal plan for days " + (currentDays + 1) + " to " + newDays
+                                                        + " with target " + targetCal);
                         String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, currentDays + 1,
-                                        newDays);
+                                        newDays, targetCal);
                         String finalPrompt = prompt != null ? prompt : "";
                         String rawJson = chatClient.prompt()
                                         .system(com.t2404e.aihealthcoach.ai.prompt.MealPlanPrompt.SYSTEM)
@@ -366,15 +374,16 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                 .build();
                                         }).collect(Collectors.toList());
 
-                                        return DayPlanDTO.builder()
+                                        DayPlanDTO dto = DayPlanDTO.builder()
                                                         .day(day)
                                                         .meals(mealDTOs)
                                                         .totalCalories(mealDTOs.stream().mapToInt(MealDTO::getCalories)
                                                                         .sum())
-                                                        .totalPlannedCalories(mealDTOs.stream()
-                                                                        .mapToInt(MealDTO::getPlannedCalories)
-                                                                        .sum())
+                                                        .totalPlannedCalories(extractDailyCalorieTarget(
+                                                                        plan.getUserId(), day))
                                                         .build();
+
+                                        return dto;
                                 })
                                 .sorted(Comparator.comparing(DayPlanDTO::getDay))
                                 .collect(Collectors.toList());
@@ -432,6 +441,19 @@ public class MealPlanServiceImpl implements MealPlanService {
                 }
         }
 
+        private int extractDailyCalorieTarget(Long userId, int dayIdx) {
+                MonthlyPlanDTO monthlyPlan = extractMonthlyPlan(userId);
+                if (monthlyPlan == null || monthlyPlan.getMonths() == null || monthlyPlan.getMonths().isEmpty()) {
+                        return 2000; // Safe default
+                }
+                // Determine which month the day belongs to (assuming 4 weeks per month)
+                int monthIdx = (dayIdx - 1) / 28;
+                if (monthIdx >= monthlyPlan.getMonths().size()) {
+                        monthIdx = monthlyPlan.getMonths().size() - 1;
+                }
+                return monthlyPlan.getMonths().get(monthIdx).getDailyCalories();
+        }
+
         @Override
         @Transactional
         public MealPlanResponse resetPlan(Long userId) {
@@ -451,4 +473,5 @@ public class MealPlanServiceImpl implements MealPlanService {
                         default -> category;
                 };
         }
+
 }

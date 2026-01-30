@@ -7,7 +7,7 @@ import { vi } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar, Check, ChevronLeft, ChevronRight, Coffee,
-    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles, Trophy
+    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles, Trophy, Zap
 } from "lucide-react";
 import React, { useMemo, useState, memo } from "react";
 import { toast } from "sonner";
@@ -71,115 +71,174 @@ const mealTypeColors: Record<string, string> = {
     Phụ: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
-// Extracted MealCard component to prevent flickering on parent re-renders
-const MealCard = memo(({
-    meal,
+const mealTypeGradients: Record<string, string> = {
+    Sáng: "from-blue-400 to-indigo-500",
+    Trưa: "from-orange-400 to-rose-400",
+    Tối: "from-indigo-400 to-purple-600",
+    Phụ: "from-emerald-400 to-teal-600",
+};
+
+// Minimalist "Apple Health" Style Card
+const CombinedMealCard = memo(({
+    meals,
     dayData,
     type,
     isTodayDate,
     isPastDate,
     isFutureDate,
-    mealKey,
     confirmedMeals,
     handleCheckIn,
     handleSwapClick,
     loggingId
-}: any) => (
-    <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        layout // Add layout prop for smoother transitions
-        className={cn(
-            "h-full p-3 rounded-2xl border flex flex-col transition-all duration-300 relative",
-            isTodayDate ? "bg-emerald-50/50 border-emerald-200 ring-2 ring-emerald-500/10" : "bg-white border-slate-100",
-            isPastDate && "bg-slate-50/80 border-slate-200 grayscale-[0.2] opacity-80",
-            isFutureDate && "bg-slate-50/30 border-slate-100 opacity-60",
-            mealKey && confirmedMeals.has(mealKey) && "border-emerald-500 bg-emerald-50/40"
-        )}
-    >
-        {mealKey && confirmedMeals.has(mealKey) && (
-            <div className="absolute top-2 right-2 p-1 bg-emerald-500 rounded-full text-white shadow-sm z-10">
-                <Check className="w-3 h-3" strokeWidth={4} />
-            </div>
-        )}
+}: any) => {
+    const totalCalories = meals.reduce((sum: number, m: any) => sum + (m.calories || 0), 0);
+    const totalPlannedCalories = meals.reduce((sum: number, m: any) => sum + (m.plannedCalories || 0), 0);
+    const allCheckedIn = meals.every((m: any) => m.checkedIn || confirmedMeals.has(m.id));
 
-        <div className="flex items-center gap-1.5 mb-2">
-            <div className={cn("p-1.5 rounded-lg border", mealTypeColors[type])}>
-                {React.cloneElement(mealTypeIcons[type] as React.ReactElement<any>, { className: "w-3 h-3" })}
-            </div>
-            <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{type}</span>
-        </div>
+    // Soft pastel accents
+    const accentColor = useMemo(() => {
+        switch (type) {
+            case "Sáng": return "bg-blue-50 text-blue-600";
+            case "Trưa": return "bg-orange-50 text-orange-600";
+            case "Tối": return "bg-indigo-50 text-indigo-600";
+            default: return "bg-emerald-50 text-emerald-600";
+        }
+    }, [type]);
 
-        <div className="space-y-1.5 mb-3">
-            <h4 className={cn(
-                "text-sm font-bold leading-tight transition-colors line-clamp-2",
-                isTodayDate ? "text-emerald-800" : "text-slate-800",
-                mealKey && confirmedMeals.has(mealKey) && "text-emerald-700"
-            )}>
-                {meal.mealName}
-            </h4>
-            <div className="flex flex-wrap gap-1 items-center">
-                <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
-                    {meal.quantity}
-                </span>
-                <span className={cn(
-                    "text-[10px] font-black italic",
-                    meal.checkedIn && meal.plannedCalories > 0 && meal.calories > meal.plannedCalories ? "text-red-500" : "text-emerald-600"
-                )}>
-                    {meal.calories} kcal
-                </span>
-                {meal.checkedIn && meal.plannedCalories > 0 && meal.calories !== meal.plannedCalories && (
-                    <span className={cn(
-                        "text-[8px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5",
-                        meal.calories > meal.plannedCalories ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+    return (
+        <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            layout
+            className={cn(
+                "h-full p-4.5 rounded-[2rem] flex flex-col transition-all duration-300 relative group border",
+                isTodayDate
+                    ? "bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-transparent ring-1 ring-black/5"
+                    : "bg-white border-slate-100 shadow-sm",
+                isPastDate && "bg-slate-50/50 grayscale-[0.5] opacity-75",
+                isFutureDate && "opacity-40 blur-[1px] grayscale bg-slate-50 pointer-events-none select-none"
+            )}
+        >
+            {/* 1. Minimal Header */}
+            <div className="flex items-start justify-between mb-5">
+                <div className="flex items-center gap-3">
+                    <div className={cn("w-9 h-9 rounded-2xl flex items-center justify-center transition-colors flex-shrink-0",
+                        allCheckedIn ? "bg-emerald-500 text-white" : accentColor
                     )}>
-                        {meal.calories > meal.plannedCalories ? '↑' : '↓'}
-                        {Math.abs(meal.calories - meal.plannedCalories)}
-                    </span>
+                        {allCheckedIn
+                            ? <Check className="w-4.5 h-4.5" strokeWidth={3} />
+                            : React.cloneElement(mealTypeIcons[type] as React.ReactElement<any>, { className: "w-4.5 h-4.5" })
+                        }
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider leading-none truncate">
+                            {type}
+                        </span>
+                        <div className="flex items-baseline gap-1">
+                            <span className={cn(
+                                "text-xl font-black tracking-tight leading-none",
+                                allCheckedIn ? "text-emerald-600" : "text-slate-900"
+                            )}>
+                                {totalCalories}
+                            </span>
+                            <span className="text-[9px] font-bold text-slate-400">kcal</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Status / Deviation Bubble */}
+                {totalPlannedCalories > 0 && totalCalories !== totalPlannedCalories && !isFutureDate && (
+                    <div className={cn("px-2 py-0.5 rounded-full text-[9px] font-bold flex-shrink-0",
+                        Math.abs(totalCalories - totalPlannedCalories) > 50
+                            ? "bg-red-50 text-red-500"
+                            : "bg-slate-100 text-slate-500"
+                    )}>
+                        {totalCalories > totalPlannedCalories ? "+" : "-"}{Math.abs(totalCalories - totalPlannedCalories)}
+                    </div>
                 )}
             </div>
-        </div>
 
-        {mealKey && (
-            <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
-                <button
-                    onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                    disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
-                    className={cn(
-                        "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
-                        (confirmedMeals.has(mealKey) || isFutureDate)
-                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
-                    )}
-                >
-                    {loggingId === mealKey ? (
-                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                    ) : isFutureDate ? (
-                        <Lock className="w-2.5 h-2.5" />
-                    ) : (
-                        <Check className="w-3 h-3" />
-                    )}
-                    {confirmedMeals.has(mealKey) ? "Hoàn tất" : isFutureDate ? "Kế hoạch" : "Xong"}
-                </button>
-                <button
-                    onClick={() => handleSwapClick(meal.id, meal.plannedMealId, dayData.day, type, meal.mealName, meal.calories)}
-                    disabled={isFutureDate}
-                    className={cn(
-                        "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
-                        isFutureDate
-                            ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
-                            : "bg-slate-800 text-white hover:bg-slate-900"
-                    )}
-                >
-                    <RefreshCw className="w-3 h-3" />
-                    Đổi
-                </button>
+            {/* 2. Clean List */}
+            <div className="flex-1 space-y-3.5 mb-2">
+                {meals.map((meal: any) => {
+                    const isChecked = meal.checkedIn || confirmedMeals.has(meal.id);
+                    const canCheck = !isFutureDate;
+
+                    return (
+                        <div key={meal.id} className="group/item flex items-start gap-2.5">
+                            {/* Custom Checkbox */}
+                            <button
+                                onClick={() => canCheck && handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
+                                disabled={!canCheck}
+                                className={cn(
+                                    "mt-0.5 w-4.5 h-4.5 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0",
+                                    isChecked
+                                        ? "bg-emerald-500 border-white ring-2 ring-emerald-100"
+                                        : "border-slate-200 hover:border-emerald-400 bg-white"
+                                )}
+                            >
+                                {isChecked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={4} />}
+                            </button>
+
+                            <div className="flex-1 flex flex-col pt-0.5 min-w-0">
+                                <div className="flex justify-between items-start w-full">
+                                    <span className={cn(
+                                        "text-[12px] font-medium leading-snug transition-colors line-clamp-2",
+                                        isChecked ? "text-emerald-600 font-bold" : "text-slate-700 font-semibold"
+                                    )}>
+                                        {meal.mealName}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="flex items-center gap-1.5 bg-slate-50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+                                        <span className="text-[9px] text-slate-500 font-medium">
+                                            {meal.quantity}
+                                        </span>
+                                        <span className="text-[8px] text-slate-300">|</span>
+                                        <span className="text-[9px] text-emerald-600 font-bold">
+                                            {meal.calories} kcal
+                                        </span>
+                                    </div>
+                                    {/* Inline Actions */}
+                                    {!isFutureDate && (
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleSwapClick(meal.id, meal.plannedMealId, dayData.day, type, meal.mealName, meal.calories);
+                                            }}
+                                            className="text-[9px] font-bold text-slate-400 hover:text-emerald-500 flex items-center gap-1 transition-colors group-hover/item:opacity-100 opacity-60 flex-shrink-0"
+                                        >
+                                            <RefreshCw className="w-2.5 h-2.5" />
+                                            Đổi
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
             </div>
-        )}
-    </motion.div>
-));
 
-MealCard.displayName = "MealCard";
+            {/* 3. Subtle Footer Action */}
+            {!allCheckedIn && !isFutureDate && (
+                <div className="pt-3.5 mt-auto border-t border-slate-50">
+                    <button
+                        onClick={() => {
+                            meals.forEach((m: any) => {
+                                if (!m.checkedIn) handleCheckIn(m.id, dayData.day, type, m.mealName, m.calories);
+                            });
+                        }}
+                        className="w-full py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-600 text-[10px] font-bold transition-all flex items-center justify-center gap-2 group/btn"
+                    >
+                        {loggingId === `${dayData.day}-${type}` && <Loader2 className="w-3 h-3 animate-spin text-emerald-600" />}
+                        Hoàn Thành
+                    </button>
+                </div>
+            )}
+        </motion.div>
+    );
+});
+CombinedMealCard.displayName = "CombinedMealCard";
 
 export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     initialData,
@@ -213,12 +272,12 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     const [isResetLoading, setIsResetLoading] = useState(false);
     const router = useRouter();
 
-    const [confirmedMeals, setConfirmedMeals] = useState<Set<string>>(() => {
-        const initialConfirmed = new Set<string>();
+    const [confirmedMeals, setConfirmedMeals] = useState<Set<number>>(() => {
+        const initialConfirmed = new Set<number>();
         initialData.mealPlan.forEach(day => {
             day.meals.forEach(meal => {
                 if (meal.checkedIn) {
-                    initialConfirmed.add(`${day.day}-${meal.type}`);
+                    initialConfirmed.add(meal.id);
                 }
             });
         });
@@ -244,18 +303,18 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
         return mealPlanState.slice(startIdx, endIdx);
     }, [currentWeek, mealPlanState]);
 
-    // Sync state when props change (e.g., after extension)
+    // Sync state when props change
     React.useEffect(() => {
         const oldWeeksCount = Math.ceil(mealPlanState.length / 7);
         const newWeeksCount = Math.ceil(initialData.mealPlan.length / 7);
 
         setMealPlanState(initialData.mealPlan);
 
-        const newConfirmed = new Set<string>();
+        const newConfirmed = new Set<number>();
         initialData.mealPlan.forEach(day => {
             day.meals.forEach(meal => {
                 if (meal.checkedIn) {
-                    newConfirmed.add(`${day.day}-${meal.type}`);
+                    newConfirmed.add(meal.id);
                 }
             });
         });
@@ -277,11 +336,12 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
         const exceededDetails: { day: number; type: string; excess: number }[] = [];
 
         currentWeekData.forEach(day => {
+            totalPlanned += (day.totalPlannedCalories || 0);
+
             day.meals.forEach(meal => {
                 if (meal.id !== -1) {
                     totalMealsCount++;
-                    totalPlanned += meal.plannedCalories;
-                    if (meal.checkedIn || confirmedMeals.has(`${day.day}-${meal.type}`)) {
+                    if (meal.checkedIn || confirmedMeals.has(meal.id)) {
                         checkedMealsCount++;
                         const actual = meal.calories || meal.plannedCalories;
                         totalActual += actual;
@@ -301,6 +361,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
         const mealCompliance = totalMealsCount > 0 ? Math.round((checkedMealsCount / totalMealsCount) * 100) : 0;
         const calorieCompliance = totalPlanned > 0 ? Math.max(0, Math.round(100 - (Math.abs(totalActual - totalPlanned) / totalPlanned) * 100)) : 0;
         const isCompleted = totalMealsCount > 0 && checkedMealsCount === totalMealsCount;
+        const isPassed = mealCompliance >= 80 && calorieCompliance >= 80;
 
         return {
             mealCompliance,
@@ -310,6 +371,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
             totalMealsCount,
             checkedMealsCount,
             isCompleted,
+            isPassed,
             exceededDetails
         };
     }, [currentWeekData, confirmedMeals]);
@@ -318,16 +380,15 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     const prevWeek = () => setCurrentWeek((prev) => Math.max(prev - 1, 0));
 
     const handleCheckIn = async (mealId: number, day: number, type: string, mealName: string, calories: number) => {
-        const mealKey = `${day}-${type}`;
         try {
-            setLoggingId(mealKey);
+            setLoggingId(`${day}-${type}`);
             const res = await mealLogService.checkInPlannedMealById(mealId) as any;
 
             if (res.success) {
-                setConfirmedMeals(prev => new Set(prev).add(mealKey));
-                toast.success(`Đã xác nhận bữa ${type.toLowerCase()}!`);
+                setConfirmedMeals(prev => new Set(prev).add(mealId));
+                toast.success(`Đã check-in món ${mealName}!`);
             } else {
-                toast.error(res.message || "Không thể xác nhận bữa ăn.");
+                toast.error(res.message || "Không thể xác nhận món ăn.");
             }
         } catch (error: any) {
             const errorMsg = error.response?.data?.message || error.message || "Lỗi kết nối server.";
@@ -383,13 +444,11 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
 
     const onSwapSuccess = (newData: any) => {
         if (selectedMeal) {
-            const mealKey = `${selectedMeal.day}-${selectedMeal.type}`;
-
             // Cập nhật state UI ngay lập tức
             setMealPlanState(prev => prev.map(dayPlan => {
                 if (dayPlan.day === selectedMeal.day) {
                     const updatedMeals = dayPlan.meals.map(m => {
-                        if (m.type === selectedMeal.type) {
+                        if (m.id === selectedMeal.id) {
                             return {
                                 ...m,
                                 mealName: newData.foodName,
@@ -409,56 +468,23 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                 return dayPlan;
             }));
 
-            setConfirmedMeals(prev => new Set(prev).add(mealKey));
+            setConfirmedMeals(prev => new Set(prev).add(selectedMeal.id));
             toast.success("Đã cập nhật bữa ăn mới bằng AI!");
         }
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-black/5">
-                <div className="flex items-center gap-3">
-                    <div className="p-3 bg-emerald-500 rounded-2xl text-white shadow-lg shadow-emerald-500/30">
-                        <Calendar className="w-6 h-6" />
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-slate-800">Lịch Ăn Uống Hàng Tuần</h2>
-                        <p className="text-sm text-slate-500 font-medium tracking-tight">Bắt đầu từ: {startDate}</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-slate-100/50 p-2 rounded-2xl">
-                    <button
-                        onClick={prevWeek}
-                        disabled={currentWeek === 0}
-                        className="p-2 hover:bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 bg-white/50"
-                    >
-                        <ChevronLeft className="w-5 h-5 text-slate-600" />
-                    </button>
-                    <span className="px-6 py-1 text-sm font-black text-slate-700 min-w-[120px] text-center uppercase tracking-widest">
-                        Tuần {currentWeek + 1}
-                    </span>
-                    <button
-                        onClick={completionStats.isCompleted ? handleNextWeekEvaluation : nextWeek}
-                        disabled={currentWeek === totalWeeks - 1 && !completionStats.isCompleted}
-                        className={cn(
-                            "p-2 rounded-xl transition-all shadow-sm active:scale-95",
-                            completionStats.isCompleted
-                                ? "bg-amber-500 text-white shadow-amber-200 shadow-lg hover:bg-amber-600"
-                                : "bg-white/50 hover:bg-white text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
-                        )}
-                    >
-                        {completionStats.isCompleted ? <Trophy className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Monthly Overview Navigation */}
-            {
-                initialData.monthlyPlan && initialData.monthlyPlan.months && initialData.monthlyPlan.months.length > 0 && (
-                    <div className="bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl shadow-black/5 space-y-6">
-                        <div className="flex flex-wrap gap-3">
-                            {initialData.monthlyPlan.months.map((month, idx) => {
+        <div className="w-full max-w-full px-4 md:px-8 mx-auto space-y-4">
+            {/* Unified Control Dashboard - Aligned with Grid */}
+            <div className="max-w-[1600px] mx-auto bg-white/40 backdrop-blur-md p-6 rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black/5 space-y-6">
+                {/* Header Row: Month Selectors & Week Navigation */}
+                <div className="flex flex-col lg:flex-row items-center justify-between gap-6 pb-5 border-b border-slate-100/50">
+                    <div className="flex items-center gap-6">
+                        <div className="p-3 bg-emerald-500 rounded-[1.2rem] text-white shadow-lg shadow-emerald-500/30">
+                            <Calendar className="w-6 h-6" />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            {initialData.monthlyPlan?.months.map((month, idx) => {
                                 const isLocked = idx > 0;
                                 return (
                                     <button
@@ -466,7 +492,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                         onClick={() => !isLocked && setSelectedMonthIdx(idx)}
                                         disabled={isLocked}
                                         className={cn(
-                                            "px-6 py-2.5 rounded-2xl font-bold transition-all border shadow-sm flex items-center gap-2",
+                                            "px-5 py-2.5 rounded-xl font-black text-[10px] transition-all border shadow-sm flex items-center gap-2 uppercase tracking-widest",
                                             selectedMonthIdx === idx
                                                 ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-200"
                                                 : isLocked
@@ -480,60 +506,107 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                 );
                             })}
                         </div>
+                    </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2 border-t border-slate-100/50 items-center">
-                            <div className="space-y-1 border-r border-slate-100/50 pr-4">
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Giai đoạn</span>
-                                <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].title}</p>
-                            </div>
-                            <div className="space-y-1">
-                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mục tiêu Calo</span>
-                                <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].dailyCalories} <span className="text-slate-400 text-xs font-medium">kcal/ngày</span></p>
-                            </div>
-                            <div className="space-y-3">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex flex-col">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Calo Tuần {currentWeek + 1}</span>
-                                        <div className="flex items-baseline gap-1.5">
-                                            <span className="text-base font-black text-slate-800">{completionStats.totalActual}</span>
-                                            <span className="text-[10px] font-bold text-slate-400 tracking-tighter">/ {completionStats.totalPlanned}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
-                                    <motion.div
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${completionStats.mealCompliance}%` }}
-                                        className={cn(
-                                            "h-full rounded-full transition-all duration-700",
-                                            completionStats.mealCompliance >= 80
-                                                ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                                                : "bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]"
-                                        )}
-                                    />
-                                </div>
-                            </div>
-                            <div className="flex justify-end">
-                                {completionStats.isCompleted ? (
-                                    <button
-                                        onClick={handleNextWeekEvaluation}
-                                        className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-amber-600 transition-all active:scale-95 group uppercase tracking-widest"
-                                    >
-                                        Đánh giá hoàn thiện lộ trình <Trophy className="w-3.5 h-3.5 group-hover:animate-bounce" />
-                                    </button>
-                                ) : (
-                                    <div className="space-y-1 text-right max-w-[200px]">
-                                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Ghi chú AI</span>
-                                        <p className="text-[11px] font-medium text-slate-500 italic leading-snug line-clamp-2">
-                                            "{initialData.monthlyPlan.months[selectedMonthIdx].note}"
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
+                    <div className="flex items-center gap-2 bg-slate-900/5 p-1.5 rounded-[1.2rem]">
+                        <button
+                            onClick={prevWeek}
+                            disabled={currentWeek === 0}
+                            className="p-2 hover:bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 bg-white/50"
+                        >
+                            <ChevronLeft className="w-5 h-5 text-slate-600" />
+                        </button>
+                        <span className="px-8 py-1 text-sm font-black text-slate-800 min-w-[140px] text-center uppercase tracking-[0.2em]">
+                            Tuần {currentWeek + 1}
+                        </span>
+                        <button
+                            onClick={nextWeek}
+                            disabled={currentWeek === totalWeeks - 1}
+                            className="p-2 bg-white/50 hover:bg-white text-slate-600 rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Info Row: Metrics Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+                    <div className="space-y-1 p-3 rounded-2xl hover:bg-white/30 transition-colors">
+                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">Giai đoạn hiện tại</span>
+                        <p className="text-lg font-black text-slate-800 leading-tight">
+                            {initialData.monthlyPlan?.months[selectedMonthIdx].title}
+                        </p>
+                    </div>
+
+                    <div className="space-y-1 p-3 rounded-2xl hover:bg-white/30 transition-colors border-l border-slate-100/50">
+                        <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest block">Mục tiêu Calo</span>
+                        <div className="flex items-baseline gap-1.5">
+                            <span className="text-xl font-black text-slate-900">{initialData.monthlyPlan?.months[selectedMonthIdx].dailyCalories}</span>
+                            <span className="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">kcal/ngày</span>
                         </div>
                     </div>
-                )
-            }
+
+                    <div className="space-y-3 p-3 rounded-2xl bg-white/40 border border-white/60 shadow-xl shadow-black/[0.02]">
+                        <div className="flex items-center justify-between">
+                            <span className="text-[9px] font-black uppercase text-emerald-600 tracking-widest">Tiến độ Calo</span>
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-xs font-black text-slate-800">{completionStats.totalActual}</span>
+                                <span className="text-[8px] font-bold text-slate-400">/ {completionStats.totalPlanned}</span>
+                            </div>
+                        </div>
+                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative shadow-inner">
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${completionStats.mealCompliance}%` }}
+                                className={cn(
+                                    "h-full rounded-full transition-all duration-1000",
+                                    completionStats.mealCompliance >= 80
+                                        ? "bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                                        : "bg-gradient-to-r from-orange-400 to-orange-600 shadow-[0_0_12px_rgba(249,115,22,0.4)]"
+                                )}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-3 p-3 rounded-2xl hover:bg-white/30 transition-colors">
+                        {completionStats.isCompleted ? (
+                            <div className="space-y-2.5">
+                                <span className={cn(
+                                    "text-[9px] font-black uppercase tracking-widest block",
+                                    completionStats.isPassed ? "text-emerald-600" : "text-orange-600"
+                                )}>
+                                    {completionStats.isPassed ? "Kết quả: Đạt" : "Kết quả: Cần Reset"}
+                                </span>
+                                <button
+                                    onClick={handleNextWeekEvaluation}
+                                    className={cn(
+                                        "group/analyze relative flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl transition-all w-full overflow-hidden border border-white/20 shadow-lg active:scale-95",
+                                        completionStats.isPassed
+                                            ? "bg-gradient-to-br from-emerald-400 via-emerald-500 to-teal-500 shadow-emerald-200/50 hover:shadow-emerald-200/80"
+                                            : "bg-gradient-to-br from-orange-400 via-orange-500 to-rose-500 shadow-orange-200/50 hover:shadow-orange-200/80"
+                                    )}
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover/analyze:translate-x-full transition-transform duration-1000 ease-in-out" />
+                                    <Trophy className="w-4 h-4 text-white group-hover/analyze:scale-110 transition-transform drop-shadow-sm" />
+                                    <span className="text-xs font-black text-white tracking-tight uppercase">
+                                        {completionStats.isPassed ? "Tiếp tục lộ trình" : "Phân tích & Reset"}
+                                    </span>
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="space-y-1 w-full">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="w-2.5 h-2.5 text-emerald-500" />
+                                    <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Ghi chú AI</span>
+                                </div>
+                                <p className="text-[10px] font-bold text-slate-500 italic leading-relaxed line-clamp-2">
+                                    "{initialData.monthlyPlan?.months[selectedMonthIdx].note}"
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
             <EvaluationModal
                 isOpen={isEvaluationOpen}
@@ -604,36 +677,37 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                         <span className="text-lg font-black text-emerald-400 leading-none">{dayData.totalCalories}</span>
                                     </div>
                                     <span className="text-[8px] font-black uppercase opacity-60 tracking-tighter">
-                                        Target: {dayData.totalPlannedCalories || dayData.totalCalories} kcal
+                                        Mục tiêu: {dayData.totalPlannedCalories || dayData.totalCalories} kcal
                                     </span>
                                 </div>
                             </div>
 
                             <div className="grid gap-4">
                                 {mealTypes.map(type => {
-                                    const meal = dayData.meals.find(m => m.type === type);
+                                    const mealsOfType = dayData.meals.filter((m) => m.type === type);
                                     const isPastDate = isBefore(startOfDay(actualDate), startOfDay(new Date()));
                                     const isFutureDate = isAfter(startOfDay(actualDate), startOfDay(new Date()));
-                                    const mealKey = `${dayData.day}-${type}`;
 
-                                    return meal ? (
-                                        <MealCard
-                                            key={type}
-                                            meal={meal}
-                                            dayData={dayData}
-                                            type={type}
-                                            isTodayDate={isTodayDate}
-                                            isPastDate={isPastDate}
-                                            isFutureDate={isFutureDate}
-                                            mealKey={mealKey}
-                                            confirmedMeals={confirmedMeals}
-                                            handleCheckIn={handleCheckIn}
-                                            handleSwapClick={handleSwapClick}
-                                            loggingId={loggingId}
-                                        />
-                                    ) : (
-                                        <div key={type} className="p-4 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-300 text-xs italic">
-                                            Chưa có món ăn cho {type}
+                                    return (
+                                        <div key={type} className="flex flex-col gap-2">
+                                            {mealsOfType.length > 0 ? (
+                                                <CombinedMealCard
+                                                    meals={mealsOfType}
+                                                    dayData={dayData}
+                                                    type={type}
+                                                    isTodayDate={isTodayDate}
+                                                    isPastDate={isPastDate}
+                                                    isFutureDate={isFutureDate}
+                                                    confirmedMeals={confirmedMeals}
+                                                    handleCheckIn={handleCheckIn}
+                                                    handleSwapClick={handleSwapClick}
+                                                    loggingId={loggingId}
+                                                />
+                                            ) : (
+                                                <div className="p-4 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-300 text-xs italic">
+                                                    Chưa có món ăn cho {type}
+                                                </div>
+                                            )}
                                         </div>
                                     );
                                 })}
@@ -643,10 +717,28 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                 })()}
             </div>
 
-            {/* DESKTOP VIEW */}
-            <div className="hidden md:block overflow-x-auto pb-4 custom-scrollbar">
-                <div className="min-w-[1100px] grid grid-cols-[110px_repeat(7,1fr)] gap-4">
-                    <div className="sticky left-0 z-10"></div>
+            {/* DESKTOP VIEW - Harmonious Center Layout */}
+            <div className="hidden md:block w-full">
+                <div className="max-w-[1600px] mx-auto grid grid-cols-[90px_repeat(7,1fr)] gap-2.5">
+                    {/* Header Row: Corner Cell - Focus Box */}
+                    <div className="flex flex-col items-center justify-center bg-white/40 backdrop-blur-md rounded-3xl border border-white/60 shadow-lg p-2 text-center group">
+                        <motion.div
+                            animate={{
+                                opacity: [0.4, 1, 0.4],
+                                scale: [0.95, 1.05, 0.95]
+                            }}
+                            transition={{
+                                duration: 2,
+                                repeat: Infinity,
+                                ease: "easeInOut"
+                            }}
+                            className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center mb-1 group-hover:scale-110 transition-transform"
+                        >
+                            <Zap className="w-3.5 h-3.5 text-emerald-500" />
+                        </motion.div>
+                        <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest leading-none">Tiêu điểm</span>
+                        <span className="text-[8px] font-bold text-slate-400 leading-tight">Chế độ Zen</span>
+                    </div>
                     {Array.from({ length: 7 }).map((_, idx) => {
                         const dayData = currentWeekData[idx];
                         const actualDate = dayData ? addDays(baseDate, (currentWeek * 7) + idx) : null;
@@ -657,16 +749,17 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                             <div
                                 key={idx}
                                 className={cn(
-                                    "text-center py-5 rounded-3xl border shadow-sm transition-all relative overflow-hidden",
+                                    "text-center py-4 rounded-3xl border shadow-sm transition-all relative overflow-hidden",
                                     isTodayDate ? "bg-emerald-500 border-emerald-400 shadow-xl shadow-emerald-100" : "bg-white border-slate-100",
-                                    isPastDate && "bg-slate-50 border-slate-200 opacity-60"
+                                    isPastDate && "bg-slate-50 border-slate-200 opacity-60",
+                                    (actualDate && isAfter(startOfDay(actualDate), startOfDay(new Date()))) && "opacity-40 blur-[1px] grayscale bg-slate-50 select-none"
                                 )}
                             >
-                                <div className={cn("text-[10px] font-black uppercase tracking-[0.2em] mb-1 opacity-60", isTodayDate ? "text-emerald-50" : "text-slate-400")}>
+                                <div className={cn("text-[9px] font-black uppercase tracking-[0.2em] mb-0.5 opacity-60", isTodayDate ? "text-emerald-50" : "text-slate-400")}>
                                     {actualDate ? format(actualDate, "EEEE", { locale: vi }) : `Ngày ${idx + 1}`}
                                 </div>
                                 <div className={cn("text-base font-black tracking-tight", isTodayDate ? "text-white" : "text-slate-900")}>
-                                    {actualDate ? format(actualDate, "dd/MM/yyyy") : `Ngày ${idx + 1}`}
+                                    {actualDate ? format(actualDate, "dd/MM") : `Ngày ${idx + 1}`}
                                 </div>
                             </div>
                         );
@@ -674,41 +767,48 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
 
                     {mealTypes.map((type) => (
                         <React.Fragment key={type}>
-                            <div className="sticky left-0 flex flex-col items-center justify-center gap-2 py-8 rounded-3xl bg-white/80 backdrop-blur-xl border border-white shadow-sm z-10">
-                                <div className={cn("p-2.5 rounded-2xl border-2 shadow-sm", mealTypeColors[type])}>
-                                    {mealTypeIcons[type]}
+                            {/* Meal Type Label (Sticky Left) */}
+                            <div className="sticky left-0 z-20 bg-white/80 backdrop-blur-md rounded-3xl border border-slate-100 shadow-sm flex flex-col items-center justify-center p-3 text-center group">
+                                <div className={cn("w-11 h-11 rounded-2xl bg-gradient-to-br flex items-center justify-center text-white shadow-lg mb-2 ring-2 ring-white transition-all group-hover:scale-105", mealTypeGradients[type])}>
+                                    {React.cloneElement(mealTypeIcons[type] as React.ReactElement<any>, { className: "w-5 h-5" })}
                                 </div>
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{type}</span>
+                                <span className="text-[10px] font-black text-slate-900 uppercase tracking-widest leading-none">{type}</span>
+                                <div className="mt-1.5 flex flex-col items-center gap-1">
+                                    <span className="text-[7px] font-bold text-emerald-600 uppercase tracking-tighter bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100/50 whitespace-nowrap shadow-sm">
+                                        {type === 'Sáng' ? '07:00' : type === 'Trưa' ? '12:00' : type === 'Tối' ? '19:00' : '15:30'}
+                                    </span>
+                                    <span className="text-[7px] font-black text-slate-400 uppercase tracking-tighter mt-0.5">
+                                        {type === 'Sáng' ? 'ENERGY' : type === 'Trưa' ? 'POWER' : type === 'Tối' ? 'MINIMAL' : 'SNACK'}
+                                    </span>
+                                </div>
                             </div>
 
                             {Array.from({ length: 7 }).map((_, dayIdx) => {
                                 const dayData = currentWeekData[dayIdx];
-                                const meal = dayData?.meals.find((m) => m.type === type);
+                                const mealsOfType = dayData?.meals.filter((m) => m.type === type) || [];
                                 const actualDate = dayData ? addDays(baseDate, (currentWeek * 7) + dayIdx) : null;
                                 const isTodayDate = actualDate ? isSameDay(startOfDay(actualDate), startOfDay(new Date())) : false;
                                 const isPastDate = actualDate ? isBefore(startOfDay(actualDate), startOfDay(new Date())) : false;
                                 const isFutureDate = actualDate ? isAfter(startOfDay(actualDate), startOfDay(new Date())) : false;
-                                const mealKey = dayData ? `${dayData.day}-${type}` : null;
 
                                 return (
-                                    <div key={`${type}-${dayIdx}`} className="h-full">
-                                        {meal ? (
-                                            <MealCard
-                                                meal={meal}
+                                    <div key={`${type}-${dayIdx}`} className="h-full flex flex-col gap-2">
+                                        {mealsOfType.length > 0 ? (
+                                            <CombinedMealCard
+                                                meals={mealsOfType}
                                                 dayData={dayData}
                                                 type={type}
                                                 isTodayDate={isTodayDate}
                                                 isPastDate={isPastDate}
                                                 isFutureDate={isFutureDate}
-                                                mealKey={mealKey}
                                                 confirmedMeals={confirmedMeals}
                                                 handleCheckIn={handleCheckIn}
                                                 handleSwapClick={handleSwapClick}
                                                 loggingId={loggingId}
                                             />
                                         ) : (
-                                            <div className="h-full min-h-[140px] rounded-3xl border border-dashed border-slate-100 bg-slate-50/20 flex items-center justify-center opacity-30 italic text-[10px] text-slate-400">
-                                                Hết món
+                                            <div className="p-4 border border-dashed border-slate-100 rounded-[2rem] text-center text-slate-300 text-[10px] italic h-full flex items-center justify-center bg-slate-50/30">
+                                                Nghỉ
                                             </div>
                                         )}
                                     </div>
@@ -717,57 +817,110 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                         </React.Fragment>
                     ))}
 
-                    {/* Total Row Desktop */}
-                    <div className="sticky left-0 flex items-center justify-center py-6 rounded-3xl bg-slate-900 text-white shadow-2xl z-10 border border-slate-800">
-                        <span className="text-[10px] font-black uppercase tracking-[0.1em] text-slate-400">Calo</span>
+                    {/* Total Row Desktop - Premium Metric Cards */}
+                    <div className="sticky left-0 flex flex-col items-center justify-center py-6 rounded-3xl bg-slate-900 text-white shadow-2xl z-20 border border-slate-800 group/label">
+                        <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center mb-1 group-hover/label:scale-110 transition-transform">
+                            <Zap className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">Tổng</span>
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-[2px] h-8 bg-gradient-to-b from-transparent via-slate-700 to-transparent" />
                     </div>
                     {Array.from({ length: 7 }).map((_, dayIdx) => {
                         const dayData = currentWeekData[dayIdx];
+                        const actualDate = dayData ? addDays(baseDate, (currentWeek * 7) + dayIdx) : null;
+                        const isToday = actualDate ? isSameDay(startOfDay(actualDate), startOfDay(new Date())) : false;
+
+                        // Calculate Accuracy Score: 100% - (|Actual - Goal| / Goal * 100%)
+                        const deviation = dayData?.totalPlannedCalories
+                            ? Math.abs((dayData.totalCalories || 0) - dayData.totalPlannedCalories)
+                            : 0;
+                        const accuracy = dayData?.totalPlannedCalories
+                            ? Math.max(0, 100 - (deviation / dayData.totalPlannedCalories * 100))
+                            : 0;
+
                         return (
                             <div
                                 key={`total-${dayIdx}`}
-                                className="py-6 rounded-3xl bg-emerald-50/50 border-2 border-emerald-100 flex flex-col items-center justify-center transition-all hover:bg-emerald-50 relative group"
+                                className={cn(
+                                    "p-4 rounded-[2rem] border transition-all duration-300 relative group overflow-hidden flex flex-col justify-between min-h-[100px]",
+                                    isToday
+                                        ? "bg-white border-emerald-500 shadow-xl shadow-emerald-500/10 ring-1 ring-emerald-500/20"
+                                        : "bg-white border-slate-100 shadow-sm hover:border-emerald-200 hover:shadow-md",
+                                    (actualDate && isAfter(startOfDay(actualDate), startOfDay(new Date()))) && "opacity-40 grayscale-[0.8] bg-slate-50/50"
+                                )}
                             >
-                                <div className="flex items-baseline gap-1">
-                                    <div className="text-2xl font-black text-emerald-600 tracking-tighter">
-                                        {dayData?.totalCalories || 0}
+                                {/* Metric Header */}
+                                <div className="flex justify-between items-start mb-2">
+                                    <div className="flex flex-col">
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Thực tế</span>
+                                        <div className="flex items-baseline gap-1">
+                                            <span className={cn(
+                                                "text-2xl font-black tracking-tight",
+                                                isToday ? "text-emerald-600" : "text-slate-900"
+                                            )}>
+                                                {dayData?.totalCalories || 0}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-slate-400 uppercase">kcal</span>
+                                        </div>
                                     </div>
+
                                     {dayData && dayData.totalPlannedCalories > 0 && dayData.totalCalories !== dayData.totalPlannedCalories && (
                                         <div className={cn(
-                                            "text-[10px] font-bold",
-                                            dayData.totalCalories > dayData.totalPlannedCalories ? "text-red-500" : "text-blue-500"
+                                            "px-2 py-0.5 rounded-full text-[10px] font-black",
+                                            dayData.totalCalories > dayData.totalPlannedCalories
+                                                ? "bg-red-50 text-red-500"
+                                                : "bg-emerald-50 text-emerald-500"
                                         )}>
-                                            {dayData.totalCalories > dayData.totalPlannedCalories ? '+' : ''}{dayData.totalCalories - dayData.totalPlannedCalories}
+                                            {dayData.totalCalories > dayData.totalPlannedCalories ? '+' : ''}
+                                            {dayData.totalCalories - dayData.totalPlannedCalories}
                                         </div>
                                     )}
                                 </div>
-                                <div className="text-[10px] font-black text-emerald-400/80 uppercase tracking-widest">kcal / ngày</div>
 
-                                {dayData && dayData.totalPlannedCalories > 0 && (
-                                    <div className="absolute -bottom-1 bg-white border border-emerald-100 text-slate-400 text-[8px] font-bold py-0.5 px-2 rounded-full shadow-sm">
-                                        Mục tiêu: {dayData.totalPlannedCalories}
+                                {/* Accuracy Progress */}
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center px-0.5">
+                                        <div className="flex items-center gap-1.5">
+                                            <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">Mục tiêu</span>
+                                            <span className="text-[10px] font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                                {dayData?.totalPlannedCalories}
+                                            </span>
+                                        </div>
+                                        <span className={cn(
+                                            "text-[9px] font-black transition-colors",
+                                            accuracy >= 95 ? "text-emerald-500" : accuracy >= 85 ? "text-orange-500" : "text-red-500"
+                                        )}>
+                                            {Math.round(accuracy)}% Chính xác
+                                        </span>
                                     </div>
-                                )}
+                                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden shadow-inner">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${accuracy}%` }}
+                                            className={cn(
+                                                "h-full rounded-full transition-all duration-1000",
+                                                accuracy >= 95
+                                                    ? "bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_8px_rgba(16,185,129,0.3)]"
+                                                    : accuracy >= 85
+                                                        ? "bg-gradient-to-r from-orange-400 to-orange-600"
+                                                        : "bg-gradient-to-r from-red-400 to-red-600"
+                                            )}
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            <style jsx global>{`
-                .custom-scrollbar::-webkit-scrollbar { height: 6px; }
-                .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 20px; border: 2px solid transparent; background-clip: content-box; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #cbd5e1; background-clip: content-box; }
-            `}</style>
-
             <MealLogModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
-                onSuccess={onSwapSuccess}
-                plannedMealId={selectedMeal?.plannedMealId}
                 mealType={selectedMeal?.type || ""}
                 day={selectedMeal?.day || 0}
+                plannedMealId={selectedMeal?.plannedMealId}
+                onSuccess={onSwapSuccess}
             />
         </div >
     );

@@ -3,7 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Loader2, Calendar, Target, Zap, Clock, CheckCircle2, Flame, Info, Search, Sparkles, TrendingUp, Apple, Coffee, Utensils, Moon } from 'lucide-react';
 import { mealPlanService, MealPlanResponse, DayPlan } from '@/services/meal-plan.service';
-import { format, differenceInDays, startOfDay, addDays, isSameDay } from 'date-fns';
+import { format, differenceInDays, startOfDay, addDays, isSameDay, isAfter } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
@@ -250,7 +250,8 @@ export default function DiaryPage() {
                                         >
                                             <div className={cn(
                                                 "h-full p-8 bg-white/60 backdrop-blur-3xl border border-white rounded-[2.5rem] shadow-2xl shadow-slate-200/50 hover:shadow-3xl hover:shadow-slate-300/50 transition-all duration-500 overflow-hidden",
-                                                section.items.length === 0 && "border-dashed border-slate-200/50 opacity-60"
+                                                section.items.length === 0 && "border-dashed border-slate-200/50 opacity-60",
+                                                isAfter(startOfDay(selectedDate), startOfDay(new Date())) && "opacity-30 grayscale-[0.5]"
                                             )}>
                                                 {/* Header */}
                                                 <div className="flex items-start justify-between mb-6">
