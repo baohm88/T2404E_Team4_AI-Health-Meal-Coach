@@ -14,6 +14,8 @@
 'use client';
 
 import { HealthAnalysisView } from '@/components/health/HealthAnalysisView';
+import { UpgradePromptModal } from '@/components/modals/UpgradePromptModal';
+
 import { RegisterPromptModal } from '@/components/modals/RegisterPromptModal';
 import { getUserFromToken, TokenUser } from '@/lib/auth';
 import { getToken } from '@/lib/http';
@@ -85,6 +87,8 @@ export default function OnboardingResultPage() {
     const [user, setUser] = useState<TokenUser | null>(null);
     const [analysis, setAnalysis] = useState<AIAnalysisResponse | null>(null);
     const [showRegisterModal, setShowRegisterModal] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
 
     // ---------------------------------------------------------------------
     // Authentication check & data fetch
@@ -299,20 +303,22 @@ export default function OnboardingResultPage() {
                     transition={{ delay: 0.3 }}
                     className="flex flex-col gap-3"
                 >
+
                     <button
-                        onClick={() => router.push('/dashboard/schedule')}
-                        className="flex items-center justify-center gap-2 w-full py-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition font-medium"
-                    >
-                        Vào Dashboard <ArrowRight className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => router.push('/pricing')}
+                        onClick={() => setShowUpgradeModal(true)}
                         className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white rounded-xl hover:from-amber-500 hover:to-orange-500 transition font-medium"
                     >
                         <Crown className="w-4 h-4" /> Mở khóa Lộ trình Cá nhân
                     </button>
                 </motion.div>
             </div>
+
+            <UpgradePromptModal
+                isOpen={showUpgradeModal}
+                onUpgrade={() => router.push('/pricing')}
+                onDashboard={() => router.push('/dashboard/schedule')}
+                onCancel={() => setShowUpgradeModal(false)}
+            />
         </div>
     );
 }
