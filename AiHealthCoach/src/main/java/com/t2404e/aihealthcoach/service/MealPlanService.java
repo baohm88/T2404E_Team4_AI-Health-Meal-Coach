@@ -8,4 +8,6 @@ public interface MealPlanService {
     MealPlanResponse getByUserId(Long userId);
 
     MealPlanResponse regenerate(Long userId);
+
+    MealPlanResponse extendPlan(Long userId);
 }

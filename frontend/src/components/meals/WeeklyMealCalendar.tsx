@@ -2,10 +2,13 @@
 
 import { mealLogService } from "@/services/meal-log.service";
 import { clsx, type ClassValue } from "clsx";
-import { addDays, format, isAfter, isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
+import { addDays, format, isAfter, isBefore, isSameDay, parseISO, startOfDay, differenceInDays } from "date-fns";
 import { vi } from "date-fns/locale";
-import { motion } from "framer-motion";
-import { Calendar, Check, ChevronLeft, ChevronRight, Coffee, Loader2, Moon, RefreshCw, Sun, Utensils } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+    Calendar, Check, ChevronLeft, ChevronRight, Coffee,
+    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles
+} from "lucide-react";
 import React, { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
@@ -17,24 +20,38 @@ function cn(...inputs: ClassValue[]) {
 
 interface Meal {
     id: number;
+    plannedMealId?: number;
     mealName: string;
     quantity: string;
     calories: number;
+    plannedCalories: number;
     type: string;
-    checkedIn: boolean;
+    checkedIn?: boolean;
 }
 
 interface DayPlan {
     day: number;
     meals: Meal[];
     totalCalories: number;
+    totalPlannedCalories: number;
 }
 
 interface WeeklyMealCalendarProps {
     initialData: {
         mealPlan: DayPlan[];
+        monthlyPlan?: {
+            goal: string;
+            totalTargetWeightChangeKg: number;
+            months: {
+                month: number;
+                title: string;
+                dailyCalories: number;
+                note: string;
+            }[];
+        };
     };
     startDate: string;
+    onExtendPlan?: () => void;
 }
 
 const mealTypeIcons: Record<string, React.ReactNode> = {
@@ -51,12 +68,34 @@ const mealTypeColors: Record<string, string> = {
     Phụ: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
-export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialData, startDate }) => {
+export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
+    initialData,
+    startDate,
+    onExtendPlan
+}) => {
     const [mealPlanState, setMealPlanState] = useState<DayPlan[]>(initialData.mealPlan);
-    const [currentWeek, setCurrentWeek] = useState(0);
-    const [selectedDayIdx, setSelectedDayIdx] = useState(0); // For Mobile View
+
+    // Initial week & day calculation
+    const { initialWeek, initialDay } = useMemo(() => {
+        try {
+            const base = parseISO(startDate);
+            const today = startOfDay(new Date());
+            const daysDiff = differenceInDays(today, startOfDay(base));
+
+            const weekIdx = Math.max(0, Math.min(Math.floor(daysDiff / 7), Math.ceil(initialData.mealPlan.length / 7) - 1));
+            const dayIdx = Math.max(0, Math.min(daysDiff % 7, 6));
+
+            return { initialWeek: weekIdx, initialDay: dayIdx };
+        } catch (e) {
+            return { initialWeek: 0, initialDay: 0 };
+        }
+    }, [startDate, initialData.mealPlan.length]);
+
+    const [currentWeek, setCurrentWeek] = useState(initialWeek);
+    const [selectedDayIdx, setSelectedDayIdx] = useState(initialDay); // For Mobile View
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [selectedMeal, setSelectedMeal] = useState<{ id: number; day: number; type: string; mealName: string; calories: number } | null>(null);
+    const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
+    const [selectedMeal, setSelectedMeal] = useState<{ id: number; plannedMealId?: number; day: number; type: string; mealName: string; calories: number } | null>(null);
     const [confirmedMeals, setConfirmedMeals] = useState<Set<string>>(() => {
         const initialConfirmed = new Set<string>();
         initialData.mealPlan.forEach(day => {
@@ -88,6 +127,62 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
         return mealPlanState.slice(startIdx, endIdx);
     }, [currentWeek, mealPlanState]);
 
+    // Sync state when props change (e.g., after extension)
+    React.useEffect(() => {
+        const oldWeeksCount = Math.ceil(mealPlanState.length / 7);
+        const newWeeksCount = Math.ceil(initialData.mealPlan.length / 7);
+
+        setMealPlanState(initialData.mealPlan);
+
+        const newConfirmed = new Set<string>();
+        initialData.mealPlan.forEach(day => {
+            day.meals.forEach(meal => {
+                if (meal.checkedIn) {
+                    newConfirmed.add(`${day.day}-${meal.type}`);
+                }
+            });
+        });
+        setConfirmedMeals(newConfirmed);
+
+        // Auto-navigate to next week if a new week was just added
+        if (newWeeksCount > oldWeeksCount && oldWeeksCount > 0) {
+            setCurrentWeek(newWeeksCount - 1);
+            toast("Lộ trình tuần mới đã sẵn sàng!", { icon: <Sparkles className="w-4 h-4 text-emerald-500" /> });
+        }
+    }, [initialData.mealPlan]);
+
+    const completionStats = useMemo(() => {
+        if (!currentWeekData || currentWeekData.length === 0) return { percent: 0, totalPlanned: 0, totalActual: 0, isCompleted: false };
+        let totalPlanned = 0;
+        let totalActual = 0;
+        let totalMealsCount = 0;
+        let checkedMealsCount = 0;
+
+        currentWeekData.forEach(day => {
+            day.meals.forEach(meal => {
+                if (meal.id !== -1) {
+                    totalMealsCount++;
+                    totalPlanned += meal.plannedCalories;
+                    if (meal.checkedIn || confirmedMeals.has(`${day.day}-${meal.type}`)) {
+                        checkedMealsCount++;
+                        totalActual += meal.calories || meal.plannedCalories;
+                    }
+                }
+            });
+        });
+
+        const percent = totalPlanned > 0 ? Math.min(Math.round((totalActual / totalPlanned) * 100), 100) : 0;
+        const isCompleted = totalMealsCount > 0 && checkedMealsCount === totalMealsCount;
+
+        return {
+            percent,
+            totalPlanned,
+            totalActual,
+            isCompleted,
+            diff: totalActual - totalPlanned
+        };
+    }, [currentWeekData, confirmedMeals]);
+
     const nextWeek = () => setCurrentWeek((prev) => Math.min(prev + 1, totalWeeks - 1));
     const prevWeek = () => setCurrentWeek((prev) => Math.max(prev - 1, 0));
 
@@ -111,8 +206,8 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
         }
     };
 
-    const handleSwapClick = (mealId: number, day: number, type: string, mealName: string, calories: number) => {
-        setSelectedMeal({ id: mealId, day, type, mealName, calories });
+    const handleSwapClick = (mealId: number, plannedMealId: number | undefined, day: number, type: string, mealName: string, calories: number) => {
+        setSelectedMeal({ id: mealId, plannedMealId, day, type, mealName, calories });
         setIsModalOpen(true);
     };
 
@@ -183,13 +278,25 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 )}>
                     {meal.mealName}
                 </h4>
-                <div className="flex flex-wrap gap-1">
+                <div className="flex flex-wrap gap-1 items-center">
                     <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
                         {meal.quantity}
                     </span>
-                    <span className="text-[10px] font-black text-emerald-600 italic">
+                    <span className={cn(
+                        "text-[10px] font-black italic",
+                        meal.checkedIn && meal.plannedCalories > 0 && meal.calories > meal.plannedCalories ? "text-red-500" : "text-emerald-600"
+                    )}>
                         {meal.calories} kcal
                     </span>
+                    {meal.checkedIn && meal.plannedCalories > 0 && meal.calories !== meal.plannedCalories && (
+                        <span className={cn(
+                            "text-[8px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5",
+                            meal.calories > meal.plannedCalories ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+                        )}>
+                            {meal.calories > meal.plannedCalories ? '↑' : '↓'}
+                            {Math.abs(meal.calories - meal.plannedCalories)}
+                        </span>
+                    )}
                 </div>
             </div>
 
@@ -197,23 +304,29 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
                     <button
                         onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || !isTodayDate}
+                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
                         className={cn(
                             "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
-                            (confirmedMeals.has(mealKey) || !isTodayDate)
+                            (confirmedMeals.has(mealKey) || isFutureDate)
                                 ? "bg-slate-100 text-slate-400 cursor-not-allowed"
                                 : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
                         )}
                     >
-                        {loggingId === mealKey ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <Check className="w-3 h-3" />}
-                        Xong
+                        {loggingId === mealKey ? (
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                        ) : isFutureDate ? (
+                            <Lock className="w-2.5 h-2.5" />
+                        ) : (
+                            <Check className="w-3 h-3" />
+                        )}
+                        {confirmedMeals.has(mealKey) ? "Hoàn tất" : isFutureDate ? "Kế hoạch" : "Xong"}
                     </button>
                     <button
-                        onClick={() => handleSwapClick(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={confirmedMeals.has(mealKey) || !isTodayDate}
+                        onClick={() => handleSwapClick(meal.id, meal.plannedMealId, dayData.day, type, meal.mealName, meal.calories)}
+                        disabled={isFutureDate}
                         className={cn(
                             "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
-                            (confirmedMeals.has(mealKey) || !isTodayDate)
+                            isFutureDate
                                 ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
                                 : "bg-slate-800 text-white hover:bg-slate-900"
                         )}
@@ -259,6 +372,105 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                     </button>
                 </div>
             </div>
+
+            {/* Monthly Overview Navigation */}
+            {initialData.monthlyPlan && initialData.monthlyPlan.months && initialData.monthlyPlan.months.length > 0 && (
+                <div className="bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl shadow-black/5 space-y-6">
+                    <div className="flex flex-wrap gap-3">
+                        {initialData.monthlyPlan.months.map((month, idx) => {
+                            const isLocked = idx > 0;
+                            return (
+                                <button
+                                    key={idx}
+                                    onClick={() => !isLocked && setSelectedMonthIdx(idx)}
+                                    disabled={isLocked}
+                                    className={cn(
+                                        "px-6 py-2.5 rounded-2xl font-bold transition-all border shadow-sm flex items-center gap-2",
+                                        selectedMonthIdx === idx
+                                            ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-200"
+                                            : isLocked
+                                                ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60"
+                                                : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30 active:scale-95"
+                                    )}
+                                >
+                                    Tháng {month.month}
+                                    {isLocked && <Lock className="w-3 h-3" />}
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2 border-t border-slate-100/50 items-center">
+                        <div className="space-y-1 border-r border-slate-100/50 pr-4">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Giai đoạn</span>
+                            <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].title}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mục tiêu Calo</span>
+                            <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].dailyCalories} <span className="text-slate-400 text-xs font-medium">kcal/ngày</span></p>
+                        </div>
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Calo Tuần {currentWeek + 1}</span>
+                                    <div className="flex items-baseline gap-1.5">
+                                        <span className="text-base font-black text-slate-800">{completionStats.totalActual}</span>
+                                        <span className="text-[10px] font-bold text-slate-400 tracking-tighter">/ {completionStats.totalPlanned}</span>
+                                    </div>
+                                </div>
+                                <div className={cn(
+                                    "flex flex-col items-end px-2.5 py-1 rounded-xl border transition-all",
+                                    completionStats.diff > 0
+                                        ? "bg-orange-50 border-orange-200 text-orange-700"
+                                        : completionStats.totalActual === 0
+                                            ? "bg-slate-50 border-slate-100 text-slate-400"
+                                            : "bg-emerald-50 border-emerald-200 text-emerald-700"
+                                )}>
+                                    <span className="text-xs font-black">
+                                        {completionStats.totalActual === 0 ? "0" : completionStats.diff > 0 ? `+${completionStats.diff}` : `${completionStats.diff}`}
+                                    </span>
+                                    <span className="text-[8px] font-black uppercase opacity-60 tracking-widest">
+                                        {completionStats.totalActual === 0 ? "Bắt đầu" : completionStats.diff > 0 ? "Dư" : "Thiếu"}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                                <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${completionStats.percent}%` }}
+                                    className={cn(
+                                        "h-full rounded-full transition-all duration-700",
+                                        completionStats.percent > 100
+                                            ? "bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]"
+                                            : "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                                    )}
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-end">
+                            {completionStats.isCompleted ? (
+                                <button
+                                    onClick={currentWeek === totalWeeks - 1 ? onExtendPlan : nextWeek}
+                                    className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-500 transition-all active:scale-95 group uppercase tracking-widest"
+                                >
+                                    {currentWeek === totalWeeks - 1 ? (
+                                        <>Prompt Tuần {currentWeek + 2} <Sparkles className="w-3.5 h-3.5 group-hover:animate-pulse" /></>
+                                    ) : (
+                                        <>Sang Tuần {currentWeek + 2} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></>
+                                    )}
+                                </button>
+                            ) : (
+                                <div className="space-y-1 text-right max-w-[200px]">
+                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Ghi chú AI</span>
+                                    <p className="text-[11px] font-medium text-slate-500 italic leading-snug line-clamp-2">
+                                        "{initialData.monthlyPlan.months[selectedMonthIdx].note}"
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Mobile Day Selector */}
             <div className="md:hidden flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
@@ -308,8 +520,20 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                                     {format(actualDate, "EEEE", { locale: vi })} - {format(actualDate, "dd/MM/yyyy")}
                                 </span>
                                 <div className="flex flex-col items-end">
-                                    <span className="text-lg font-black text-emerald-400 leading-none">{dayData.totalCalories}</span>
-                                    <span className="text-[8px] font-black uppercase opacity-60 tracking-tighter">Total Kcal</span>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-lg font-black text-emerald-400 leading-none">{dayData.totalCalories}</span>
+                                        {dayData.totalPlannedCalories > 0 && dayData.totalCalories !== dayData.totalPlannedCalories && (
+                                            <span className={cn(
+                                                "text-[10px] font-bold",
+                                                dayData.totalCalories > dayData.totalPlannedCalories ? "text-red-400" : "text-blue-400"
+                                            )}>
+                                                {dayData.totalCalories > dayData.totalPlannedCalories ? '+' : ''}{dayData.totalCalories - dayData.totalPlannedCalories}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="text-[8px] font-black uppercase opacity-60 tracking-tighter">
+                                        Target: {dayData.totalPlannedCalories || dayData.totalCalories} kcal
+                                    </span>
                                 </div>
                             </div>
 
@@ -422,12 +646,28 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                         return (
                             <div
                                 key={`total-${dayIdx}`}
-                                className="py-6 rounded-3xl bg-emerald-50/50 border-2 border-emerald-100 flex flex-col items-center justify-center transition-all hover:bg-emerald-50"
+                                className="py-6 rounded-3xl bg-emerald-50/50 border-2 border-emerald-100 flex flex-col items-center justify-center transition-all hover:bg-emerald-50 relative group"
                             >
-                                <div className="text-2xl font-black text-emerald-600 tracking-tighter">
-                                    {dayData?.totalCalories || 0}
+                                <div className="flex items-baseline gap-1">
+                                    <div className="text-2xl font-black text-emerald-600 tracking-tighter">
+                                        {dayData?.totalCalories || 0}
+                                    </div>
+                                    {dayData && dayData.totalPlannedCalories > 0 && dayData.totalCalories !== dayData.totalPlannedCalories && (
+                                        <div className={cn(
+                                            "text-[10px] font-bold",
+                                            dayData.totalCalories > dayData.totalPlannedCalories ? "text-red-500" : "text-blue-500"
+                                        )}>
+                                            {dayData.totalCalories > dayData.totalPlannedCalories ? '+' : ''}{dayData.totalCalories - dayData.totalPlannedCalories}
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="text-[10px] font-black text-emerald-400/80 uppercase tracking-widest">kcal / ngày</div>
+
+                                {dayData && dayData.totalPlannedCalories > 0 && (
+                                    <div className="absolute -bottom-1 bg-white border border-emerald-100 text-slate-400 text-[8px] font-bold py-0.5 px-2 rounded-full shadow-sm">
+                                        Mục tiêu: {dayData.totalPlannedCalories}
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
@@ -445,7 +685,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({ initialD
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSuccess={onSwapSuccess}
-                plannedMealId={selectedMeal?.id}
+                plannedMealId={selectedMeal?.plannedMealId}
                 mealType={selectedMeal?.type || ""}
                 day={selectedMeal?.day || 0}
             />

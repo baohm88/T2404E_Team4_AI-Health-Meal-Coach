@@ -3,6 +3,7 @@ package com.t2404e.aihealthcoach.controller;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -64,5 +65,18 @@ public class MealPlanController {
 
                 return ResponseEntity.ok(
                                 ApiResponse.success("Meal plan regenerated successfully", mealPlan));
+        }
+
+        @PatchMapping("/extend")
+        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @Operation(summary = "Mở rộng thực đơn", description = "Yêu cầu AI tạo thêm 7 ngày thực đơn tiếp theo.")
+        public ResponseEntity<ApiResponse<MealPlanResponse>> extend(
+                        HttpServletRequest request) {
+
+                Long userId = RequestUtil.getUserId(request);
+                MealPlanResponse mealPlan = service.extendPlan(userId);
+
+                return ResponseEntity.ok(
+                                ApiResponse.success("Meal plan extended successfully", mealPlan));
         }
 }

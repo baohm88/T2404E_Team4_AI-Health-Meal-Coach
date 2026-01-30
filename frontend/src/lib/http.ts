@@ -38,7 +38,21 @@ http.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         // Only run in browser environment
         if (typeof window !== 'undefined') {
-            const token = localStorage.getItem(TOKEN_KEY);
+            let token = localStorage.getItem(TOKEN_KEY); // Standalone key
+
+            // Fallback: Check Zustand storage if standalone token not found
+            if (!token) {
+                const authData = localStorage.getItem('auth-storage');
+                if (authData) {
+                    try {
+                        const parsed = JSON.parse(authData);
+                        token = parsed.state?.accessToken;
+                    } catch (e) {
+                        console.error('Failed to parse auth-storage');
+                    }
+                }
+            }
+
             if (token && config.headers) {
                 config.headers.Authorization = `Bearer ${token}`;
             }

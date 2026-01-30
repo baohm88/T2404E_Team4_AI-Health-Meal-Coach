@@ -7,6 +7,7 @@
 
 'use client';
 
+import { Logo } from '@/components/ui/Logo';
 import { ADMIN_BRAND, ADMIN_MENU_ITEMS, AdminMenuItem } from '@/lib/constants/admin.constants';
 import { cn } from '@/lib/utils';
 import { authService } from '@/services/auth.service';
@@ -71,14 +72,9 @@ interface NavProps {
 const DesktopSidebar = ({ pathname, onLogout }: NavProps) => (
     <aside className="hidden lg:flex flex-col w-64 h-screen fixed left-0 top-0 bg-slate-900 p-6 z-40">
         {/* Logo */}
-        <Link href="/admin" className="flex items-center gap-3 mb-10">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
-                <Shield className="w-5 h-5 text-white" />
-            </div>
-            <div>
-                <span className="font-bold text-lg text-white block">{ADMIN_BRAND.NAME}</span>
-                <span className="text-xs text-slate-400">Quản trị hệ thống</span>
-            </div>
+        <Link href="/admin" className="mb-10 block transition-transform active:scale-95">
+            <Logo light />
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1 block px-1">Admin Portal</span>
         </Link>
 
         {/* Navigation */}

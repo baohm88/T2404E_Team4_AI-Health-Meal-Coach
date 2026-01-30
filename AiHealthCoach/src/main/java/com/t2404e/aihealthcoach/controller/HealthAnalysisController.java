@@ -1,7 +1,6 @@
 package com.t2404e.aihealthcoach.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,7 +27,6 @@ public class HealthAnalysisController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Lưu kết quả phân tích", description = "Lưu lại JSON kết quả phân tích AI vào lịch sử.")
     public ResponseEntity<ApiResponse<Void>> save(
             @RequestBody String analysisJson,
@@ -39,24 +37,23 @@ public class HealthAnalysisController {
         service.saveOrUpdate(userId, analysisJson);
 
         return ResponseEntity.ok(
-                ApiResponse.success("Health analysis saved successfully", null)
-        );
+                ApiResponse.success("Health analysis saved successfully", null));
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('USER','ADMIN')")
     @Operation(summary = "Lấy lịch sử phân tích gần nhất", description = "Lấy kết quả phân tích AI gần nhất của người dùng.")
     public ResponseEntity<ApiResponse<String>> get(
             HttpServletRequest request) {
 
         Long userId = RequestUtil.getUserId(request);
+        if (userId == null) {
+            return ResponseEntity
+                    .ok(ApiResponse.error("Vui lòng đăng nhập hoặc hoàn thành khảo sát để xem kết quả phân tích."));
+        }
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Health analysis fetched successfully",
-                        service.getByUserId(userId)
-                )
-        );
+                        service.getByUserId(userId)));
     }
 }
-
