@@ -79,4 +79,17 @@ public class MealPlanController {
                 return ResponseEntity.ok(
                                 ApiResponse.success("Meal plan extended successfully", mealPlan));
         }
+
+        @PostMapping("/reset")
+        @PreAuthorize("hasAnyRole('USER','ADMIN')")
+        @Operation(summary = "Reset lộ trình", description = "Xóa lộ trình hiện tại và quay lại tuần 1.")
+        public ResponseEntity<ApiResponse<MealPlanResponse>> reset(
+                        HttpServletRequest request) {
+
+                Long userId = RequestUtil.getUserId(request);
+                MealPlanResponse mealPlan = service.resetPlan(userId);
+
+                return ResponseEntity.ok(
+                                ApiResponse.success("Meal plan resetted to week 1", mealPlan));
+        }
 }

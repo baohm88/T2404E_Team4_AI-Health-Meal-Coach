@@ -32,6 +32,21 @@ export default function MealPlanPage() {
         }
     }
 
+    const handleGenerate = async () => {
+        const promise = mealPlanService.generateMealPlan();
+        toast.promise(promise, {
+            loading: 'Đang khởi tạo lộ trình dinh dưỡng AI...',
+            success: (res) => {
+                if (res.data) {
+                    setPlanData(res.data);
+                    setError(null);
+                }
+                return 'Đã khởi tạo lộ trình thành công! Chúc bạn đạt được mục tiêu.';
+            },
+            error: (err) => err.response?.data?.message || 'Lỗi khi khởi tạo lộ trình.',
+        });
+    };
+
     const handleRegenerate = async () => {
         const promise = mealPlanService.regenerateMealPlan();
         toast.promise(promise, {
@@ -64,23 +79,41 @@ export default function MealPlanPage() {
         );
     }
 
-    if (error) {
+    if (error && !planData) {
+        const isNotFound = error.includes("Không tìm thấy") || error.includes("Vui lòng tạo mới");
         return (
             <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-                <div className="bg-white p-8 rounded-3xl shadow-xl border border-slate-100 max-w-md w-full text-center space-y-6">
-                    <div className="mx-auto w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center text-red-500">
-                        <AlertCircle className="w-8 h-8" />
+                <div className="bg-white p-10 rounded-3xl shadow-2xl border border-slate-100 max-w-lg w-full text-center space-y-8">
+                    <div className="mx-auto w-20 h-20 bg-emerald-50 rounded-3xl flex items-center justify-center text-emerald-600 ring-8 ring-emerald-50/50">
+                        {isNotFound ? <Sparkles className="w-10 h-10" /> : <AlertCircle className="w-10 h-10" />}
                     </div>
-                    <div className="space-y-2">
-                        <h2 className="text-xl font-bold text-slate-800">Thông báo</h2>
-                        <p className="text-slate-500">{error}</p>
+                    <div className="space-y-3">
+                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                            {isNotFound ? "Sẵn sàng cho lộ trình mới?" : "Đã có lỗi xảy ra"}
+                        </h2>
+                        <p className="text-slate-500 font-medium leading-relaxed px-4">
+                            {error}
+                        </p>
                     </div>
-                    <button
-                        onClick={fetchMealPlan}
-                        className="w-full py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-colors shadow-lg shadow-emerald-500/30"
-                    >
-                        Thử lại
-                    </button>
+
+                    <div className="flex flex-col gap-3">
+                        {isNotFound ? (
+                            <button
+                                onClick={handleGenerate}
+                                className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/30 active:scale-[0.98] flex items-center justify-center gap-2"
+                            >
+                                <Sparkles className="w-5 h-5 fill-white/20" />
+                                KHỞI TẠO LỘ TRÌNH AI
+                            </button>
+                        ) : (
+                            <button
+                                onClick={fetchMealPlan}
+                                className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-600 transition-all shadow-xl shadow-emerald-500/30 active:scale-[0.98]"
+                            >
+                                THỬ LẠI
+                            </button>
+                        )}
+                    </div>
                 </div>
             </div>
         );
@@ -99,13 +132,25 @@ export default function MealPlanPage() {
                     </p>
                 </div>
 
-                <button
-                    onClick={handleRegenerate}
-                    className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 rounded-2xl font-bold border border-slate-200 hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-95"
-                >
-                    <RefreshCcw className="w-4 h-4" />
-                    Tạo lại lộ trình
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={handleRegenerate}
+                        disabled={!planData}
+                        className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 rounded-2xl font-bold border border-slate-200 hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                    >
+                        <RefreshCcw className="w-4 h-4" />
+                        Tái tạo lộ trình
+                    </button>
+                    {!planData && (
+                        <button
+                            onClick={handleGenerate}
+                            className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                        >
+                            <Sparkles className="w-4 h-4" />
+                            Khởi tạo ngay
+                        </button>
+                    )}
+                </div>
             </div>
 
             <div className="max-w-7xl mx-auto px-4 mb-4 flex items-center gap-2">
@@ -121,8 +166,23 @@ export default function MealPlanPage() {
                     startDate={planData?.startDate || "Chưa xác định"}
                 />
             ) : (
-                <div className="text-center py-20 text-slate-400 italic">
-                    Chưa có dữ liệu lộ trình ăn uống.
+                <div className="max-w-7xl mx-auto px-4">
+                    <div className="bg-white/60 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-[32px] py-32 text-center space-y-6">
+                        <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto text-slate-400">
+                            <Sparkles className="w-10 h-10" />
+                        </div>
+                        <div className="space-y-2">
+                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chưa có dữ liệu lộ trình</h3>
+                            <p className="text-slate-500 font-medium">Click nút bên dưới để AI tổng hợp thực đơn thông minh cho bạn</p>
+                        </div>
+                        <button
+                            onClick={handleGenerate}
+                            className="inline-flex items-center gap-3 px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-600 transition-all shadow-2xl shadow-emerald-500/20 active:scale-95"
+                        >
+                            <Sparkles className="w-6 h-6 fill-white/20" />
+                            KHỞI TẠO LỘ TRÌNH AI
+                        </button>
+                    </div>
                 </div>
             )}
         </main>

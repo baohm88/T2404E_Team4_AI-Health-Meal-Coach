@@ -432,6 +432,14 @@ public class MealPlanServiceImpl implements MealPlanService {
                 }
         }
 
+        @Override
+        @Transactional
+        public MealPlanResponse resetPlan(Long userId) {
+                // Just calling generateForUser is enough as it wipes existing plans and starts
+                // from Day 1
+                return generateForUser(userId);
+        }
+
         private String mapToVietnameseCategory(String category) {
                 if (category == null)
                         return "Phụ";
