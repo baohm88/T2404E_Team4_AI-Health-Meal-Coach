@@ -10,4 +10,6 @@ public interface MealPlanService {
     MealPlanResponse regenerate(Long userId);
 
     MealPlanResponse extendPlan(Long userId);
+
+    MealPlanResponse resetPlan(Long userId);
 }

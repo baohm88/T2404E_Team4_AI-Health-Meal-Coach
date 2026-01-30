@@ -69,6 +69,13 @@ export const mealPlanService = {
     },
 
     /**
+     * Reset lộ trình về tuần 1
+     */
+    resetMealPlan: async (): Promise<ApiResponse<MealPlanResponse>> => {
+        return http.post('/meal-plans/reset');
+    },
+
+    /**
      * Không còn cần parse phức tạp vì backend đã trả về object chuẩn
      */
     parsePlanJson: (data: any): MealPlanResponse => {

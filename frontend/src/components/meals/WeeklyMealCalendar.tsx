@@ -7,12 +7,15 @@ import { vi } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import {
     Calendar, Check, ChevronLeft, ChevronRight, Coffee,
-    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles
+    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles, Trophy
 } from "lucide-react";
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, memo } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
 import { MealLogModal } from "./MealLogModal";
+import { EvaluationModal } from "./EvaluationModal";
+import { mealPlanService } from "@/services/meal-plan.service";
+import { useRouter } from "next/navigation";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -68,6 +71,116 @@ const mealTypeColors: Record<string, string> = {
     Phụ: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
+// Extracted MealCard component to prevent flickering on parent re-renders
+const MealCard = memo(({
+    meal,
+    dayData,
+    type,
+    isTodayDate,
+    isPastDate,
+    isFutureDate,
+    mealKey,
+    confirmedMeals,
+    handleCheckIn,
+    handleSwapClick,
+    loggingId
+}: any) => (
+    <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        layout // Add layout prop for smoother transitions
+        className={cn(
+            "h-full p-3 rounded-2xl border flex flex-col transition-all duration-300 relative",
+            isTodayDate ? "bg-emerald-50/50 border-emerald-200 ring-2 ring-emerald-500/10" : "bg-white border-slate-100",
+            isPastDate && "bg-slate-50/80 border-slate-200 grayscale-[0.2] opacity-80",
+            isFutureDate && "bg-slate-50/30 border-slate-100 opacity-60",
+            mealKey && confirmedMeals.has(mealKey) && "border-emerald-500 bg-emerald-50/40"
+        )}
+    >
+        {mealKey && confirmedMeals.has(mealKey) && (
+            <div className="absolute top-2 right-2 p-1 bg-emerald-500 rounded-full text-white shadow-sm z-10">
+                <Check className="w-3 h-3" strokeWidth={4} />
+            </div>
+        )}
+
+        <div className="flex items-center gap-1.5 mb-2">
+            <div className={cn("p-1.5 rounded-lg border", mealTypeColors[type])}>
+                {React.cloneElement(mealTypeIcons[type] as React.ReactElement<any>, { className: "w-3 h-3" })}
+            </div>
+            <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{type}</span>
+        </div>
+
+        <div className="space-y-1.5 mb-3">
+            <h4 className={cn(
+                "text-sm font-bold leading-tight transition-colors line-clamp-2",
+                isTodayDate ? "text-emerald-800" : "text-slate-800",
+                mealKey && confirmedMeals.has(mealKey) && "text-emerald-700"
+            )}>
+                {meal.mealName}
+            </h4>
+            <div className="flex flex-wrap gap-1 items-center">
+                <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
+                    {meal.quantity}
+                </span>
+                <span className={cn(
+                    "text-[10px] font-black italic",
+                    meal.checkedIn && meal.plannedCalories > 0 && meal.calories > meal.plannedCalories ? "text-red-500" : "text-emerald-600"
+                )}>
+                    {meal.calories} kcal
+                </span>
+                {meal.checkedIn && meal.plannedCalories > 0 && meal.calories !== meal.plannedCalories && (
+                    <span className={cn(
+                        "text-[8px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5",
+                        meal.calories > meal.plannedCalories ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
+                    )}>
+                        {meal.calories > meal.plannedCalories ? '↑' : '↓'}
+                        {Math.abs(meal.calories - meal.plannedCalories)}
+                    </span>
+                )}
+            </div>
+        </div>
+
+        {mealKey && (
+            <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
+                <button
+                    onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
+                    disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
+                    className={cn(
+                        "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
+                        (confirmedMeals.has(mealKey) || isFutureDate)
+                            ? "bg-slate-100 text-slate-400 cursor-not-allowed"
+                            : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
+                    )}
+                >
+                    {loggingId === mealKey ? (
+                        <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                    ) : isFutureDate ? (
+                        <Lock className="w-2.5 h-2.5" />
+                    ) : (
+                        <Check className="w-3 h-3" />
+                    )}
+                    {confirmedMeals.has(mealKey) ? "Hoàn tất" : isFutureDate ? "Kế hoạch" : "Xong"}
+                </button>
+                <button
+                    onClick={() => handleSwapClick(meal.id, meal.plannedMealId, dayData.day, type, meal.mealName, meal.calories)}
+                    disabled={isFutureDate}
+                    className={cn(
+                        "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
+                        isFutureDate
+                            ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
+                            : "bg-slate-800 text-white hover:bg-slate-900"
+                    )}
+                >
+                    <RefreshCw className="w-3 h-3" />
+                    Đổi
+                </button>
+            </div>
+        )}
+    </motion.div>
+));
+
+MealCard.displayName = "MealCard";
+
 export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     initialData,
     startDate,
@@ -96,6 +209,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMonthIdx, setSelectedMonthIdx] = useState(0);
     const [selectedMeal, setSelectedMeal] = useState<{ id: number; plannedMealId?: number; day: number; type: string; mealName: string; calories: number } | null>(null);
+    const [isEvaluationOpen, setIsEvaluationOpen] = useState(false);
+    const [isResetLoading, setIsResetLoading] = useState(false);
+    const router = useRouter();
+
     const [confirmedMeals, setConfirmedMeals] = useState<Set<string>>(() => {
         const initialConfirmed = new Set<string>();
         initialData.mealPlan.forEach(day => {
@@ -152,11 +269,12 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     }, [initialData.mealPlan]);
 
     const completionStats = useMemo(() => {
-        if (!currentWeekData || currentWeekData.length === 0) return { percent: 0, totalPlanned: 0, totalActual: 0, isCompleted: false };
+        if (!currentWeekData || currentWeekData.length === 0) return { percent: 0, totalPlanned: 0, totalActual: 0, isCompleted: false, exceededDetails: [] };
         let totalPlanned = 0;
         let totalActual = 0;
         let totalMealsCount = 0;
         let checkedMealsCount = 0;
+        const exceededDetails: { day: number; type: string; excess: number }[] = [];
 
         currentWeekData.forEach(day => {
             day.meals.forEach(meal => {
@@ -165,21 +283,34 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                     totalPlanned += meal.plannedCalories;
                     if (meal.checkedIn || confirmedMeals.has(`${day.day}-${meal.type}`)) {
                         checkedMealsCount++;
-                        totalActual += meal.calories || meal.plannedCalories;
+                        const actual = meal.calories || meal.plannedCalories;
+                        totalActual += actual;
+
+                        if (actual > meal.plannedCalories) {
+                            exceededDetails.push({
+                                day: day.day,
+                                type: meal.type,
+                                excess: actual - meal.plannedCalories
+                            });
+                        }
                     }
                 }
             });
         });
 
-        const percent = totalPlanned > 0 ? Math.min(Math.round((totalActual / totalPlanned) * 100), 100) : 0;
+        const mealCompliance = totalMealsCount > 0 ? Math.round((checkedMealsCount / totalMealsCount) * 100) : 0;
+        const calorieCompliance = totalPlanned > 0 ? Math.max(0, Math.round(100 - (Math.abs(totalActual - totalPlanned) / totalPlanned) * 100)) : 0;
         const isCompleted = totalMealsCount > 0 && checkedMealsCount === totalMealsCount;
 
         return {
-            percent,
+            mealCompliance,
+            calorieCompliance,
             totalPlanned,
             totalActual,
+            totalMealsCount,
+            checkedMealsCount,
             isCompleted,
-            diff: totalActual - totalPlanned
+            exceededDetails
         };
     }, [currentWeekData, confirmedMeals]);
 
@@ -203,6 +334,45 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
             toast.error(`Lỗi: ${errorMsg}`);
         } finally {
             setLoggingId(null);
+        }
+    };
+
+    const handleNextWeekEvaluation = () => {
+        setIsEvaluationOpen(true);
+    };
+
+    const confirmNextWeek = async () => {
+        try {
+            setIsResetLoading(true);
+            if (currentWeek === totalWeeks - 1) {
+                if (onExtendPlan) onExtendPlan();
+            } else {
+                nextWeek();
+            }
+            setIsEvaluationOpen(false);
+            toast.success("Tuyệt vời! Hãy tiếp tục duy trì phong độ nhé.");
+        } catch (error) {
+            toast.error("Đã có lỗi xảy ra khi chuyển tuần.");
+        } finally {
+            setIsResetLoading(false);
+        }
+    };
+
+    const handleResetPlan = async () => {
+        try {
+            setIsResetLoading(true);
+            const res = await mealPlanService.resetMealPlan();
+            if (res.success) {
+                toast.success("Lộ trình đã được thiết lập lại từ Tuần 1.");
+                window.location.reload(); // Refresh to get new data
+            } else {
+                toast.error(res.message || "Không thể reset lộ trình.");
+            }
+        } catch (error) {
+            toast.error("Lỗi kết nối máy chủ.");
+        } finally {
+            setIsResetLoading(false);
+            setIsEvaluationOpen(false);
         }
     };
 
@@ -244,101 +414,6 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
         }
     };
 
-    // Helper component for Meal Card to avoid duplication
-    const MealCard = ({ meal, dayData, type, isTodayDate, isPastDate, isFutureDate, mealKey }: any) => (
-        <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={cn(
-                "h-full p-3 rounded-2xl border flex flex-col transition-all duration-300 relative",
-                isTodayDate ? "bg-emerald-50/50 border-emerald-200 ring-2 ring-emerald-500/10" : "bg-white border-slate-100",
-                isPastDate && "bg-slate-50/80 border-slate-200 grayscale-[0.2] opacity-80",
-                isFutureDate && "bg-slate-50/30 border-slate-100 opacity-60",
-                mealKey && confirmedMeals.has(mealKey) && "border-emerald-500 bg-emerald-50/40"
-            )}
-        >
-            {mealKey && confirmedMeals.has(mealKey) && (
-                <div className="absolute top-2 right-2 p-1 bg-emerald-500 rounded-full text-white shadow-sm z-10">
-                    <Check className="w-3 h-3" strokeWidth={4} />
-                </div>
-            )}
-
-            <div className="flex items-center gap-1.5 mb-2">
-                <div className={cn("p-1.5 rounded-lg border", mealTypeColors[type])}>
-                    {React.cloneElement(mealTypeIcons[type] as React.ReactElement<any>, { className: "w-3 h-3" })}
-                </div>
-                <span className="text-[9px] font-black uppercase text-slate-400 tracking-tighter">{type}</span>
-            </div>
-
-            <div className="space-y-1.5 mb-3">
-                <h4 className={cn(
-                    "text-sm font-bold leading-tight transition-colors line-clamp-2",
-                    isTodayDate ? "text-emerald-800" : "text-slate-800",
-                    mealKey && confirmedMeals.has(mealKey) && "text-emerald-700"
-                )}>
-                    {meal.mealName}
-                </h4>
-                <div className="flex flex-wrap gap-1 items-center">
-                    <span className="text-[9px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md uppercase">
-                        {meal.quantity}
-                    </span>
-                    <span className={cn(
-                        "text-[10px] font-black italic",
-                        meal.checkedIn && meal.plannedCalories > 0 && meal.calories > meal.plannedCalories ? "text-red-500" : "text-emerald-600"
-                    )}>
-                        {meal.calories} kcal
-                    </span>
-                    {meal.checkedIn && meal.plannedCalories > 0 && meal.calories !== meal.plannedCalories && (
-                        <span className={cn(
-                            "text-[8px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-0.5",
-                            meal.calories > meal.plannedCalories ? "bg-red-50 text-red-600" : "bg-blue-50 text-blue-600"
-                        )}>
-                            {meal.calories > meal.plannedCalories ? '↑' : '↓'}
-                            {Math.abs(meal.calories - meal.plannedCalories)}
-                        </span>
-                    )}
-                </div>
-            </div>
-
-            {mealKey && (
-                <div className="mt-auto pt-2 border-t border-slate-100/50 flex gap-1.5">
-                    <button
-                        onClick={() => handleCheckIn(meal.id, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={loggingId === mealKey || confirmedMeals.has(mealKey) || isFutureDate}
-                        className={cn(
-                            "flex-1 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1",
-                            (confirmedMeals.has(mealKey) || isFutureDate)
-                                ? "bg-slate-100 text-slate-400 cursor-not-allowed"
-                                : "bg-emerald-500 text-white hover:bg-emerald-600 shadow-md shadow-emerald-500/10 active:scale-95"
-                        )}
-                    >
-                        {loggingId === mealKey ? (
-                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
-                        ) : isFutureDate ? (
-                            <Lock className="w-2.5 h-2.5" />
-                        ) : (
-                            <Check className="w-3 h-3" />
-                        )}
-                        {confirmedMeals.has(mealKey) ? "Hoàn tất" : isFutureDate ? "Kế hoạch" : "Xong"}
-                    </button>
-                    <button
-                        onClick={() => handleSwapClick(meal.id, meal.plannedMealId, dayData.day, type, meal.mealName, meal.calories)}
-                        disabled={isFutureDate}
-                        className={cn(
-                            "p-1.5 rounded-lg text-[10px] font-black transition-all flex items-center justify-center gap-1 active:scale-95",
-                            isFutureDate
-                                ? "bg-slate-50 text-slate-300 cursor-not-allowed opacity-50"
-                                : "bg-slate-800 text-white hover:bg-slate-900"
-                        )}
-                    >
-                        <RefreshCw className="w-3 h-3" />
-                        Đổi
-                    </button>
-                </div>
-            )}
-        </motion.div>
-    );
-
     return (
         <div className="w-full max-w-7xl mx-auto p-4 md:p-6 space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 backdrop-blur-md p-4 rounded-3xl border border-white/20 shadow-xl shadow-black/5">
@@ -364,113 +439,118 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                         Tuần {currentWeek + 1}
                     </span>
                     <button
-                        onClick={nextWeek}
-                        disabled={currentWeek === totalWeeks - 1}
-                        className="p-2 hover:bg-white rounded-xl transition-all disabled:opacity-30 disabled:cursor-not-allowed shadow-sm active:scale-95 bg-white/50"
+                        onClick={completionStats.isCompleted ? handleNextWeekEvaluation : nextWeek}
+                        disabled={currentWeek === totalWeeks - 1 && !completionStats.isCompleted}
+                        className={cn(
+                            "p-2 rounded-xl transition-all shadow-sm active:scale-95",
+                            completionStats.isCompleted
+                                ? "bg-amber-500 text-white shadow-amber-200 shadow-lg hover:bg-amber-600"
+                                : "bg-white/50 hover:bg-white text-slate-600 disabled:opacity-30 disabled:cursor-not-allowed"
+                        )}
                     >
-                        <ChevronRight className="w-5 h-5 text-slate-600" />
+                        {completionStats.isCompleted ? <Trophy className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
                     </button>
                 </div>
             </div>
 
             {/* Monthly Overview Navigation */}
-            {initialData.monthlyPlan && initialData.monthlyPlan.months && initialData.monthlyPlan.months.length > 0 && (
-                <div className="bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl shadow-black/5 space-y-6">
-                    <div className="flex flex-wrap gap-3">
-                        {initialData.monthlyPlan.months.map((month, idx) => {
-                            const isLocked = idx > 0;
-                            return (
-                                <button
-                                    key={idx}
-                                    onClick={() => !isLocked && setSelectedMonthIdx(idx)}
-                                    disabled={isLocked}
-                                    className={cn(
-                                        "px-6 py-2.5 rounded-2xl font-bold transition-all border shadow-sm flex items-center gap-2",
-                                        selectedMonthIdx === idx
-                                            ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-200"
-                                            : isLocked
-                                                ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60"
-                                                : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30 active:scale-95"
-                                    )}
-                                >
-                                    Tháng {month.month}
-                                    {isLocked && <Lock className="w-3 h-3" />}
-                                </button>
-                            );
-                        })}
-                    </div>
+            {
+                initialData.monthlyPlan && initialData.monthlyPlan.months && initialData.monthlyPlan.months.length > 0 && (
+                    <div className="bg-white/40 backdrop-blur-md p-6 rounded-3xl border border-white/20 shadow-xl shadow-black/5 space-y-6">
+                        <div className="flex flex-wrap gap-3">
+                            {initialData.monthlyPlan.months.map((month, idx) => {
+                                const isLocked = idx > 0;
+                                return (
+                                    <button
+                                        key={idx}
+                                        onClick={() => !isLocked && setSelectedMonthIdx(idx)}
+                                        disabled={isLocked}
+                                        className={cn(
+                                            "px-6 py-2.5 rounded-2xl font-bold transition-all border shadow-sm flex items-center gap-2",
+                                            selectedMonthIdx === idx
+                                                ? "bg-emerald-500 border-emerald-400 text-white shadow-lg shadow-emerald-200"
+                                                : isLocked
+                                                    ? "bg-slate-50 border-slate-100 text-slate-300 cursor-not-allowed opacity-60"
+                                                    : "bg-white border-slate-200 text-slate-600 hover:border-emerald-200 hover:bg-emerald-50/30 active:scale-95"
+                                        )}
+                                    >
+                                        Tháng {month.month}
+                                        {isLocked && <Lock className="w-3 h-3" />}
+                                    </button>
+                                );
+                            })}
+                        </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2 border-t border-slate-100/50 items-center">
-                        <div className="space-y-1 border-r border-slate-100/50 pr-4">
-                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Giai đoạn</span>
-                            <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].title}</p>
-                        </div>
-                        <div className="space-y-1">
-                            <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mục tiêu Calo</span>
-                            <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].dailyCalories} <span className="text-slate-400 text-xs font-medium">kcal/ngày</span></p>
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex flex-col">
-                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Calo Tuần {currentWeek + 1}</span>
-                                    <div className="flex items-baseline gap-1.5">
-                                        <span className="text-base font-black text-slate-800">{completionStats.totalActual}</span>
-                                        <span className="text-[10px] font-bold text-slate-400 tracking-tighter">/ {completionStats.totalPlanned}</span>
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 pt-2 border-t border-slate-100/50 items-center">
+                            <div className="space-y-1 border-r border-slate-100/50 pr-4">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Giai đoạn</span>
+                                <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].title}</p>
+                            </div>
+                            <div className="space-y-1">
+                                <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Mục tiêu Calo</span>
+                                <p className="text-lg font-bold text-slate-800">{initialData.monthlyPlan.months[selectedMonthIdx].dailyCalories} <span className="text-slate-400 text-xs font-medium">kcal/ngày</span></p>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col">
+                                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest">Calo Tuần {currentWeek + 1}</span>
+                                        <div className="flex items-baseline gap-1.5">
+                                            <span className="text-base font-black text-slate-800">{completionStats.totalActual}</span>
+                                            <span className="text-[10px] font-bold text-slate-400 tracking-tighter">/ {completionStats.totalPlanned}</span>
+                                        </div>
                                     </div>
                                 </div>
-                                <div className={cn(
-                                    "flex flex-col items-end px-2.5 py-1 rounded-xl border transition-all",
-                                    completionStats.diff > 0
-                                        ? "bg-orange-50 border-orange-200 text-orange-700"
-                                        : completionStats.totalActual === 0
-                                            ? "bg-slate-50 border-slate-100 text-slate-400"
-                                            : "bg-emerald-50 border-emerald-200 text-emerald-700"
-                                )}>
-                                    <span className="text-xs font-black">
-                                        {completionStats.totalActual === 0 ? "0" : completionStats.diff > 0 ? `+${completionStats.diff}` : `${completionStats.diff}`}
-                                    </span>
-                                    <span className="text-[8px] font-black uppercase opacity-60 tracking-widest">
-                                        {completionStats.totalActual === 0 ? "Bắt đầu" : completionStats.diff > 0 ? "Dư" : "Thiếu"}
-                                    </span>
+                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${completionStats.mealCompliance}%` }}
+                                        className={cn(
+                                            "h-full rounded-full transition-all duration-700",
+                                            completionStats.mealCompliance >= 80
+                                                ? "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                                                : "bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]"
+                                        )}
+                                    />
                                 </div>
                             </div>
-                            <div className="h-2 bg-slate-100 rounded-full overflow-hidden relative">
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${completionStats.percent}%` }}
-                                    className={cn(
-                                        "h-full rounded-full transition-all duration-700",
-                                        completionStats.percent > 100
-                                            ? "bg-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.4)]"
-                                            : "bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                                    )}
-                                />
+                            <div className="flex justify-end">
+                                {completionStats.isCompleted ? (
+                                    <button
+                                        onClick={handleNextWeekEvaluation}
+                                        className="px-6 py-3 bg-amber-500 text-white rounded-2xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-amber-600 transition-all active:scale-95 group uppercase tracking-widest"
+                                    >
+                                        Đánh giá hoàn thiện lộ trình <Trophy className="w-3.5 h-3.5 group-hover:animate-bounce" />
+                                    </button>
+                                ) : (
+                                    <div className="space-y-1 text-right max-w-[200px]">
+                                        <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Ghi chú AI</span>
+                                        <p className="text-[11px] font-medium text-slate-500 italic leading-snug line-clamp-2">
+                                            "{initialData.monthlyPlan.months[selectedMonthIdx].note}"
+                                        </p>
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                        <div className="flex justify-end">
-                            {completionStats.isCompleted ? (
-                                <button
-                                    onClick={currentWeek === totalWeeks - 1 ? onExtendPlan : nextWeek}
-                                    className="px-6 py-3 bg-slate-900 text-white rounded-2xl font-black text-xs flex items-center gap-2 shadow-xl hover:bg-emerald-500 transition-all active:scale-95 group uppercase tracking-widest"
-                                >
-                                    {currentWeek === totalWeeks - 1 ? (
-                                        <>Prompt Tuần {currentWeek + 2} <Sparkles className="w-3.5 h-3.5 group-hover:animate-pulse" /></>
-                                    ) : (
-                                        <>Sang Tuần {currentWeek + 2} <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" /></>
-                                    )}
-                                </button>
-                            ) : (
-                                <div className="space-y-1 text-right max-w-[200px]">
-                                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-widest block">Ghi chú AI</span>
-                                    <p className="text-[11px] font-medium text-slate-500 italic leading-snug line-clamp-2">
-                                        "{initialData.monthlyPlan.months[selectedMonthIdx].note}"
-                                    </p>
-                                </div>
-                            )}
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
+
+            <EvaluationModal
+                isOpen={isEvaluationOpen}
+                onClose={() => setIsEvaluationOpen(false)}
+                stats={{
+                    totalMeals: completionStats.totalMealsCount,
+                    checkedMeals: completionStats.checkedMealsCount,
+                    mealCompliance: completionStats.mealCompliance,
+                    totalPlannedCal: completionStats.totalPlanned,
+                    totalActualCal: completionStats.totalActual,
+                    calorieCompliance: completionStats.calorieCompliance,
+                    exceededDetails: completionStats.exceededDetails
+                }}
+                onSuccess={confirmNextWeek}
+                onFailure={handleResetPlan}
+                isLoading={isResetLoading}
+            />
 
             {/* Mobile Day Selector */}
             <div className="md:hidden flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
@@ -522,14 +602,6 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                 <div className="flex flex-col items-end">
                                     <div className="flex items-center gap-1">
                                         <span className="text-lg font-black text-emerald-400 leading-none">{dayData.totalCalories}</span>
-                                        {dayData.totalPlannedCalories > 0 && dayData.totalCalories !== dayData.totalPlannedCalories && (
-                                            <span className={cn(
-                                                "text-[10px] font-bold",
-                                                dayData.totalCalories > dayData.totalPlannedCalories ? "text-red-400" : "text-blue-400"
-                                            )}>
-                                                {dayData.totalCalories > dayData.totalPlannedCalories ? '+' : ''}{dayData.totalCalories - dayData.totalPlannedCalories}
-                                            </span>
-                                        )}
                                     </div>
                                     <span className="text-[8px] font-black uppercase opacity-60 tracking-tighter">
                                         Target: {dayData.totalPlannedCalories || dayData.totalCalories} kcal
@@ -554,6 +626,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                             isPastDate={isPastDate}
                                             isFutureDate={isFutureDate}
                                             mealKey={mealKey}
+                                            confirmedMeals={confirmedMeals}
+                                            handleCheckIn={handleCheckIn}
+                                            handleSwapClick={handleSwapClick}
+                                            loggingId={loggingId}
                                         />
                                     ) : (
                                         <div key={type} className="p-4 border-2 border-dashed border-slate-100 rounded-2xl text-center text-slate-300 text-xs italic">
@@ -625,6 +701,10 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                                 isPastDate={isPastDate}
                                                 isFutureDate={isFutureDate}
                                                 mealKey={mealKey}
+                                                confirmedMeals={confirmedMeals}
+                                                handleCheckIn={handleCheckIn}
+                                                handleSwapClick={handleSwapClick}
+                                                loggingId={loggingId}
                                             />
                                         ) : (
                                             <div className="h-full min-h-[140px] rounded-3xl border border-dashed border-slate-100 bg-slate-50/20 flex items-center justify-center opacity-30 italic text-[10px] text-slate-400">
@@ -689,6 +769,6 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                 mealType={selectedMeal?.type || ""}
                 day={selectedMeal?.day || 0}
             />
-        </div>
+        </div >
     );
 };
