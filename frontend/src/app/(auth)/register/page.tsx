@@ -9,6 +9,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
 import { useRegisterForm } from '@/hooks/use-auth-form';
 
@@ -25,6 +26,9 @@ export default function RegisterPage() {
         showPassword,
         togglePasswordVisibility,
     } = useRegisterForm();
+
+    const searchParams = useSearchParams();
+    const isFromOnboarding = searchParams.get('from') === 'onboarding';
 
     return (
         <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-2xl p-8 md:p-10 border border-white/50">
@@ -129,12 +133,14 @@ export default function RegisterPage() {
             </form>
 
             {/* Login Link */}
-            <p className="text-center mt-8 text-slate-600">
-                Bạn đã có tài khoản?{' '}
-                <Link href="/login" className="text-primary font-semibold hover:underline">
-                    Đăng nhập
-                </Link>
-            </p>
+            {!isFromOnboarding && (
+                <p className="text-center mt-8 text-slate-600">
+                    Bạn đã có tài khoản?{' '}
+                    <Link href="/login" className="text-primary font-semibold hover:underline">
+                        Đăng nhập
+                    </Link>
+                </p>
+            )}
         </div>
     );
 }

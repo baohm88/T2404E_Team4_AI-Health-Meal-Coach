@@ -14,40 +14,45 @@ import {
     ArrowRight, Github, Linkedin, Mail
 } from 'lucide-react';
 
+import haManhBaoImg from '@/assets/HaManhBao.jpg';
+import giaPhatImg from '@/assets/GiaPhat.jpg';
+import tongMinhImg from '@/assets/tongMinhImg.jpg';
+import luuThanhImg from '@/assets/luuThanhImg.jpg';
+
 const TEAM_MEMBERS = [
     {
         name: 'Hà Mạnh Bảo',
-        role: 'Team Lead / Backend Engineer',
+        role: 'Team Lead / Full-stack Developer',
         bio: 'Lãnh đạo dự án AI Health Coach, điều phối quá trình phát triển và định hướng kiến trúc hệ thống.',
-        avatar: 'https://ui-avatars.com/api/?name=Ha+Manh+Bao&background=059669&color=fff&size=200',
+        avatar: haManhBaoImg.src,
         icon: Users,
     },
     {
         name: 'Tống Quang Minh',
         role: 'Full-stack Developer',
         bio: 'Xây dựng nhịp cầu giữa dữ liệu và giao diện, đảm bảo sự mượt mà trong từng tương tác người dùng.',
-        avatar: 'https://ui-avatars.com/api/?name=Tong+Quang+Minh&background=10b981&color=fff&size=200',
+        avatar: tongMinhImg.src,
         icon: Code,
     },
     {
         name: 'Trần Văn Đức',
-        role: 'Fullstack AI Engineer',
+        role: 'Frontend Developer',
         bio: 'Phát triển toàn diện hệ thống từ mô hình AI, kiến trúc Backend đến trải nghiệm Frontend mượt mà.',
-        avatar: 'https://ui-avatars.com/api/?name=Tran+Van+Duc&background=22c55e&color=fff&size=200',
+        avatar: 'https://ui-avatars.com/api/?name=Tran+Van+Duc&background=random&size=400',
         icon: Zap,
     },
     {
         name: 'Lưu Thanh',
-        role: 'AI / Data Scientist',
+        role: 'Backend Developer / AI Engineer',
         bio: 'Huấn luyện các mô hình học máy để phân tích dinh dưỡng và đưa ra gợi ý cá nhân hóa chính xác.',
-        avatar: 'https://ui-avatars.com/api/?name=Luu+Thanh&background=16a34a&color=fff&size=200',
+        avatar: luuThanhImg.src,
         icon: Brain,
     },
     {
         name: 'Gia Phát',
-        role: 'QA / System Optimization',
+        role: 'Tester',
         bio: 'Đảm bảo tính ổn định và bảo mật tối đa cho toàn bộ hệ sinh thái dịch vụ AI Health.',
-        avatar: 'https://ui-avatars.com/api/?name=Gia+Phat&background=0d9488&color=fff&size=200',
+        avatar: giaPhatImg.src,
         icon: Code,
     },
 ];
