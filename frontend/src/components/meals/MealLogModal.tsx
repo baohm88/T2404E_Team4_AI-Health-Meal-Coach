@@ -1,14 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-    X, Upload, Camera, Loader2, CheckCircle2, AlertCircle,
-    Mic, MessageSquare, Search, Sparkles, Send, History, ChevronRight
-} from "lucide-react";
 import { mealLogService } from "@/services/meal-log.service";
-import { toast } from "sonner";
 import clsx from "clsx";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+    AlertCircle,
+    Camera,
+    CheckCircle2,
+    ChevronRight,
+    History,
+    Loader2,
+    MessageSquare,
+    Mic,
+    Search, Sparkles,
+    Upload,
+    X
+} from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
 interface MealLogModalProps {
     isOpen: boolean;
@@ -344,6 +353,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                                             >
                                                 {preview ? (
                                                     <div className="relative w-full aspect-[4/3] rounded-[28px] overflow-hidden shadow-2xl transition-transform duration-700 group-hover:scale-105">
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
                                                         <img src={preview} alt="Meal preview" className="w-full h-full object-cover" />
                                                         <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                                             <div className="bg-white/20 backdrop-blur-xl p-4 rounded-3xl border border-white/30 text-white font-black text-xs uppercase tracking-widest">Đổi ảnh</div>
@@ -412,7 +422,7 @@ export const MealLogModal: React.FC<MealLogModalProps> = ({
                                                         {isListening ? "Hệ thống đang nghe..." : "Nhấn để bắt đầu"}
                                                     </p>
                                                     <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em]">
-                                                        "Hôm nay tôi đã ăn một bát bún chả"
+                                                        &quot;Hôm nay tôi đã ăn một bát bún chả&quot;
                                                     </p>
                                                 </div>
 

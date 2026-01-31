@@ -71,6 +71,7 @@ export function FoodFormModal({ isOpen, onClose, onSubmit, editingDish }: DishFo
     useEffect(() => {
         if (isOpen && editingDish) {
             // Edit mode: fill form with existing data
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setFormData({
                 name: editingDish.name,
                 category: editingDish.category,

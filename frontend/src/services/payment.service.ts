@@ -80,18 +80,18 @@ export const paymentService = {
                 }
             });
 
-            if (response.success && response.data) {
-                console.log('✅ VNPay URL generated:', response.data);
+            if (response.data && response.data.success) {
+                console.log('✅ VNPay URL generated:', response.data.data);
                 return {
                     success: true,
-                    url: response.data,
+                    url: response.data.data,
                 };
             }
 
             return {
                 success: false,
                 url: '',
-                error: response.message || 'Failed to generate URL'
+                error: response.data?.message || 'Failed to generate URL'
             };
 
         } catch (error) {

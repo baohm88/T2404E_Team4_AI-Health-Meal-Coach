@@ -118,7 +118,7 @@ export default function PlanOverviewPage() {
     const [error, setError] = useState<string | null>(null);
 
     const fetchData = async () => {
-        setLoading(true);
+        // setLoading(true); // Initial state is already true
         setError(null);
 
         const result = await aiService.getStoredAnalysis();
@@ -133,6 +133,7 @@ export default function PlanOverviewPage() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchData();
     }, []);
 
