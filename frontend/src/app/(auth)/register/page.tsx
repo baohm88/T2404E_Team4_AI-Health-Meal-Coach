@@ -8,16 +8,18 @@
 
 'use client';
 
+import { useRegisterForm } from '@/hooks/use-auth-form';
+import { Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Loader2, Mail, Lock, User, Eye, EyeOff } from 'lucide-react';
-import { useRegisterForm } from '@/hooks/use-auth-form';
 
 // ============================================================
 // COMPONENT
 // ============================================================
 
-export default function RegisterPage() {
+import { Suspense } from 'react';
+
+function RegisterContent() {
     const {
         form: { register, handleSubmit, formState: { errors } },
         onSubmit,
@@ -142,6 +144,14 @@ export default function RegisterPage() {
                 </p>
             )}
         </div>
+    );
+}
+
+export default function RegisterPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+            <RegisterContent />
+        </Suspense>
     );
 }
 

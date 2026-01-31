@@ -1,18 +1,17 @@
 "use client";
 
-import React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { cn } from "@/lib/utils";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-    Trophy,
     AlertCircle,
+    CheckCircle2,
     ChevronRight,
     RefreshCcw,
-    CheckCircle2,
+    Trophy,
     XCircle,
-    Target,
     Zap
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import React from "react";
 
 interface EvaluationModalProps {
     isOpen: boolean;
@@ -133,6 +132,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                                         )}>
                                             {stats.mealCompliance}%
                                         </span>
+                                        {/* This line was misplaced and has been removed: ? Hành động này không thể hoàn tác. */}
                                     </div>
                                     <span className="text-[10px] font-bold text-slate-400 mt-1">{stats.checkedMeals}/{stats.totalMeals} bữa</span>
                                 </div>
@@ -193,7 +193,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                                     </h3>
                                 </div>
                                 <p className={cn("text-sm font-medium leading-relaxed italic", feedback.color)}>
-                                    "{feedback.message}"
+                                    &quot;{feedback.message}&quot;
                                 </p>
 
                                 {stats.exceededDetails.length > 0 && (
@@ -220,7 +220,7 @@ export const EvaluationModal: React.FC<EvaluationModalProps> = ({
                                         <Zap className="w-4 h-4 fill-amber-500" />
                                     </div>
                                     <p className="text-xs font-bold text-slate-500 italic">
-                                        "Kỷ luật là cầu nối giữa mục tiêu và sự thành công. Hãy tiếp tục cố gắng!"
+                                        &quot;Kỷ luật là cầu nối giữa mục tiêu và sự thành công. Hãy tiếp tục cố gắng!&quot;
                                     </p>
                                 </div>
                             )}

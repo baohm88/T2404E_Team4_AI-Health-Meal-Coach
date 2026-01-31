@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { toast } from 'sonner';
 import { CalorieCircle } from '@/components/dashboard/widgets/CalorieCircle';
+import { HealthTrendChart } from '@/components/dashboard/widgets/HealthTrendChart';
 import { MacrosBreakdown } from '@/components/dashboard/widgets/MacrosBreakdown';
-import { WaterTracker } from '@/components/dashboard/widgets/WaterTracker';
 import { RecentMeals } from '@/components/dashboard/widgets/RecentMeals';
 import { StrategicMealCard } from '@/components/dashboard/widgets/StrategicMealCard';
+import { WaterTracker } from '@/components/dashboard/widgets/WaterTracker';
 import { WeeklyGoalProgress } from '@/components/dashboard/widgets/WeeklyGoalProgress';
-import { HealthTrendChart } from '@/components/dashboard/widgets/HealthTrendChart';
 import { dashboardService } from '@/services/dashboard.service';
 import { mealLogService } from '@/services/meal-log.service';
 import { DashboardSummary, DEFAULT_DASHBOARD_SUMMARY } from '@/types/api';
-import { Footprints, Flame, RefreshCw, PlusCircle, Droplets } from 'lucide-react';
+import { Droplets, Flame, Footprints, PlusCircle, RefreshCw } from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'sonner';
 
 // ============================================================
 // LOADING SKELETON
@@ -35,7 +35,10 @@ const StatSkeleton = () => (
 // COMPONENT
 // ============================================================
 
-export default function DashboardPage() {
+import { Loader2 } from 'lucide-react'; // Ensure Loader2 is imported
+import { Suspense } from 'react';
+
+function DashboardContent() {
     const [data, setData] = useState<DashboardSummary>(DEFAULT_DASHBOARD_SUMMARY);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -324,5 +327,13 @@ export default function DashboardPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={<div className="flex items-center justify-center p-8"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>}>
+            <DashboardContent />
+        </Suspense>
     );
 }

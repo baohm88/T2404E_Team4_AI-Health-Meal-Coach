@@ -1,21 +1,26 @@
 "use client";
 
 import { mealLogService } from "@/services/meal-log.service";
+import { mealPlanService } from "@/services/meal-plan.service";
 import { clsx, type ClassValue } from "clsx";
-import { addDays, format, isAfter, isBefore, isSameDay, parseISO, startOfDay, differenceInDays } from "date-fns";
+import { addDays, differenceInDays, format, isAfter, isBefore, isSameDay, parseISO, startOfDay } from "date-fns";
 import { vi } from "date-fns/locale";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
     Calendar, Check, ChevronLeft, ChevronRight, Coffee,
-    Loader2, Lock, Moon, RefreshCw, Sun, Utensils, Sparkles, Trophy, Zap
+    Loader2, Lock, Moon, RefreshCw,
+    Sparkles,
+    Sun,
+    Trophy,
+    Utensils,
+    Zap
 } from "lucide-react";
-import React, { useMemo, useState, memo } from "react";
+import { useRouter } from "next/navigation";
+import React, { memo, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { twMerge } from "tailwind-merge";
-import { MealLogModal } from "./MealLogModal";
 import { EvaluationModal } from "./EvaluationModal";
-import { mealPlanService } from "@/services/meal-plan.service";
-import { useRouter } from "next/navigation";
+import { MealLogModal } from "./MealLogModal";
 
 function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
@@ -600,7 +605,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                     <span className="text-[9px] font-black uppercase text-slate-400 tracking-widest">Ghi chú AI</span>
                                 </div>
                                 <p className="text-[10px] font-bold text-slate-500 italic leading-relaxed line-clamp-2">
-                                    "{initialData.monthlyPlan?.months[selectedMonthIdx].note}"
+                                    &quot;{initialData.monthlyPlan?.months[selectedMonthIdx].note}&quot;
                                 </p>
                             </div>
                         )}

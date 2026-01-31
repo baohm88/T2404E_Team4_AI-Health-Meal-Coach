@@ -11,9 +11,9 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Bell, Search, UserCircle2 } from 'lucide-react';
 import { getUserFromToken, TokenUser } from '@/lib/auth';
+import { Bell, Search, UserCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 // ============================================================
 // HELPER FUNCTIONS
@@ -50,6 +50,7 @@ export function Header() {
     // Get user from JWT token on mount
     useEffect(() => {
         const tokenUser = getUserFromToken();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(tokenUser);
         setGreeting(getGreeting());
     }, []);

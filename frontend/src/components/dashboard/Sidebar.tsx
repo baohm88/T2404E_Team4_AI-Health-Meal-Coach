@@ -9,20 +9,20 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { LogOut, UserCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { Logo } from '@/components/ui/Logo';
+import { LogoutModal } from '@/components/ui/LogoutModal';
+import { useLogout } from '@/hooks/use-logout';
+import { getUserFromToken, TokenUser } from '@/lib/auth';
 import {
-    DASHBOARD_MENU_ITEMS,
     BRAND,
+    DASHBOARD_MENU_ITEMS,
     MenuItem
 } from '@/lib/constants/dashboard.constants';
-import { useLogout } from '@/hooks/use-logout';
-import { LogoutModal } from '@/components/ui/LogoutModal';
-import { getUserFromToken, TokenUser } from '@/lib/auth';
+import { cn } from '@/lib/utils';
+import { LogOut, UserCircle } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 // ============================================================
 // MAIN COMPONENT
@@ -193,8 +193,10 @@ const UserDisplay = () => {
 
     useEffect(() => {
         const tokenUser = getUserFromToken();
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setUser(tokenUser);
     }, []);
+
 
     if (!user) return null;
 

@@ -1,16 +1,14 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-    Sparkles,
-    TrendingUp,
-    Crown,
-    CheckCircle,
-    X,
     ArrowRight,
-    Rocket,
     Brain,
-    Utensils
+    Crown,
+    Rocket,
+    Sparkles,
+    Utensils,
+    X
 } from 'lucide-react';
 
 interface UpgradePromptModalProps {
@@ -96,7 +94,7 @@ export function UpgradePromptModal({ isOpen, onUpgrade, onDashboard, onCancel }:
                                         <div className="bg-amber-100 p-1 rounded text-amber-600 mt-0.5"><Utensils className="w-4 h-4" /></div>
                                         <div>
                                             <p className="font-semibold text-slate-800 text-sm">Thực đơn từng bữa mỗi ngày</p>
-                                            <p className="text-xs text-slate-500">Không cần đau đầu nghĩ "Hôm nay ăn gì?"</p>
+                                            <p className="text-xs text-slate-500">Không cần đau đầu nghĩ &quot;Hôm nay ăn gì?&quot;</p>
                                         </div>
                                     </div>
                                     <div className="flex items-start gap-3">
