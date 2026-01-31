@@ -9,7 +9,13 @@ import java.util.stream.Collectors;
 
 public class MealPlanPromptBuilder {
 
-  private MealPlanPromptBuilder() {
+  public static String build(
+      HealthProfile profile,
+      HealthAnalysis analysis,
+      List<DishLibrary> dishes,
+      int startDay,
+      int endDay) {
+    return build(profile, analysis, dishes, startDay, endDay, 2000); // Default 2000
   }
 
   public static String build(
@@ -17,33 +23,42 @@ public class MealPlanPromptBuilder {
       HealthAnalysis analysis,
       List<DishLibrary> dishes,
       int startDay,
-      int endDay) {
+      int endDay,
+      int targetDailyCalories) {
     return """
-        THÔNG TIN SỨC KHỎE NGƯỜI DÙNG (LƯU TỪ DATABASE):
+        THÔNG TIN SỨC KHỎE NGƯỜI DÙNG:
         %s
 
         PHÂN TÍCH DINH DƯỠNG MỤC TIÊU:
         %s
 
-        THƯ VIỆN MÓN ĂN CÓ SẴN (BẮT BUỘC CHỌN TỪ ĐÂY):
+        MỤC TIÊU CALO LỘ TRÌNH:
+        - Mục tiêu Calo hằng ngày KHUYÊN DÙNG: %d kcal.
+        - TỔNG CALO TRONG TUẦN (7 ngày) PHẢI sát với: %d kcal (+/- 0-3%%).
+        - Bạn có thể linh hoạt: một số ngày Calo có thể cao hơn hoặc thấp hơn mục tiêu (%d kcal), miễn là TỔNG TUẦN cân bằng.
+        - Điều này giúp thực đơn tự nhiên và thực tế hơn.
+
+        THƯ VIỆN MÓN ĂN (BẮT BUỘC CHỌN TỪ ĐÂY):
         %s
 
-        YÊU CẦU:
-        - Dựa trên HealthProfile + Thư viện món ăn ở trên
-        - Sinh thực đơn từ ngày %d đến ngày %d (Tổng cộng %d ngày)
-        - Mỗi ngày 4 bữa (Sáng, Trưa, Tối, Phụ)
-        - CHỈ ĐƯỢC CHỌN món ăn có trong Thư viện món ăn.
-        - Trả về đúng dishId.
-        - Tổng calories/ngày phải phù hợp với mục tiêu cân nặng.
+        YÊU CẦU QUAN TRỌNG:
+        1. Linh hoạt hằng ngày: Không cần ép mỗi ngày phải đúng chóc %d kcal. Hãy chọn tổ hợp món ăn hợp lý.
+        2. Tổng tuần chuẩn xác: Đảm bảo tổng năng lượng của tất cả món ăn trong 7 ngày cộng lại sát với mức %d kcal (Sai số tối đa 3%%).
+        3. Tự nhiên & Thực tế: CHỈ chọn các món có sẵn trong thư viện. Sử dụng "số lượng" (1 bát, 1 đĩa, 150g...) một cách thực tế. KHÔNG dùng các con số lẻ bất thường (ví dụ: 1.23 bát) chỉ để khớp số Calo.
+        4. Mỗi ngày 4 bữa: Sáng, Trưa, Tối, Phụ.
+        5. Trả về đúng dishId.
 
         CHỈ TRẢ JSON.
-        """.formatted(
-        buildProfileText(profile),
-        buildAnalysisText(analysis),
-        buildDishLibraryText(dishes),
-        startDay,
-        endDay,
-        (endDay - startDay + 1));
+        """
+        .formatted(
+            buildProfileText(profile),
+            buildAnalysisText(analysis),
+            targetDailyCalories,
+            targetDailyCalories * 7,
+            targetDailyCalories,
+            buildDishLibraryText(dishes),
+            targetDailyCalories,
+            targetDailyCalories * 7);
   }
 
   private static String buildProfileText(HealthProfile p) {

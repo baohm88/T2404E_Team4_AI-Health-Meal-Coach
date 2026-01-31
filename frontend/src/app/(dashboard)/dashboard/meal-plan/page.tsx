@@ -61,6 +61,20 @@ export default function MealPlanPage() {
         });
     };
 
+    const handleExtend = async () => {
+        const promise = mealPlanService.extendMealPlan();
+        toast.promise(promise, {
+            loading: 'Đang thiết lập thực đơn cho tuần tiếp theo...',
+            success: (res) => {
+                if (res.data) {
+                    setPlanData(res.data);
+                }
+                return 'Tuyệt vời! Thực đơn tuần tiếp theo đã sẵn sàng.';
+            },
+            error: 'Lỗi khi mở rộng lộ trình.',
+        });
+    };
+
     useEffect(() => {
         fetchMealPlan();
     }, []);
@@ -120,15 +134,15 @@ export default function MealPlanPage() {
     }
 
     return (
-        <main className="min-h-screen bg-[#f8fafc] py-12">
-            <div className="max-w-7xl mx-auto px-4 mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
-                <div className="space-y-2">
+        <main className="min-h-screen bg-[#f8fafc] py-6">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div className="space-y-1">
                     <h1 className="text-4xl font-black text-slate-900 tracking-tight">
                         Lộ Trình <span className="text-emerald-500">Dinh Dưỡng</span> Của Bạn
                     </h1>
                     <p className="text-slate-500 font-medium max-w-2xl">
                         Lộ trình {planData?.totalDays} ngày được cá nhân hóa hoàn toàn bởi AI.
-                        Sử dụng các món ăn quen thuộc giúp bạn dễ dàng duy trì thói quen.
+                        Sử dụng các món ăn quen thuật giúp bạn dễ dàng duy trì thói quen.
                     </p>
                 </div>
 
@@ -136,7 +150,7 @@ export default function MealPlanPage() {
                     <button
                         onClick={handleRegenerate}
                         disabled={!planData}
-                        className="flex items-center gap-2 px-6 py-3 bg-white text-slate-600 rounded-2xl font-bold border border-slate-200 hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white text-slate-600 rounded-2xl font-bold border border-slate-200 hover:border-emerald-200 hover:text-emerald-600 transition-all shadow-sm active:scale-95 disabled:opacity-50"
                     >
                         <RefreshCcw className="w-4 h-4" />
                         Tái tạo lộ trình
@@ -144,7 +158,7 @@ export default function MealPlanPage() {
                     {!planData && (
                         <button
                             onClick={handleGenerate}
-                            className="flex items-center gap-2 px-6 py-3 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-2xl font-bold hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                         >
                             <Sparkles className="w-4 h-4" />
                             Khởi tạo ngay
@@ -153,7 +167,7 @@ export default function MealPlanPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 mb-4 flex items-center gap-2">
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-4 flex items-center gap-2">
                 <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
                     <Sparkles className="w-5 h-5" />
                 </div>
@@ -164,6 +178,7 @@ export default function MealPlanPage() {
                 <WeeklyMealCalendar
                     initialData={planData}
                     startDate={planData?.startDate || "Chưa xác định"}
+                    onExtendPlan={handleExtend}
                 />
             ) : (
                 <div className="max-w-7xl mx-auto px-4">

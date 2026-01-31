@@ -25,11 +25,27 @@ public class AiHealthAnalysisServiceImpl implements AiHealthAnalysisService {
         QUY TẮC BẮT BUỘC:
         1. TRẢ JSON DUY NHẤT. KHÔNG CÓ TEXT BÊN NGOÀI.
         2. KHÔNG ĐƯỢC trả về null cho bất kỳ trường nào trong `months`.
+        3. SỐ PHẢI LÀ SỐ HỢP LỆ (Ví dụ: 20.0 hoặc 20, KHÔNG ĐƯỢC là "20." hay "20,").
         3. TẤT CẢ các mô tả phải giàu thông tin, chuyên sâu và mang tính thực tiễn cao (Actionable).
         4. sampleDailyMeals phải bao gồm ít nhất 4 món: Sáng, Trưa, Tối và Phụ.
         5. Ưu tiên các món ăn Việt Nam truyền thống nhưng lành mạnh.
         6. Kế hoạch mỗi tháng PHẢI được chia nhỏ thành 4 tuần trong trường `weeks`.
         7. Trong phần `weeks`, CHỈ TẬP TRUNG VÀO DINH DƯỠNG. KHÔNG liệt kê các bài tập hay hoạt động thể chất.
+
+        CÔNG THỨC TÍNH TOÁN CALO CHUẨN KHOA HỌC (BẮT BUỘC TUÂN THỦ):
+        Bước 1: Tính BMR (Mifflin-St Jeor)
+        - Nam: (10 × weight_kg) + (6.25 × height_cm) - (5 × age) + 5
+        - Nữ: (10 × weight_kg) + (6.25 × height_cm) - (5 × age) - 161
+        Bước 2: Tính TDEE = BMR × Activity Factor
+        - Sedentary (Ít vận động): 1.2
+        - Lightly Active (Nhẹ): 1.375
+        - Moderately Active (Vừa): 1.55
+        - Very Active (Năng động): 1.725
+        Bước 3: Xác định Calories Mục Tiêu (Daily Target)
+        - Giảm cân (Weight Loss): TDEE - 500 kcal (Lưu ý: KHÔNG thấp hơn BMR).
+        - Tăng cân (Muscle Gain): TDEE + 300 kcal.
+        - Giữ cân (Maintenance): = TDEE.
+        LƯU Ý: Trường `dailyCalories` trong JSON PHẢI là kết quả tính toán từ công thức trên.
 
         VÍ DỤ VỀ ĐỘ CHI TIẾT CẦN THIẾT (FEW-SHOT):
         - macronutrients: "Đạm: 140g (25%)- Béo: 60g (30%)- Tinh bột: 200g (45%)"
@@ -89,26 +105,72 @@ public class AiHealthAnalysisServiceImpl implements AiHealthAnalysisService {
         }
         """;
 
-    String userPrompt = String.format("""
-                                Dữ liệu người dùng:
-                                - Tuổi: %d
-                                - Giới tính: %s
-                                - Chiều cao: %.1f cm
-                                - Cân nặng: %.1f kg
-                                - Mức độ vận động: %s
-                                - Thời gian ngủ: %s
-                                - Mức độ stress: %s
+    // 1. Tính toán BMR (Mifflin-St Jeor)
+    double bmr = 0;
+    if (request.getGender().name().equalsIgnoreCase("MALE")) {
+      bmr = (10 * request.getWeight()) + (6.25 * request.getHeight()) - (5 * request.getAge()) + 5;
+    } else {
+      bmr = (10 * request.getWeight()) + (6.25 * request.getHeight()) - (5 * request.getAge()) - 161;
+    }
 
-                                Hãy phân tích sức khỏe tổng thể và lập kế hoạch cải thiện trong 3 tháng.
-                                TOÀN BỘ NỘI DUNG MÔ TẢ PHẢI VIẾT BẰNG TIẾNG VIỆT.
-        """,
+    // 2. Tính TDEE
+    double activityMultiplier = switch (request.getActivityLevel()) {
+      case SEDENTARY -> 1.2;
+      case LIGHT -> 1.375;
+      case MODERATE -> 1.55;
+      case VERY_ACTIVE -> 1.725;
+    };
+    double tdee = bmr * activityMultiplier;
+
+    // 3. Xác định Target
+    double targetCalories = tdee;
+    // Simple heuristic for initial goal (can be refined or let AI choose goal enum,
+    // but here we set number)
+    // Assume Maintenance as base, but we can infer goal from request if it existed.
+    // However, since we don't have explicit goal input, we'll let AI decide goal
+    // TEXT, but we provide TDEE as anchor.
+    // BETTER STRATEGY: Calculate all 3 numeric scenarios and let AI pick based on
+    // its textual analysis of BMI?
+    // User wants "phù hợp". Let's provide the ANCHORS.
+
+    // Actually, let's default to a "Healthy" adjustment based on BMI.
+    double bmi = request.getWeight() / ((request.getHeight() / 100) * (request.getHeight() / 100));
+    if (bmi >= 25) {
+      targetCalories = tdee - 500; // Weight Loss
+      if (targetCalories < bmr)
+        targetCalories = bmr; // Safety
+    } else if (bmi < 18.5) {
+      targetCalories = tdee + 300; // Weight Gain
+    }
+    // Else Maintenance
+
+    String userPrompt = String.format(
+        """
+                                    Dữ liệu người dùng:
+                                    - Tuổi: %d
+                                    - Giới tính: %s
+                                    - Chiều cao: %.1f cm
+                                    - Cân nặng: %.1f kg
+                                    - Mức độ vận động: %s
+                                    - Thời gian ngủ: %s
+                                    - Mức độ stress: %s
+
+                                    DỮ LIỆU TÍNH TOÁN TRƯỚC (BẮT BUỘC SỬ DỤNG):
+                                    - BMR (Basal Metabolic Rate): %.0f kcal
+                                    - TDEE (Total Daily Energy Expenditure): %.0f kcal
+                                    - MỤC TIÊU CALO HẰNG NGÀY (DAILY TARGET): %.0f kcal
+
+                                    Hãy phân tích sức khỏe tổng thể và lập kế hoạch cải thiện trong 3 tháng dựa trên các chỉ số trên.
+                                    TOÀN BỘ NỘI DUNG MÔ TẢ PHẢI VIẾT BẰNG TIẾNG VIỆT.
+            """,
         request.getAge(),
         request.getGender().name(),
         request.getHeight(),
         request.getWeight(),
         request.getActivityLevel().name(),
         request.getSleepDuration().name(),
-        request.getStressLevel().name());
+        request.getStressLevel().name(),
+        bmr, tdee, targetCalories);
 
     // GỌI AI THẬT
     return chatClient.prompt()
