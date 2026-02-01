@@ -30,56 +30,76 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final com.t2404e.aihealthcoach.repository.TransactionRepository transactionRepository;
 
     @Override
-    public Map<String, Object> getRevenueStats(String period) {
+    public Map<String, Object> getRevenueStats(String period, String startDate, String endDate) {
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime start;
-        String format;
-        
-        switch (period.toLowerCase()) {
-            case "week":
-                start = now.minusDays(6).with(LocalTime.MIN);
-                format = "dd/MM";
-                break;
-            case "month":
-                start = now.minusDays(29).with(LocalTime.MIN);
-                format = "dd/MM";
-                break;
-            case "year":
-                start = now.minusMonths(11).withDayOfMonth(1).with(LocalTime.MIN);
+        LocalDateTime end = now;
+        String format = "dd/MM";
+        boolean isMonthly = false;
+
+        if ("custom".equalsIgnoreCase(period) && startDate != null && endDate != null) {
+            start = java.time.LocalDate.parse(startDate).atStartOfDay();
+            end = java.time.LocalDate.parse(endDate).atTime(LocalTime.MAX);
+            
+            long daysDiff = java.time.Duration.between(start, end).toDays();
+            if (daysDiff > 60) {
                 format = "MM/yyyy";
-                break;
-            default: // day or default
-                start = now.minusHours(23).withMinute(0).withSecond(0).withNano(0);
-                format = "HH:00";
-                break;
+                isMonthly = true;
+            }
+        } else {
+            switch (period.toLowerCase()) {
+                case "week":
+                    start = now.minusDays(6).with(LocalTime.MIN);
+                    break;
+                case "month":
+                    start = now.minusDays(29).with(LocalTime.MIN);
+                    break;
+                case "year":
+                    start = now.minusMonths(11).withDayOfMonth(1).with(LocalTime.MIN);
+                    format = "MM/yyyy";
+                    isMonthly = true;
+                    break;
+                default: 
+                    start = now.minusHours(23).withMinute(0).withSecond(0).withNano(0);
+                    format = "HH:00";
+                    break;
+            }
         }
 
         List<Map<String, Object>> chartData = new ArrayList<>();
         long totalRevenue = 0;
 
-        if (period.equalsIgnoreCase("year")) {
-             for (int i = 11; i >= 0; i--) {
-                LocalDateTime date = now.minusMonths(i);
-                LocalDateTime monthStart = date.withDayOfMonth(1).with(LocalTime.MIN);
-                LocalDateTime monthEnd = date.withDayOfMonth(date.toLocalDate().lengthOfMonth()).with(LocalTime.MAX);
+        // LocalDateTime current = start; // Unused 
+        // Existing logic iterates backwards. Let's adapt.
+        
+        if (isMonthly) {
+             // For monthly iteration, we can't easily do a simple loop if start/end are arbitrary dates.
+             // Better to just loop from start to end by month.
+             LocalDateTime iter = start.withDayOfMonth(1).with(LocalTime.MIN);
+             while (!iter.isAfter(end)) {
+                 LocalDateTime monthStart = iter;
+                 LocalDateTime monthEnd = iter.withDayOfMonth(iter.toLocalDate().lengthOfMonth()).with(LocalTime.MAX);
+                 if (monthEnd.isAfter(end)) monthEnd = end; // Clamp to end date
 
-                Long revenue = transactionRepository.sumAmountByStatusAndCreatedAtBetween(
-                        com.t2404e.aihealthcoach.enums.TransactionStatus.SUCCESS, monthStart, monthEnd);
-                if (revenue == null) revenue = 0L;
-                totalRevenue += revenue;
+                 Long revenue = transactionRepository.sumAmountByStatusAndCreatedAtBetween(
+                         com.t2404e.aihealthcoach.enums.TransactionStatus.SUCCESS, monthStart, monthEnd);
+                 if (revenue == null) revenue = 0L;
+                 totalRevenue += revenue;
 
-                Map<String, Object> point = new HashMap<>();
-                point.put("name", date.format(DateTimeFormatter.ofPattern(format)));
-                point.put("value", revenue);
-                chartData.add(point);
-            }
+                 Map<String, Object> point = new HashMap<>();
+                 point.put("name", iter.format(DateTimeFormatter.ofPattern(format)));
+                 point.put("value", revenue);
+                 chartData.add(point);
+                 
+                 iter = iter.plusMonths(1);
+             }
         } else {
-             // Daily based (Week/Month)
-            int days = period.equalsIgnoreCase("week") ? 7 : (period.equalsIgnoreCase("month") ? 30 : 1);
-            for (int i = days - 1; i >= 0; i--) {
-                LocalDateTime date = now.minusDays(i);
-                LocalDateTime dayStart = date.with(LocalTime.MIN);
-                LocalDateTime dayEnd = date.with(LocalTime.MAX);
+            // Daily iteration
+            LocalDateTime iter = start.with(LocalTime.MIN);
+            while (!iter.isAfter(end)) {
+                LocalDateTime dayStart = iter;
+                LocalDateTime dayEnd = iter.with(LocalTime.MAX);
+                if (dayEnd.isAfter(end)) dayEnd = end;
 
                 Long revenue = transactionRepository.sumAmountByStatusAndCreatedAtBetween(
                         com.t2404e.aihealthcoach.enums.TransactionStatus.SUCCESS, dayStart, dayEnd);
@@ -87,20 +107,23 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 totalRevenue += revenue;
 
                 Map<String, Object> point = new HashMap<>();
-                point.put("name", date.format(DateTimeFormatter.ofPattern(format)));
+                point.put("name", iter.format(DateTimeFormatter.ofPattern(format)));
                 point.put("value", revenue);
                 chartData.add(point);
+                
+                iter = iter.plusDays(1);
             }
         }
         
         Map<String, Object> response = new HashMap<>();
         response.put("totalRevenue", totalRevenue);
+        // chartData might need sorting if iterated differently? Forward iteration ensures sorted order already.
         response.put("chartData", chartData);
         return response;
     }
 
     @Override
-    public AdminDashboardResponse getStats() {
+    public AdminDashboardResponse getStats(String period, String startDate, String endDate) {
         long totalUsers = userRepository.count();
         long totalFoods = dishLibraryRepository.count();
 
@@ -134,37 +157,64 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         userTypeStats.put("Premium", premiumCount);
         userTypeStats.put("Free", totalUsers - premiumCount);
 
-        // Registration & Food stats (Last 7 days)
+        // Registration & Food stats (Dynamic Period)
         List<Map<String, Object>> registrationStats = new ArrayList<>();
         List<Map<String, Object>> premiumRegistrationStats = new ArrayList<>();
         List<Map<String, Object>> foodGrowthStats = new ArrayList<>();
 
-        for (int i = 6; i >= 0; i--) {
-            LocalDateTime date = LocalDateTime.now().minusDays(i);
-            String[] dayNames = { "CN", "T2", "T3", "T4", "T5", "T6", "T7" };
-            String dayName = dayNames[date.getDayOfWeek().getValue() % 7];
+        LocalDateTime rangeStart;
+        LocalDateTime rangeEnd = LocalDateTime.now();
+        boolean isMonthly = false;
 
-            LocalDateTime start = date.with(LocalTime.MIN);
-            LocalDateTime end = date.with(LocalTime.MAX);
+        if ("custom".equalsIgnoreCase(period) && startDate != null && endDate != null) {
+            rangeStart = java.time.LocalDate.parse(startDate).atStartOfDay();
+            rangeEnd = java.time.LocalDate.parse(endDate).atTime(LocalTime.MAX);
+            
+            long daysDiff = java.time.Duration.between(rangeStart, rangeEnd).toDays();
+            if (daysDiff > 60) {
+                isMonthly = true;
+            }
+        } else {
+             if ("year".equalsIgnoreCase(period)) {
+                rangeStart =  LocalDateTime.now().minusMonths(11).withDayOfMonth(1).with(LocalTime.MIN);
+                isMonthly = true;
+            } else {
+                int days = "month".equalsIgnoreCase(period) ? 30 : 7;
+                rangeStart =  LocalDateTime.now().minusDays(days - 1).with(LocalTime.MIN);
+            }
+        }
+        
+        if (isMonthly) {
+             LocalDateTime iter = rangeStart.withDayOfMonth(1).with(LocalTime.MIN);
+             while (!iter.isAfter(rangeEnd)) {
+                 LocalDateTime monthStart = iter;
+                 LocalDateTime monthEnd = iter.withDayOfMonth(iter.toLocalDate().lengthOfMonth()).with(LocalTime.MAX);
+                 if (monthEnd.isAfter(rangeEnd)) monthEnd = rangeEnd;
 
-            long regCount = userRepository.countByCreatedAtBetween(start, end);
-            long premiumRegCount = userRepository.countByIsPremiumTrueAndCreatedAtBetween(start, end);
-            long foodCount = dishLibraryRepository.countByCreatedAtBetween(start, end);
+                 String label = iter.format(DateTimeFormatter.ofPattern("MM/yyyy"));
+                 
+                 addGrowthStat(registrationStats, "users", userRepository.countByCreatedAtBetween(monthStart, monthEnd), label);
+                 addGrowthStat(premiumRegistrationStats, "premium", userRepository.countByIsPremiumTrueAndCreatedAtBetween(monthStart, monthEnd), label);
+                 addGrowthStat(foodGrowthStats, "foods", dishLibraryRepository.countByCreatedAtBetween(monthStart, monthEnd), label);
 
-            Map<String, Object> regStat = new HashMap<>();
-            regStat.put("day", dayName);
-            regStat.put("users", regCount);
-            registrationStats.add(regStat);
+                 iter = iter.plusMonths(1);
+             }
+        } else {
+             LocalDateTime iter = rangeStart.with(LocalTime.MIN);
+             while (!iter.isAfter(rangeEnd)) {
+                 LocalDateTime dayStart = iter;
+                 LocalDateTime dayEnd = iter.with(LocalTime.MAX);
+                 
+                 String label = "month".equalsIgnoreCase(period) || "custom".equalsIgnoreCase(period)
+                        ? iter.format(DateTimeFormatter.ofPattern("dd/MM"))
+                        : getVietnameseDayOfWeek(iter);
 
-            Map<String, Object> premiumStat = new HashMap<>();
-            premiumStat.put("day", dayName);
-            premiumStat.put("premium", premiumRegCount);
-            premiumRegistrationStats.add(premiumStat);
+                 addGrowthStat(registrationStats, "users", userRepository.countByCreatedAtBetween(dayStart, dayEnd), label);
+                 addGrowthStat(premiumRegistrationStats, "premium", userRepository.countByIsPremiumTrueAndCreatedAtBetween(dayStart, dayEnd), label);
+                 addGrowthStat(foodGrowthStats, "foods", dishLibraryRepository.countByCreatedAtBetween(dayStart, dayEnd), label);
 
-            Map<String, Object> foodStat = new HashMap<>();
-            foodStat.put("day", dayName);
-            foodStat.put("foods", foodCount);
-            foodGrowthStats.add(foodStat);
+                 iter = iter.plusDays(1);
+             }
         }
 
         // Recent activities (Combined and Sorted)
@@ -222,6 +272,18 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                 .foodGrowthStats(foodGrowthStats)
                 .recentActivities(recentActivities)
                 .build();
+    }
+
+    private void addGrowthStat(List<Map<String, Object>> list, String key, long value, String label) {
+        Map<String, Object> stat = new HashMap<>();
+        stat.put("day", label);
+        stat.put(key, value);
+        list.add(stat);
+    }
+
+    private String getVietnameseDayOfWeek(LocalDateTime date) {
+        String[] dayNames = { "CN", "T2", "T3", "T4", "T5", "T6", "T7" };
+        return dayNames[date.getDayOfWeek().getValue() % 7];
     }
 
     private String formatRelativeTime(LocalDateTime dateTime) {

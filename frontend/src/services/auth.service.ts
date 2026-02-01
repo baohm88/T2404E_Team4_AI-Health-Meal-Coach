@@ -10,10 +10,10 @@
 
 import http, { removeToken } from '@/lib/http';
 import {
-    ApiResponse,
-    AuthData,
-    LoginRequest,
-    RegisterRequest,
+  ApiResponse,
+  AuthData,
+  LoginRequest,
+  RegisterRequest,
 } from '@/types/api';
 
 // ============================================================
@@ -50,6 +50,10 @@ export const authService = {
 
                 // ⚠️ NOTE: Token is saved in use-auth-form.ts hook, not here
                 // This keeps token management centralized in the UI layer
+
+                // Explicitly save token to ensure http client finds it immediately
+                const { saveToken } = await import('@/lib/http');
+                saveToken(token);
 
                 return {
                     success: true,

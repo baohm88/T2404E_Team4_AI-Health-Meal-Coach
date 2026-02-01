@@ -279,7 +279,7 @@ function DashboardContent() {
                             </p>
 
                             <div className="flex items-center gap-3">
-                                <button className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20 active:scale-95">
+                                <button className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-900/20 active:scale-95 cursor-pointer">
                                     Nhận lời khuyên
                                 </button>
                                 <div className="flex -space-x-2">
@@ -305,7 +305,7 @@ function DashboardContent() {
                         Hành động nhanh
                     </h3>
                     <div className="space-y-3">
-                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all group">
+                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-emerald-50 hover:text-emerald-700 transition-all group active:scale-95 cursor-pointer">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-emerald-100 transition-colors">
                                     <PlusCircle className="w-5 h-5" />
@@ -314,7 +314,7 @@ function DashboardContent() {
                             </div>
                             <PlusCircle className="w-4 h-4 opacity-0 group-hover:opacity-100" />
                         </button>
-                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all group">
+                        <button className="w-full flex items-center justify-between p-4 rounded-2xl bg-slate-50 hover:bg-blue-50 hover:text-blue-700 transition-all group active:scale-95 cursor-pointer">
                             <div className="flex items-center gap-3">
                                 <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm group-hover:bg-blue-100 transition-colors">
                                     <Droplets className="w-5 h-5 text-blue-500" />

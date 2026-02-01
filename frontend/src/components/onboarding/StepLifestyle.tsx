@@ -13,19 +13,19 @@
 'use client';
 
 import {
-    ACTIVITY_DESCRIPTIONS,
-    ACTIVITY_LABELS,
-    SLEEP_LABELS,
-    STRESS_LABELS,
+  ACTIVITY_DESCRIPTIONS,
+  ACTIVITY_LABELS,
+  SLEEP_LABELS,
+  STRESS_LABELS,
 } from '@/lib/constants/onboarding.constants';
 import { ActivityLevel, SleepRange, StressLevel } from '@/lib/schemas/onboarding.schema';
 import { useOnboardingStore } from '@/stores/useOnboardingStore';
 import clsx from 'clsx';
 import {
-    Activity,
-    Brain,
-    Loader2,
-    Moon,
+  Activity,
+  Brain,
+  Loader2,
+  Moon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
@@ -124,7 +124,7 @@ export function StepLifestyle() {
                                     'p-2.5 rounded-xl border-2 transition-all text-left',
                                     isSelected
                                         ? 'border-primary ring-2 ring-primary ring-inset bg-primary/5'
-                                        : 'border-slate-200 hover:border-slate-300 bg-white',
+                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white active:scale-[0.98] cursor-pointer',
                                     isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
@@ -159,7 +159,7 @@ export function StepLifestyle() {
                                     'py-2.5 px-2 rounded-lg border-2 transition-all text-center',
                                     isSelected
                                         ? 'border-primary bg-primary/10 text-primary'
-                                        : 'border-slate-200 hover:border-slate-300 bg-white text-slate-600',
+                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white text-slate-600 active:scale-[0.98] cursor-pointer',
                                     isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
@@ -193,7 +193,7 @@ export function StepLifestyle() {
                                     'py-2.5 px-2 rounded-lg border-2 transition-all text-center',
                                     isSelected
                                         ? 'border-primary bg-primary/10 text-primary'
-                                        : 'border-slate-200 hover:border-slate-300 bg-white text-slate-600',
+                                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50 bg-white text-slate-600 active:scale-[0.98] cursor-pointer',
                                     isSubmitting && 'opacity-50 cursor-not-allowed'
                                 )}
                             >
@@ -230,7 +230,7 @@ export function StepLifestyle() {
                         onClick={handleSubmit}
                         disabled={!isValid || isSubmitting}
                         className={clsx(
-                            'px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all flex items-center gap-2',
+                            'px-5 py-2.5 rounded-xl font-semibold shadow-md transition-all flex items-center gap-2 active:scale-95 cursor-pointer',
                             isValid && !isSubmitting
                                 ? 'bg-primary text-white hover:shadow-lg'
                                 : 'bg-slate-200 text-slate-400 cursor-not-allowed'

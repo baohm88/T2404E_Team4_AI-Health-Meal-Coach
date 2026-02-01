@@ -1,6 +1,6 @@
-import { forwardRef, ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
+import { ButtonHTMLAttributes, forwardRef } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
     variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ({ className, variant = 'primary', size = 'md', isLoading, disabled, children, ...props }, ref) => {
-        const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold transition-all disabled:opacity-70 disabled:cursor-not-allowed';
+        const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold transition-all disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer';
 
         const variants = {
             primary: 'bg-gradient-to-r from-primary to-red-500 text-white shadow-lg shadow-primary/30 hover:shadow-xl hover:scale-[1.02] rounded-full',

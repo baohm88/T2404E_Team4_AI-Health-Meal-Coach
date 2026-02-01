@@ -8,8 +8,8 @@
  * @see /services/*.ts - Service implementations
  */
 
-import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import { ApiResponse } from '@/types/api';
+import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 
 // ============================================================
 // CONSTANTS
@@ -78,8 +78,9 @@ http.interceptors.response.use(
     (error: AxiosError<ApiResponse<unknown>>) => {
         // Handle 401 Unauthorized
         if (error.response?.status === 401) {
+            console.error('🚨 401 Unauthorized detected from:', error.config?.url); // Debug log
             if (typeof window !== 'undefined') {
-                localStorage.removeItem(TOKEN_KEY);
+                removeToken(); // Use helper to clear all storage
                 window.location.href = '/login';
             }
         }
@@ -117,6 +118,7 @@ export const removeToken = (): void => {
     if (typeof window !== 'undefined') {
         // 1. Remove from localStorage
         localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem('auth-storage'); // Clear Zustand storage
 
         // 2. Remove from cookie by setting expiry to past
         document.cookie = 'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax';
