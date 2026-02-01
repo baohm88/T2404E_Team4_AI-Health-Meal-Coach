@@ -855,7 +855,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
                                         <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Thực tế</span>
                                         <div className="flex items-baseline gap-1">
                                             <span className={cn(
-                                                "text-2xl font-black tracking-tight",
+                                                "text-xl font-black tracking-tight",
                                                 isToday ? "text-emerald-600" : "text-slate-900"
                                             )}>
                                                 {dayData?.totalCalories || 0}

@@ -110,7 +110,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                 .user(prompt)
                                                 .call()
                                                 .content();
-                                parseAndSaveChunk(savedPlan, rawJson);
+                                parseAndSaveChunk(savedPlan, rawJson, start);
                         }
                 } catch (Exception e) {
                         System.err.println("CRITICAL AI ERROR: " + e.getMessage());
@@ -125,7 +125,7 @@ public class MealPlanServiceImpl implements MealPlanService {
         }
 
         @Transactional
-        protected void parseAndSaveChunk(MealPlan plan, String rawJson) {
+        protected void parseAndSaveChunk(MealPlan plan, String rawJson, int startDay) {
                 try {
                         if (rawJson == null)
                                 return;
@@ -147,9 +147,11 @@ public class MealPlanServiceImpl implements MealPlanService {
                         if (mealPlanObj instanceof List<?> days) {
                                 for (Object dayObj : days) {
                                         if (dayObj instanceof Map<?, ?> dayData) {
-                                                Integer dayNum = (Integer) dayData.get("day");
+                                                Integer dayNumRaw = (Integer) dayData.get("day");
+                                                int dayNum = (dayNumRaw != null && dayNumRaw < startDay)
+                                                                ? dayNumRaw + (startDay - 1)
+                                                                : (dayNumRaw != null ? dayNumRaw : startDay);
                                                 Object mealsObj = dayData.get("meals");
-                                                java.util.Set<String> processedCategories = new java.util.HashSet<>();
 
                                                 if (mealsObj instanceof List<?> mealsData) {
                                                         for (Object mealObj : mealsData) {
@@ -160,12 +162,6 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                 category = (String) mealData
                                                                                                 .get("type");
                                                                         category = mapToVietnameseCategory(category);
-
-                                                                        if (processedCategories.contains(category)) {
-                                                                                continue; // Skip duplicate category for
-                                                                                          // this day
-                                                                        }
-                                                                        processedCategories.add(category);
 
                                                                         Long dishId = ((Number) mealData.get("dishId"))
                                                                                         .longValue();
@@ -286,7 +282,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                         .user(finalPrompt)
                                         .call()
                                         .content();
-                        parseAndSaveChunk(plan, rawJson);
+                        parseAndSaveChunk(plan, rawJson, currentDays + 1);
                 } catch (Exception e) {
                         System.err.println("AI EXTEND ERROR: " + e.getMessage());
                         throw new RuntimeException("Lỗi khi mở rộng lộ trình bằng AI: " + e.getMessage());
@@ -327,13 +323,13 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                         l.getCategory() == null ? "Phụ"
                                                                                                         : l.getCategory())));
 
-                                        List<MealDTO> mealDTOs = mandatoryCategories.stream().map(categoryName -> {
+                                        List<MealDTO> mealDTOs = mandatoryCategories.stream().flatMap(categoryName -> {
                                                 List<UserMealLog> categoryLogs = groupedByCategory.getOrDefault(
                                                                 categoryName,
                                                                 Collections.emptyList());
 
                                                 if (categoryLogs.isEmpty()) {
-                                                        return MealDTO.builder()
+                                                        return java.util.stream.Stream.of(MealDTO.builder()
                                                                         .id(-1L) // ID giả cho slot trống
                                                                         .mealName("Chưa có món")
                                                                         .quantity("")
@@ -341,37 +337,27 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                         .plannedCalories(0)
                                                                         .type(categoryName)
                                                                         .checkedIn(false)
-                                                                        .build();
+                                                                        .build());
                                                 }
 
-                                                String combinedName = categoryLogs.stream()
-                                                                .map(UserMealLog::getFoodName)
-                                                                .distinct()
-                                                                .collect(Collectors.joining(" + "));
-                                                int totalCal = categoryLogs.stream()
-                                                                .mapToInt(UserMealLog::getEstimatedCalories)
-                                                                .sum();
-                                                java.util.Set<Long> seenPlannedIds = new java.util.HashSet<>();
-                                                int totalPlannedCal = categoryLogs.stream()
-                                                                .filter(l -> l.getPlannedMealId() != null)
-                                                                .filter(l -> seenPlannedIds.add(l.getPlannedMealId()))
-                                                                .mapToInt(l -> plannedCaloriesMap.getOrDefault(
-                                                                                l.getPlannedMealId(),
-                                                                                l.getEstimatedCalories()))
-                                                                .sum();
-                                                boolean anyCheckedIn = categoryLogs.stream()
-                                                                .anyMatch(l -> Boolean.TRUE.equals(l.getCheckedIn()));
+                                                return categoryLogs.stream().map(log -> {
+                                                        int plannedCal = plannedCaloriesMap.getOrDefault(
+                                                                        log.getPlannedMealId(),
+                                                                        log.getEstimatedCalories());
 
-                                                return MealDTO.builder()
-                                                                .id(categoryLogs.get(0).getId())
-                                                                .plannedMealId(categoryLogs.get(0).getPlannedMealId())
-                                                                .mealName(combinedName)
-                                                                .quantity("")
-                                                                .calories(totalCal)
-                                                                .plannedCalories(totalPlannedCal)
-                                                                .type(categoryName)
-                                                                .checkedIn(anyCheckedIn)
-                                                                .build();
+                                                        return MealDTO.builder()
+                                                                        .id(log.getId())
+                                                                        .plannedMealId(log.getPlannedMealId())
+                                                                        .mealName(log.getFoodName())
+                                                                        .quantity("") // Quantity details can be added
+                                                                                      // if needed
+                                                                        .calories(log.getEstimatedCalories())
+                                                                        .plannedCalories(plannedCal)
+                                                                        .type(categoryName)
+                                                                        .checkedIn(Boolean.TRUE
+                                                                                        .equals(log.getCheckedIn()))
+                                                                        .build();
+                                                });
                                         }).collect(Collectors.toList());
 
                                         DayPlanDTO dto = DayPlanDTO.builder()
