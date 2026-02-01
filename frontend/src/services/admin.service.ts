@@ -144,7 +144,7 @@ export const getDashboardStats = async (
     endDate?: string
 ): Promise<AdminDashboardResponse> => {
     let url = `/admin/stats?period=${period}`;
-    if (period === 'custom' && startDate && endDate) {
+    if (startDate && endDate) {
         url += `&startDate=${startDate}&endDate=${endDate}`;
     }
     const response = await http.get<any, ApiResponse<AdminDashboardResponse>>(url);

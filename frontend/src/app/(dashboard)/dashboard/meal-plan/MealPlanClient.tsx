@@ -142,7 +142,7 @@ export default function MealPlanClient() {
                     </h1>
                     <p className="text-slate-500 font-medium max-w-2xl">
                         Lộ trình {planData?.totalDays} ngày được cá nhân hóa hoàn toàn bởi AI.
-                        Sử dụng các món ăn quen thuật giúp bạn dễ dàng duy trì thói quen.
+                        Sử dụng các món ăn quen thuộc giúp bạn dễ dàng duy trì thói quen.
                     </p>
                 </div>
 
