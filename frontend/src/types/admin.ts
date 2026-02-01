@@ -4,7 +4,6 @@
  * Types for Admin Management features (User & Dish).
  */
 
-import { ApiGender, ApiGoal, ApiActivity, ApiStress, ApiSleep } from './api';
 
 // ============================================================
 // USER MANAGEMENT
@@ -117,4 +116,27 @@ export interface AdminDashboardResponse {
     premiumRegistrationStats: { day: string; premium: number }[];
     foodGrowthStats: { day: string; foods: number }[];
     recentActivities: AdminDashboardActivity[];
+}
+
+// ============================================================
+// TRANSACTION & REVENUE
+// ============================================================
+
+export interface Transaction {
+    transactionId: string;
+    status: 'SUCCESS' | 'FAILED' | 'PENDING';
+    amount: number;
+    isPremium: boolean;
+    paidAt: string;
+    error?: string;
+    userEmail: string;
+    userName: string;
+}
+
+export interface RevenueStats {
+    totalRevenue: number;
+    chartData: {
+        name: string;
+        value: number;
+    }[];
 }

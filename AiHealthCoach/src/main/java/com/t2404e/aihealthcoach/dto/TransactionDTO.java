@@ -16,4 +16,8 @@ public class TransactionDTO {
     private Boolean isPremium;
     private LocalDateTime paidAt;
     private String error;
+    
+    // Admin View Extras
+    private String userEmail;
+    private String userName;
 }
