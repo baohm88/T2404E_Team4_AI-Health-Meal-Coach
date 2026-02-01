@@ -4,7 +4,7 @@
  * Menu items and brand info for Admin Portal.
  */
 
-import { LayoutDashboard, Users, Database, Flag, Settings, Bot, FileText, LucideIcon, Settings2 } from 'lucide-react';
+import { Bot, Database, FileText, Flag, LayoutDashboard, LucideIcon, Receipt, Settings2, Users } from 'lucide-react';
 
 // ============================================================
 // TYPES
@@ -39,6 +39,12 @@ export const ADMIN_MENU_ITEMS: AdminMenuItem[] = [
         label: 'Kho món ăn',
         icon: Database,
         description: 'Food Database',
+    },
+    {
+        href: '/admin/transactions',
+        label: 'Lịch sử giao dịch',
+        icon: Receipt,
+        description: 'Transaction History',
     },
     {
         href: '/admin/reports',

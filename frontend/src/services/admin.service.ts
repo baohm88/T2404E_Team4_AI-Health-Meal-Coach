@@ -7,8 +7,8 @@
 
 import { http } from '@/lib/http';
 import {
-    AdminUser,
     AdminDashboardResponse,
+    AdminUser,
     CreateDishRequest,
     DishLibrary,
     MealTimeSlot,
@@ -154,4 +154,26 @@ export const batchUpdateDishStatus = async (ids: number[], isDeleted: boolean): 
 
 export const batchVerifyDishes = async (ids: number[], isVerified: boolean): Promise<void> => {
     await http.patch('/admin/dishes/batch/verify', { ids, isVerified });
+};
+// ============================================================
+// REVENUE & TRANSACTIONS
+// ============================================================
+
+export const getRevenueStats = async (period: 'week' | 'month' | 'year' = 'week'): Promise<import('@/types/admin').RevenueStats> => {
+    const response = await http.get<any, ApiResponse<import('@/types/admin').RevenueStats>>(`/admin/stats/revenue?period=${period}`);
+    return response.data;
+};
+
+export const getTransactions = async (
+    page: number = 0,
+    size: number = 10,
+    sort: string = 'createdAt,desc'
+): Promise<PageResponse<import('@/types/admin').Transaction>> => {
+    const params = new URLSearchParams({
+        page: page.toString(),
+        size: size.toString(),
+        sort: sort
+    });
+    const response = await http.get<any, ApiResponse<PageResponse<import('@/types/admin').Transaction>>>(`/admin/transactions?${params.toString()}`);
+    return response.data;
 };

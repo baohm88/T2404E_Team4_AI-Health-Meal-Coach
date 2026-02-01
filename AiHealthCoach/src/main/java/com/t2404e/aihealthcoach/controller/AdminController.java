@@ -1,5 +1,8 @@
 package com.t2404e.aihealthcoach.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -10,14 +13,12 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.t2404e.aihealthcoach.common.ApiResponse;
 import com.t2404e.aihealthcoach.dto.response.AdminDashboardResponse;
 import com.t2404e.aihealthcoach.dto.response.UserResponse;
@@ -26,7 +27,6 @@ import com.t2404e.aihealthcoach.service.DishService;
 import com.t2404e.aihealthcoach.service.HealthAnalysisService;
 import com.t2404e.aihealthcoach.service.MealPlanService;
 import com.t2404e.aihealthcoach.service.UserService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,6 +43,7 @@ public class AdminController {
     private final MealPlanService mealPlanService;
     private final AdminDashboardService adminDashboardService;
     private final DishService dishService;
+    private final com.t2404e.aihealthcoach.service.TransactionService transactionService;
     private final ObjectMapper objectMapper;
 
     @GetMapping("/ping")
@@ -57,6 +58,29 @@ public class AdminController {
     @Operation(summary = "Lấy thống kê Dashboard", description = "Lấy các chỉ số tổng quan, biểu đồ tăng trưởng và hoạt động gần đây.")
     public ResponseEntity<ApiResponse<AdminDashboardResponse>> getStats() {
         return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", adminDashboardService.getStats()));
+    }
+
+    @GetMapping("/stats/revenue")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lấy thống kê Doanh thu", description = "Lấy thống kê doanh thu theo kỳ (week, month, year).")
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getRevenueStats(
+            @RequestParam(defaultValue = "week") String period
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê doanh thu thành công", adminDashboardService.getRevenueStats(period)));
+    }
+
+    @GetMapping("/transactions")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Lấy lịch sử giao dịch", description = "Lấy danh sách giao dịch có phân trang.")
+    public ResponseEntity<ApiResponse<Page<com.t2404e.aihealthcoach.dto.TransactionDTO>>> getTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt,desc") String sort
+    ) {
+        String[] sortParams = sort.split(",");
+        Sort sortObj = Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]);
+        Pageable pageable = PageRequest.of(page, size, sortObj);
+        return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử giao dịch thành công", transactionService.getAllTransactions(pageable)));
     }
 
     @GetMapping("/users")

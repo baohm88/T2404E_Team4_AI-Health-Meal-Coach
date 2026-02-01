@@ -1,19 +1,24 @@
 package com.t2404e.aihealthcoach.service.impl;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
 import com.t2404e.aihealthcoach.dto.response.AdminDashboardResponse;
 import com.t2404e.aihealthcoach.repository.DishLibraryRepository;
 import com.t2404e.aihealthcoach.repository.UserMealLogRepository;
 import com.t2404e.aihealthcoach.repository.UserRepository;
 import com.t2404e.aihealthcoach.service.AdminDashboardService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +27,77 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private final UserRepository userRepository;
     private final DishLibraryRepository dishLibraryRepository;
     private final UserMealLogRepository userMealLogRepository;
+    private final com.t2404e.aihealthcoach.repository.TransactionRepository transactionRepository;
+
+    @Override
+    public Map<String, Object> getRevenueStats(String period) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start;
+        String format;
+        
+        switch (period.toLowerCase()) {
+            case "week":
+                start = now.minusDays(6).with(LocalTime.MIN);
+                format = "dd/MM";
+                break;
+            case "month":
+                start = now.minusDays(29).with(LocalTime.MIN);
+                format = "dd/MM";
+                break;
+            case "year":
+                start = now.minusMonths(11).withDayOfMonth(1).with(LocalTime.MIN);
+                format = "MM/yyyy";
+                break;
+            default: // day or default
+                start = now.minusHours(23).withMinute(0).withSecond(0).withNano(0);
+                format = "HH:00";
+                break;
+        }
+
+        List<Map<String, Object>> chartData = new ArrayList<>();
+        long totalRevenue = 0;
+
+        if (period.equalsIgnoreCase("year")) {
+             for (int i = 11; i >= 0; i--) {
+                LocalDateTime date = now.minusMonths(i);
+                LocalDateTime monthStart = date.withDayOfMonth(1).with(LocalTime.MIN);
+                LocalDateTime monthEnd = date.withDayOfMonth(date.toLocalDate().lengthOfMonth()).with(LocalTime.MAX);
+
+                Long revenue = transactionRepository.sumAmountByStatusAndCreatedAtBetween(
+                        com.t2404e.aihealthcoach.enums.TransactionStatus.SUCCESS, monthStart, monthEnd);
+                if (revenue == null) revenue = 0L;
+                totalRevenue += revenue;
+
+                Map<String, Object> point = new HashMap<>();
+                point.put("name", date.format(DateTimeFormatter.ofPattern(format)));
+                point.put("value", revenue);
+                chartData.add(point);
+            }
+        } else {
+             // Daily based (Week/Month)
+            int days = period.equalsIgnoreCase("week") ? 7 : (period.equalsIgnoreCase("month") ? 30 : 1);
+            for (int i = days - 1; i >= 0; i--) {
+                LocalDateTime date = now.minusDays(i);
+                LocalDateTime dayStart = date.with(LocalTime.MIN);
+                LocalDateTime dayEnd = date.with(LocalTime.MAX);
+
+                Long revenue = transactionRepository.sumAmountByStatusAndCreatedAtBetween(
+                        com.t2404e.aihealthcoach.enums.TransactionStatus.SUCCESS, dayStart, dayEnd);
+                if (revenue == null) revenue = 0L;
+                totalRevenue += revenue;
+
+                Map<String, Object> point = new HashMap<>();
+                point.put("name", date.format(DateTimeFormatter.ofPattern(format)));
+                point.put("value", revenue);
+                chartData.add(point);
+            }
+        }
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("totalRevenue", totalRevenue);
+        response.put("chartData", chartData);
+        return response;
+    }
 
     @Override
     public AdminDashboardResponse getStats() {
