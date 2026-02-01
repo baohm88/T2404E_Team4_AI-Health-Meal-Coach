@@ -59,7 +59,7 @@ const PRICING_PLANS: PricingPlan[] = [
         pricePerMonth: Math.round(899000 / 6),
         discount: 25,
         badge: 'Phổ biến',
-        popular: true,
+        popular: false,
         icon: <Crown className="w-6 h-6" />,
         color: 'from-emerald-500 to-emerald-600',
         bgGradient: 'from-emerald-50 to-emerald-100',
@@ -80,9 +80,10 @@ const PRICING_PLANS: PricingPlan[] = [
         pricePerMonth: Math.round(1499000 / 12),
         discount: 37,
         badge: 'Tiết kiệm nhất',
-        icon: <Zap className="w-6 h-6" />,
-        color: 'from-purple-500 to-purple-600',
-        bgGradient: 'from-purple-50 to-purple-100',
+        popular: true,
+        icon: <Zap className="w-6 h-6 text-yellow-300" />,
+        color: 'from-violet-600 to-indigo-600',
+        bgGradient: 'from-violet-50 to-indigo-100',
         features: [
             'Tất cả tính năng gói 6 tháng',
             'Tư vấn 1-1 với chuyên gia dinh dưỡng',
@@ -121,7 +122,9 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
             transition={{ duration: 0.5, delay: index * 0.1 }}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className={`relative rounded-2xl overflow-hidden flex flex-col h-full transition-all duration-300 ${isHovered
+            className={`relative rounded-3xl overflow-hidden flex flex-col h-full transition-all duration-300 ${plan.id === '12-months' 
+                    ? 'ring-4 ring-violet-500 shadow-2xl shadow-violet-500/30 scale-105 z-20 border-0'
+                    : isHovered
                     ? 'ring-2 ring-emerald-500 shadow-xl shadow-emerald-500/20 scale-105 z-10'
                     : 'border border-slate-200 shadow-lg'
                 }`}
@@ -140,7 +143,7 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
                 {/* Icon & Name */}
                 <div className="flex items-center gap-3 mb-4">
                     <div
-                        className={`p-3 rounded-xl bg-gradient-to-r ${plan.bgGradient} text-${plan.color.split('-')[1]}-600`}
+                        className={`p-3 rounded-xl bg-gradient-to-r ${plan.bgGradient} ${plan.id === '12-months' ? 'text-white shadow-lg shadow-violet-500/30 ring-2 ring-violet-200' : typeof plan.color === 'string' && plan.color.includes('from-') ? `text-${plan.color.split('-')[1]}-600` : ''}`}
                     >
                         {plan.icon}
                     </div>
@@ -180,9 +183,9 @@ const PricingCard = ({ plan, index }: PricingCardProps) => {
                 {/* CTA Button */}
                 <Link
                     href={`/checkout?plan=${plan.id}`}
-                    className={`block w-full py-4 px-6 text-center rounded-xl font-bold text-lg transition-all duration-300 mt-auto ${plan.popular
-                        ? `bg-gradient-to-r ${plan.color} text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:scale-[1.02]`
-                        : 'bg-slate-900 text-white hover:bg-slate-800 hover:scale-[1.02]'
+                    className={`block w-full py-4 px-6 text-center rounded-xl font-bold text-lg transition-all duration-300 mt-auto ${plan.id === '12-months'
+                        ? `bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-500/40 hover:scale-[1.03] hover:shadow-xl hover:shadow-violet-500/50`
+                        : 'bg-white text-slate-400 border border-slate-200 hover:text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                         }`}
                 >
                     <motion.span

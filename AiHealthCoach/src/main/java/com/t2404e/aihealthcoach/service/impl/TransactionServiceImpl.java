@@ -18,8 +18,23 @@ public class TransactionServiceImpl implements TransactionService {
     private final TransactionRepository transactionRepository;
 
     @Override
-    public Page<TransactionDTO> getAllTransactions(Pageable pageable) {
-        Page<Transaction> transactions = transactionRepository.findAll(pageable);
+    public Page<TransactionDTO> getAllTransactions(String keyword, com.t2404e.aihealthcoach.enums.TransactionStatus status, String startDate, String endDate, Pageable pageable) {
+        java.time.LocalDateTime start = null;
+        java.time.LocalDateTime end = null;
+
+        try {
+            if (startDate != null && !startDate.isEmpty()) {
+                start = java.time.LocalDate.parse(startDate).atStartOfDay();
+            }
+            if (endDate != null && !endDate.isEmpty()) {
+                end = java.time.LocalDate.parse(endDate).atTime(java.time.LocalTime.MAX);
+            }
+        } catch (Exception e) {
+            // Log error or ignore invalid dates
+            System.err.println("Invalid date format: " + e.getMessage());
+        }
+
+        Page<Transaction> transactions = transactionRepository.searchTransactions(keyword, status, start, end, pageable);
         return transactions.map(this::mapToDTO);
     }
 
