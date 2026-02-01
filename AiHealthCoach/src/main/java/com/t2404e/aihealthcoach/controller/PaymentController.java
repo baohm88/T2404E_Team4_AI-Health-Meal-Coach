@@ -37,7 +37,8 @@ public class PaymentController {
             String url = paymentService.createPaymentUrl(userId, amount, request);
             return ResponseEntity.ok(ApiResponse.success("URL generated", url));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to generate URL"));
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(ApiResponse.error("Failed to generate URL: " + e.getMessage()));
         }
     }
 
@@ -89,6 +90,17 @@ public class PaymentController {
             }
         } catch (Exception e) {
             response.sendRedirect("http://localhost:3000/dashboard?payment=error&msg=" + e.getMessage());
+        }
+    }
+    @GetMapping("/status/{transactionNo}")
+    public ResponseEntity<ApiResponse<com.t2404e.aihealthcoach.dto.TransactionDTO>> checkTransactionStatus(
+            @org.springframework.web.bind.annotation.PathVariable String transactionNo
+    ) {
+        com.t2404e.aihealthcoach.dto.TransactionDTO transactionDTO = paymentService.getTransactionStatus(transactionNo);
+        if (transactionDTO != null) {
+            return ResponseEntity.ok(ApiResponse.success("Transaction status retrieved", transactionDTO));
+        } else {
+            return ResponseEntity.status(404).body(ApiResponse.error("Transaction not found"));
         }
     }
 }
