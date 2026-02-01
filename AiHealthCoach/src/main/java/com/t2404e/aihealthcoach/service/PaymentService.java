@@ -1,7 +1,8 @@
 package com.t2404e.aihealthcoach.service;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.util.Map;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 public interface PaymentService {
     
@@ -10,4 +11,7 @@ public interface PaymentService {
 
     // Xử lý callback trả về từ VNPay -> Tự động kích hoạt Premium
     boolean processPaymentReturn(Map<String, String> requestParams);
+
+    // Kiểm tra trạng thái giao dịch
+    com.t2404e.aihealthcoach.dto.TransactionDTO getTransactionStatus(String vnpTransactionNo);
 }

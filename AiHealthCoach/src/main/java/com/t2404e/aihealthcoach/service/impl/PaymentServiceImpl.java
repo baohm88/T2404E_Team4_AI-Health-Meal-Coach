@@ -1,24 +1,38 @@
 package com.t2404e.aihealthcoach.service.impl;
 
-import com.t2404e.aihealthcoach.config.VNPayConfig;
-import com.t2404e.aihealthcoach.exception.InvalidSignatureException;
-import com.t2404e.aihealthcoach.entity.User;
-import com.t2404e.aihealthcoach.repository.UserRepository;
-import com.t2404e.aihealthcoach.service.PaymentService;
-import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TimeZone;
+
+import org.springframework.stereotype.Service;
+
+import com.t2404e.aihealthcoach.config.VNPayConfig;
+import com.t2404e.aihealthcoach.entity.Transaction;
+import com.t2404e.aihealthcoach.entity.User;
+import com.t2404e.aihealthcoach.enums.TransactionStatus;
+import com.t2404e.aihealthcoach.exception.InvalidSignatureException;
+import com.t2404e.aihealthcoach.repository.TransactionRepository;
+import com.t2404e.aihealthcoach.repository.UserRepository;
+import com.t2404e.aihealthcoach.service.PaymentService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class PaymentServiceImpl implements PaymentService {
 
     private final UserRepository userRepository;
+    private final TransactionRepository transactionRepository;
 
     @Override
     public String createPaymentUrl(Long userId, long amount, HttpServletRequest req) throws Exception {
@@ -80,6 +94,22 @@ public class PaymentServiceImpl implements PaymentService {
         String queryUrl = query.toString();
         String vnp_SecureHash = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+
+        // --- NEW: Save Pending Transaction ---
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        Transaction transaction = Transaction.builder()
+                .user(user)
+                .amount(amount)
+                .vnpTxnRef(vnp_TxnRef)
+                .vnpOrderInfo(orderInfo)
+                .status(TransactionStatus.PENDING)
+                .build();
+
+        transactionRepository.save(transaction);
+        // -------------------------------------
+
         return VNPayConfig.vnp_PayUrl + "?" + queryUrl;
     }
 
@@ -124,30 +154,53 @@ public class PaymentServiceImpl implements PaymentService {
             throw new InvalidSignatureException("Invalid Checksum. Transaction may have been tampered with.");
         }
 
-        // 2. Process Result
-        String responseCode = requestParams.get("vnp_ResponseCode");
-        
-        // "00" = Giao dịch thành công
-        if ("00".equals(responseCode)) {
-            String orderInfo = requestParams.get("vnp_OrderInfo");
-            try {
-                // Parse UserID: "Payment_User_123" -> 123
-                String userIdStr = orderInfo.replace("Payment_User_", "");
-                Long userId = Long.parseLong(userIdStr);
+        // 2. Process Result and Update Transaction
+        String vnp_TxnRef = requestParams.get("vnp_TxnRef");
+        String vnp_ResponseCode = requestParams.get("vnp_ResponseCode");
+        String vnp_TransactionNo = requestParams.get("vnp_TransactionNo");
+
+        // Find Transaction
+        Optional<Transaction> transactionOpt = transactionRepository.findByVnpTxnRef(vnp_TxnRef);
+
+        if (transactionOpt.isPresent()) {
+            Transaction transaction = transactionOpt.get();
+            transaction.setVnpTransactionNo(vnp_TransactionNo);
+            transaction.setVnpResponseCode(vnp_ResponseCode);
+
+            // "00" = Giao dịch thành công
+            if ("00".equals(vnp_ResponseCode)) {
+                transaction.setStatus(TransactionStatus.SUCCESS);
+                transactionRepository.save(transaction);
 
                 // Auto Upgrade Premium
-                User user = userRepository.findById(userId)
-                        .orElseThrow(() -> new RuntimeException("User not found"));
-                
-                user.setIsPremium(true);
-                userRepository.save(user);
-                
+                User user = transaction.getUser();
+                if (!user.getIsPremium()) {
+                    user.setIsPremium(true);
+                    userRepository.save(user);
+                }
                 return true;
-            } catch (Exception e) {
-                System.out.println("Error upgrading user: " + e.getMessage());
+            } else {
+                transaction.setStatus(TransactionStatus.FAILED);
+                transactionRepository.save(transaction);
                 return false;
             }
+        } else {
+            // Transaction Not Found (Should record error or log)
+            System.err.println("Transaction not found for ref: " + vnp_TxnRef);
+            return false;
         }
-        return false;
+    }
+
+    @Override
+    public com.t2404e.aihealthcoach.dto.TransactionDTO getTransactionStatus(String vnpTransactionNo) {
+        return transactionRepository.findByVnpTransactionNo(vnpTransactionNo)
+                .map(txn -> com.t2404e.aihealthcoach.dto.TransactionDTO.builder()
+                        .transactionId(txn.getVnpTransactionNo())
+                        .status(txn.getStatus())
+                        .amount(txn.getAmount())
+                        .isPremium(txn.getUser().getIsPremium())
+                        .paidAt(txn.getCreatedAt())
+                        .build())
+                .orElse(null);
     }
 }

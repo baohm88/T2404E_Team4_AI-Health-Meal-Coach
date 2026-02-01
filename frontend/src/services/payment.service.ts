@@ -73,25 +73,27 @@ export const paymentService = {
             console.log(`💳 Initiating Payment for User [${userId}] Amount: ${amount}`);
 
             // 2. Call Backend API
+            // Note: http interceptor unwraps response, so we get ApiResponse directly at runtime
+            // But TS thinks we get AxiosResponse. We cast to unknown first.
             const response = await http.get<ApiResponse<string>>('/payment/create-url', {
                 params: {
                     userId,
                     amount
                 }
-            });
+            }) as unknown as ApiResponse<string>;
 
-            if (response.data && response.data.success) {
-                console.log('✅ VNPay URL generated:', response.data.data);
+            if (response.success) {
+                console.log('✅ VNPay URL generated:', response.data);
                 return {
                     success: true,
-                    url: response.data.data,
+                    url: response.data,
                 };
             }
 
             return {
                 success: false,
                 url: '',
-                error: response.data?.message || 'Failed to generate URL'
+                error: response.message || 'Failed to generate URL'
             };
 
         } catch (error) {
@@ -110,8 +112,28 @@ export const paymentService = {
      * Not actively used for VNPay as it relies on Redirect.
      */
     checkTransactionStatus: async (transactionId: string): Promise<TransactionResult> => {
-        // Placeholder
-        return { success: false, error: 'Not implemented' };
+        try {
+            // transactionId here corresponds to vnp_TransactionNo passed in URL
+            // We use the same pattern as createPaymentUrl for casting response
+            const response = await http.get<ApiResponse<TransactionStatus>>(`/payment/status/${transactionId}`) as unknown as ApiResponse<TransactionStatus>;
+
+            if (response.success && response.data) {
+                return {
+                    success: true,
+                    data: response.data
+                };
+            }
+            return {
+                success: false,
+                error: response.message || 'Transaction not found'
+            };
+        } catch (error) {
+            console.error('Check transaction status error:', error);
+            return {
+                success: false,
+                error: 'Failed to check transaction status'
+            };
+        }
     },
 
     /**
