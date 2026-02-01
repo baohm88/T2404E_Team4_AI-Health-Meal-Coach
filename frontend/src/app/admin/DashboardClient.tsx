@@ -271,7 +271,7 @@ export default function DashboardClient() {
             {/* Consolidated Metrics Chart */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-3 bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 w-96 h-96 bg-slate-500/5 rounded-full blur-3xl -mr-48 -mt-48" />
+                    <div className="absolute top-0 right-0 w-96 h-96 bg-slate-500/5 rounded-full blur-3xl -mr-48 -mt-48 pointer-events-none" />
 
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <h2 className="text-xl font-black text-slate-800 flex items-center gap-3">
