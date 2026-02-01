@@ -38,6 +38,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class MealPlanServiceImpl implements MealPlanService {
 
         private final HealthProfileRepository profileRepo;
@@ -99,9 +100,9 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 int start = i;
                                 int end = Math.min(i + 6, 7);
                                 int targetCal = extractDailyCalorieTarget(userId, start);
-                                System.out.println(
-                                                "DEBUG: Generating meal plan chunk for days " + start + " to " + end
-                                                                + " with target " + targetCal);
+                                log.debug(
+                                                "Generating meal plan chunk for days {} to {} with target {}", start,
+                                                end, targetCal);
 
                                 String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, start, end,
                                                 targetCal);
@@ -113,7 +114,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 parseAndSaveChunk(savedPlan, rawJson);
                         }
                 } catch (Exception e) {
-                        System.err.println("CRITICAL AI ERROR: " + e.getMessage());
+                        log.error("CRITICAL AI ERROR: {}", e.getMessage());
                         if (e.getMessage().contains("429") || e.getMessage().contains("rate_limit")) {
                                 throw new RuntimeException(
                                                 "Giới hạn lượt dùng AI đã hết cho hôm nay (Rate Limit). Vui lòng thử lại sau vài phút hoặc ngày mai.");
@@ -137,7 +138,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 rawJson = rawJson.substring(firstIndex, lastIndex + 1);
                         }
 
-                        System.out.println("DEBUG AI RAW JSON: " + rawJson);
+                        log.debug("DEBUG AI RAW JSON: {}", rawJson);
 
                         Map<String, Object> map = objectMapper.readValue(rawJson,
                                         new com.fasterxml.jackson.core.type.TypeReference<Map<String, Object>>() {
@@ -207,7 +208,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                         .save(plannedMeal);
 
                                                                         // 4. Đồng bộ sang UserMealLog
-                                                                        UserMealLog log = UserMealLog.builder()
+                                                                        UserMealLog logEntry = UserMealLog.builder()
                                                                                         .userId(plan.getUserId())
                                                                                         .plannedMealId(savedPlannedMeal
                                                                                                         .getId())
@@ -227,7 +228,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                                                                                         .atStartOfDay()
                                                                                                         .plusDays(dayNum - 1))
                                                                                         .build();
-                                                                        logRepo.save(log);
+                                                                        logRepo.save(logEntry);
                                                                 }
                                                         }
                                                 }
@@ -235,7 +236,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                 }
                         }
                 } catch (Exception e) {
-                        System.err.println("Error parsing AI Meal Plan: " + e.getMessage());
+                        log.error("Error parsing AI Meal Plan: {}", e.getMessage());
                 }
         }
 
@@ -275,9 +276,8 @@ public class MealPlanServiceImpl implements MealPlanService {
 
                 try {
                         int targetCal = extractDailyCalorieTarget(uid, currentDays + 1);
-                        System.out.println(
-                                        "DEBUG: Extending meal plan for days " + (currentDays + 1) + " to " + newDays
-                                                        + " with target " + targetCal);
+                        log.debug("Extending meal plan for days {} to {} with target {}", currentDays + 1, newDays,
+                                        targetCal);
                         String prompt = MealPlanPromptBuilder.build(profile, analysis, dishes, currentDays + 1,
                                         newDays, targetCal);
                         String finalPrompt = prompt != null ? prompt : "";
@@ -288,7 +288,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                         .content();
                         parseAndSaveChunk(plan, rawJson);
                 } catch (Exception e) {
-                        System.err.println("AI EXTEND ERROR: " + e.getMessage());
+                        log.error("AI EXTEND ERROR: {}", e.getMessage());
                         throw new RuntimeException("Lỗi khi mở rộng lộ trình bằng AI: " + e.getMessage());
                 }
 
@@ -436,7 +436,7 @@ public class MealPlanServiceImpl implements MealPlanService {
                                         .months(months)
                                         .build();
                 } catch (Exception e) {
-                        System.err.println("Error extracting monthly plan: " + e.getMessage());
+                        log.error("Error extracting monthly plan: {}", e.getMessage());
                         return null;
                 }
         }

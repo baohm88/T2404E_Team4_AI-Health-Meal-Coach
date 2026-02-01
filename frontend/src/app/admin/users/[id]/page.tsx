@@ -30,46 +30,54 @@ export default function AdminUserDetailPage() {
         const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch basic info
-                const userData = await getUserDetail(userId);
-                setUser(userData);
+                // Fetch all data in parallel
+                const [userRes, planRes, mealRes] = await Promise.allSettled([
+                    getUserDetail(userId),
+                    getUserPlan(userId),
+                    getUserMealPlan(userId)
+                ]);
 
-                // Fetch Health Analysis (if exists)
-                try {
-                    const planData = await getUserPlan(userId);
-                    console.log('Plan data received:', planData);
-
-                    if (planData?.analysisJson) {
-                        // Handle both string (old format) and object (new format)
-                        const healthData = typeof planData.analysisJson === 'string'
-                            ? JSON.parse(planData.analysisJson)
-                            : planData.analysisJson;
-
-                        console.log('Parsed health data:', healthData);
-                        setHealthPlan(healthData);
-                    } else {
-                        console.log('No analysisJson found in response');
-                        setHealthPlan(null);
-                    }
-                } catch (e) {
-                    console.error("Lỗi parse dữ liệu sức khỏe:", e);
-                    setHealthPlan(null);
-                    toast.error("Dữ liệu phân tích sức khỏe không hợp lệ");
+                // Handle User Details
+                if (userRes.status === 'fulfilled') {
+                    setUser(userRes.value);
+                } else {
+                    console.error("Failed to fetch user details:", userRes.reason);
+                    toast.error("Không tìm thấy người dùng");
+                    router.push('/admin/users');
+                    return; // Stop if user load fails
                 }
 
+                // Handle Health Plan
+                if (planRes.status === 'fulfilled') {
+                    const planData = planRes.value;
+                    if (planData?.analysisJson) {
+                         try {
+                            const healthData = typeof planData.analysisJson === 'string'
+                                ? JSON.parse(planData.analysisJson)
+                                : planData.analysisJson;
+                            setHealthPlan(healthData);
+                        } catch (e) {
+                            console.error("Lỗi parse dữ liệu sức khỏe:", e);
+                            setHealthPlan(null);
+                        }
+                    } else {
+                        setHealthPlan(null);
+                    }
+                } else {
+                    console.error("Failed to fetch health plan:", planRes.reason);
+                     setHealthPlan(null);
+                }
 
-                // Fetch Meal Plan (if exists)
-                try {
-                    const mealData = await getUserMealPlan(userId);
-                    setMealPlan(mealData);
-                } catch (e) {
-                    console.log("No meal plan found");
+                // Handle Meal Plan
+                if (mealRes.status === 'fulfilled') {
+                    setMealPlan(mealRes.value);
+                } else {
+                    // console.log("No meal plan found or error fetching");
+                     setMealPlan(null);
                 }
 
             } catch (error) {
-                console.error("Failed to fetch user details:", error);
-                toast.error("Không tìm thấy người dùng");
-                router.push('/admin/users');
+                console.error("Unexpected error fetching data:", error);
             } finally {
                 setLoading(false);
             }

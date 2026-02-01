@@ -1,7 +1,7 @@
 import { UnderDevelopment } from "@/components/admin/UnderDevelopment";
 
 export const metadata = {
-    title: 'Báo cáo - Admin Portal',
+    title: 'Báo cáo - Quản trị viên',
 };
 
 export default function ReportsPage() {

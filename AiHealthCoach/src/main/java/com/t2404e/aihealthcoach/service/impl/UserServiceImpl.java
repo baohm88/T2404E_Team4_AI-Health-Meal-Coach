@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -35,7 +36,7 @@ public class UserServiceImpl implements UserService {
             }
         } catch (Exception e) {
             // Ignore parse error, treat as null or logged
-            System.err.println("Date parse error: " + e.getMessage());
+            log.error("Date parse error: {}", e.getMessage());
         }
 
         Page<User> usersPage = userRepository.searchUsers(keyword, status, isPremium, startDate, endDate, pageable);

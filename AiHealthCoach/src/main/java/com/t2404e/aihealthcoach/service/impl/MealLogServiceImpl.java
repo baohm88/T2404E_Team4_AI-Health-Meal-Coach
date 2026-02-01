@@ -18,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class MealLogServiceImpl implements MealLogService {
 
     private final CloudinaryService cloudinaryService;
@@ -32,13 +33,13 @@ public class MealLogServiceImpl implements MealLogService {
         // 1. Upload ảnh lên Cloudinary
         // Upload file ảnh và nhận lại URL
         String imageUrl = cloudinaryService.uploadImage(file);
-        System.out.println("DEBUG: Image uploaded to Cloudinary: " + imageUrl);
+        log.info("Image uploaded to Cloudinary: {}", imageUrl);
 
         // 2. Gọi AI Vision phân thích
         // Gửi URL ảnh cho AI để nhận diện món ăn và dinh dưỡng
         MealAnalysisResponse analysis = aiMealVisionService.analyzeMealImage(imageUrl);
         analysis.setImageUrl(imageUrl); // Gán lại URL ảnh vào response
-        System.out.println("DEBUG: AI Analysis result: " + analysis.getFoodName());
+        log.info("AI Analysis result: {}", analysis.getFoodName());
 
         // Xác định category: Ưu tiên tham số truyền vào -> Loại từ AI/Thư viện
         String finalCategory = categoryParam;
@@ -60,7 +61,7 @@ public class MealLogServiceImpl implements MealLogService {
             dishId = matchedDish.getId();
             // Cập nhật calo chuẩn từ thư viện nếu tìm thấy khớp
             analysis.setEstimatedCalories(matchedDish.getBaseCalories());
-            System.out.println("DEBUG: Matched dish in library: " + matchedDish.getName() + " (ID: " + dishId + ")");
+            log.info("Matched dish in library: {} (ID: {})", matchedDish.getName(), dishId);
         } else {
             // Option 2: Tạo mới DishLibrary với trạng thái unverified
             com.t2404e.aihealthcoach.entity.DishLibrary newDish = com.t2404e.aihealthcoach.entity.DishLibrary.builder()
@@ -75,17 +76,15 @@ public class MealLogServiceImpl implements MealLogService {
             com.t2404e.aihealthcoach.entity.DishLibrary savedDish = dishLibraryRepo.save(newDish);
             if (savedDish != null) {
                 dishId = savedDish.getId();
-                System.out.println(
-                        "DEBUG: Created new unverified dish in library: " + savedDish.getName() + " (ID: " + dishId
-                                + ")");
+                log.info("Created new unverified dish in library: {} (ID: {})", savedDish.getName(), dishId);
             }
         }
 
         // 4. Lưu vào DB (Cập nhật nếu đã có bản ghi từ sync thực đơn)
-        UserMealLog log;
+        UserMealLog logEntry;
         if (plannedMealId != null) {
             final Long pid = plannedMealId;
-            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
+            logEntry = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(plannedMealId)
                     .orElseGet(() -> {
                         PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
                         return UserMealLog.builder()
@@ -96,27 +95,27 @@ public class MealLogServiceImpl implements MealLogService {
                                 .build();
                     });
         } else {
-            log = UserMealLog.builder()
+            logEntry = UserMealLog.builder()
                     .userId(userId)
                     .build();
         }
 
         // Cập nhật thông tin mới từ AI
-        log.setImageUrl(imageUrl);
-        log.setFoodName(analysis.getFoodName());
-        log.setEstimatedCalories(analysis.getEstimatedCalories());
-        log.setNutritionDetails(analysis.getNutritionDetails());
-        log.setDishId(dishId);
-        if (log.getCategory() == null || log.getCategory().isEmpty() || categoryParam != null) {
-            log.setCategory(mapToVietnameseCategory(finalCategory));
+        logEntry.setImageUrl(imageUrl);
+        logEntry.setFoodName(analysis.getFoodName());
+        logEntry.setEstimatedCalories(analysis.getEstimatedCalories());
+        logEntry.setNutritionDetails(analysis.getNutritionDetails());
+        logEntry.setDishId(dishId);
+        if (logEntry.getCategory() == null || logEntry.getCategory().isEmpty() || categoryParam != null) {
+            logEntry.setCategory(mapToVietnameseCategory(finalCategory));
         }
-        log.setCheckedIn(true); // Đã đổi món/phân tích ảnh thì coi như đã ăn
-        log.setIsPlanCompliant(plannedMealId != null); // Nếu có plannedMealId thì coi như liên quan đến kế hoạch
+        logEntry.setCheckedIn(true); // Đã đổi món/phân tích ảnh thì coi như đã ăn
+        logEntry.setIsPlanCompliant(plannedMealId != null); // Nếu có plannedMealId thì coi như liên quan đến kế hoạch
 
-        logRepository.save(log);
-        System.out.println("DEBUG: Meal log updated/saved with ID: " + log.getId());
+        logRepository.save(logEntry);
+        log.info("Meal log updated/saved with ID: {}", logEntry.getId());
 
-        analysis.setType(log.getCategory()); // Trả về category đã map cho UI
+        analysis.setType(logEntry.getCategory()); // Trả về category đã map cho UI
         return analysis;
     }
 
@@ -124,7 +123,7 @@ public class MealLogServiceImpl implements MealLogService {
     public MealAnalysisResponse analyzeTextAndLog(String text, Long userId, Long plannedMealId, String categoryParam) {
         // 1. Gọi AI Vision phân tích văn bản
         MealAnalysisResponse analysis = aiMealVisionService.analyzeMealText(text);
-        System.out.println("DEBUG: AI Text Analysis result: " + analysis.getFoodName());
+        log.info("AI Text Analysis result: {}", analysis.getFoodName());
 
         // Xác định category (tương tự analyzeAndLog)
         String finalCategory = categoryParam;
@@ -160,10 +159,10 @@ public class MealLogServiceImpl implements MealLogService {
         }
 
         // 3. Lưu log
-        UserMealLog log;
+        UserMealLog logEntry;
         if (plannedMealId != null) {
             final Long pid = plannedMealId;
-            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
+            logEntry = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
                     .orElseGet(() -> {
                         PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
                         return UserMealLog.builder()
@@ -174,30 +173,30 @@ public class MealLogServiceImpl implements MealLogService {
                                 .build();
                     });
         } else {
-            log = UserMealLog.builder()
+            logEntry = UserMealLog.builder()
                     .userId(userId)
                     .build();
         }
 
-        log.setFoodName(analysis.getFoodName());
-        log.setEstimatedCalories(analysis.getEstimatedCalories());
-        log.setNutritionDetails(analysis.getNutritionDetails());
-        log.setDishId(dishId);
-        if (log.getCategory() == null || log.getCategory().isEmpty() || categoryParam != null) {
-            log.setCategory(mapToVietnameseCategory(finalCategory));
+        logEntry.setFoodName(analysis.getFoodName());
+        logEntry.setEstimatedCalories(analysis.getEstimatedCalories());
+        logEntry.setNutritionDetails(analysis.getNutritionDetails());
+        logEntry.setDishId(dishId);
+        if (logEntry.getCategory() == null || logEntry.getCategory().isEmpty() || categoryParam != null) {
+            logEntry.setCategory(mapToVietnameseCategory(finalCategory));
         }
-        log.setCheckedIn(true);
-        log.setIsPlanCompliant(plannedMealId != null);
-        log.setImageUrl(""); // Không có ảnh cho text input
+        logEntry.setCheckedIn(true);
+        logEntry.setIsPlanCompliant(plannedMealId != null);
+        logEntry.setImageUrl(""); // Không có ảnh cho text input
 
-        logRepository.save(log);
-        analysis.setType(log.getCategory());
+        logRepository.save(logEntry);
+        analysis.setType(logEntry.getCategory());
         return analysis;
     }
 
     @Override
     public UserMealLog confirmCheckIn(MealAnalysisResponse checkInData, Long userId) {
-        System.out.println("DEBUG: Processing check-in for user: " + userId);
+        log.info("Processing check-in for user: {}", userId);
 
         String details = checkInData.getNutritionDetails();
         if (details == null)
@@ -217,10 +216,10 @@ public class MealLogServiceImpl implements MealLogService {
         }
 
         // Tạo log hoặc cập nhật log cũ cho việc check-in
-        UserMealLog log;
+        UserMealLog logEntry;
         if (checkInData.getPlannedMealId() != null) {
             final Long pid = checkInData.getPlannedMealId();
-            log = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
+            logEntry = logRepository.findFirstByPlannedMealIdOrderByLoggedAtDesc(pid)
                     .orElseGet(() -> {
                         PlannedMeal pm = plannedMealRepository.findById(pid).orElse(null);
                         return UserMealLog.builder()
@@ -231,24 +230,24 @@ public class MealLogServiceImpl implements MealLogService {
                                 .build();
                     });
         } else {
-            log = UserMealLog.builder()
+            logEntry = UserMealLog.builder()
                     .userId(userId)
                     .build();
         }
 
-        log.setDishId(dishId);
-        log.setFoodName(checkInData.getFoodName());
-        log.setImageUrl(checkInData.getImageUrl() != null ? checkInData.getImageUrl() : "");
-        log.setEstimatedCalories(checkInData.getEstimatedCalories());
-        log.setIsPlanCompliant(true); // Check-in nghĩa là tuân thủ
-        log.setNutritionDetails(details);
-        log.setCheckedIn(true);
-        if (log.getCategory() == null || log.getCategory().isEmpty()) {
-            log.setCategory(mapToVietnameseCategory(checkInData.getType()));
+        logEntry.setDishId(dishId);
+        logEntry.setFoodName(checkInData.getFoodName());
+        logEntry.setImageUrl(checkInData.getImageUrl() != null ? checkInData.getImageUrl() : "");
+        logEntry.setEstimatedCalories(checkInData.getEstimatedCalories());
+        logEntry.setIsPlanCompliant(true); // Check-in nghĩa là tuân thủ
+        logEntry.setNutritionDetails(details);
+        logEntry.setCheckedIn(true);
+        if (logEntry.getCategory() == null || logEntry.getCategory().isEmpty()) {
+            logEntry.setCategory(mapToVietnameseCategory(checkInData.getType()));
         }
 
-        UserMealLog saved = logRepository.save(log);
-        System.out.println("DEBUG: Check-in saved successfully. Log ID: " + saved.getId());
+        UserMealLog saved = logRepository.save(logEntry);
+        log.info("Check-in saved successfully. Log ID: {}", saved.getId());
         return saved;
     }
 

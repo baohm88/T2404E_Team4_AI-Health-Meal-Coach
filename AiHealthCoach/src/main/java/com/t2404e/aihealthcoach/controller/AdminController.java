@@ -31,11 +31,13 @@ import com.t2404e.aihealthcoach.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
-@Tag(name = "Admin - User Management", description = "Quản lý người dùng")
+@Tag(name = "Admin Management", description = "APIs for Admin Dashboard")
+@Slf4j
 public class AdminController {
 
     private final UserService userService;
@@ -72,6 +74,7 @@ public class AdminController {
     @GetMapping("/transactions")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy lịch sử giao dịch", description = "Lấy danh sách giao dịch có phân trang và bộ lọc.")
+    @SuppressWarnings("null")
     public ResponseEntity<ApiResponse<Page<com.t2404e.aihealthcoach.dto.TransactionDTO>>> getTransactions(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) com.t2404e.aihealthcoach.enums.TransactionStatus status,
@@ -121,35 +124,19 @@ public class AdminController {
     public ResponseEntity<ApiResponse<?>> getUserPlan(@PathVariable Long userId) {
         String analysisJson = healthAnalysisService.getByUserId(userId);
 
-        // DEBUG: Log raw data from database
-        System.out.println("========== DEBUG getUserPlan ==========");
-        System.out.println("User ID: " + userId);
-        System.out.println("Raw analysisJson from DB: " + analysisJson);
-
         if (analysisJson == null) {
-            System.out.println("analysisJson is NULL - User has no health analysis");
             return ResponseEntity.ok(ApiResponse.success("User chưa có phân tích sức khỏe", null));
         }
 
         try {
             // Parse JSON string to Object to prevent double-stringification
             Object parsedJson = objectMapper.readValue(analysisJson, Object.class);
-
-            // DEBUG: Log parsed object
-            System.out.println("Parsed Object type: " + parsedJson.getClass().getName());
-            System.out.println("Parsed Object: " + objectMapper.writeValueAsString(parsedJson));
-
             Map<String, Object> response = new HashMap<>();
             response.put("analysisJson", parsedJson);
 
-            // DEBUG: Log final response
-            System.out.println("Final response: " + objectMapper.writeValueAsString(response));
-            System.out.println("=======================================");
-
             return ResponseEntity.ok(ApiResponse.success("Lấy thông tin phân tích người dùng thành công", response));
         } catch (Exception e) {
-            System.err.println("ERROR parsing analysisJson: " + e.getMessage());
-            e.printStackTrace();
+            log.error("ERROR parsing analysisJson: {}", e.getMessage());
             return ResponseEntity.ok(ApiResponse.success("Lỗi parse dữ liệu phân tích", null));
         }
     }

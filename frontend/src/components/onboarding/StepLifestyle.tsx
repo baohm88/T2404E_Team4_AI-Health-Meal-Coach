@@ -81,9 +81,6 @@ export function StepLifestyle() {
         setError(null);
 
         try {
-            console.log('📝 Onboarding complete');
-            console.log('Form data:', formData);
-
             // Check if user is authenticated
             const { getToken } = require('@/lib/http'); // Import dynamically or at top level to avoid circular issues if any
             const token = getToken();
@@ -91,21 +88,17 @@ export function StepLifestyle() {
             if (token) {
                 // Determine user is logged in, call API to save/analyze immediately
                 const { aiService } = require('@/services/ai.service');
-                console.log('🚀 Authenticated user - calling AI Analysis...');
                 const res = await aiService.analyzeHealth(formData);
                 
                 if (!res.success) {
                     throw new Error(res.error || 'Phân tích thất bại');
                 }
-                console.log('✅ Analysis saved!');
             } else {
-                console.log('👤 Guest user - redirecting to flow...');
             }
 
             // Navigate to result page
             router.push('/onboarding/result');
         } catch (err: any) {
-            console.error('❌ Error:', err);
             setError(err.message || 'Có lỗi xảy ra. Vui lòng thử lại.');
             setIsSubmitting(false);
         }

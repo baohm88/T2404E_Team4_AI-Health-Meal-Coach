@@ -10,9 +10,11 @@ import com.t2404e.aihealthcoach.repository.TransactionRepository;
 import com.t2404e.aihealthcoach.service.TransactionService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionServiceImpl implements TransactionService {
 
     private final TransactionRepository transactionRepository;

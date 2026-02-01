@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
+@lombok.extern.slf4j.Slf4j
 public class UserSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -40,16 +41,16 @@ public class UserSeeder implements CommandLineRunner {
                 .build();
 
         userRepository.save(admin);
-        System.out.println("✅ Admin account seeded: admin@aihealth.com / Admin@123");
+        log.info("✅ Admin account seeded: admin@aihealth.com / Admin@123");
     }
 
     private void seedUsers() {
         if (userRepository.count() > 5) {
-            System.out.println("ℹ️ Users already seeded, skipping...");
+            log.info("ℹ️ Users already seeded, skipping...");
             return;
         }
 
-        System.out.println("🌱 Seeding 20 test users...");
+        log.info("🌱 Seeding 20 test users...");
         String mockAnalysisJson = "{"
                 + "\"analysis\": {"
                 + "\"bmi\": 22.5,"

@@ -267,7 +267,6 @@ export const aiService = {
             const apiResponse = response as unknown as ApiResponse<void>;
 
             if (apiResponse?.success) {
-                console.log('✅ [saveHealthAnalysis] Saved successfully!');
                 return { success: true };
             }
 
@@ -276,8 +275,6 @@ export const aiService = {
                 error: apiResponse?.message || 'Lưu dữ liệu thất bại',
             };
         } catch (error) {
-            console.error('❌ [saveHealthAnalysis] Error:', error);
-
             const axiosError = error as {
                 response?: {
                     data?: { message?: string };
