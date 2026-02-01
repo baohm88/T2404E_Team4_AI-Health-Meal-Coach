@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 @Component
 @RequiredArgsConstructor
 @lombok.extern.slf4j.Slf4j
+@SuppressWarnings("null") // Suppress null warnings for Lombok-generated builders
 public class UserSeeder implements CommandLineRunner {
 
     private final UserRepository userRepository;

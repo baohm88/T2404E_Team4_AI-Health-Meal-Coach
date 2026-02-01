@@ -55,20 +55,37 @@ public class AdminController {
         return ResponseEntity.ok(ApiResponse.success("Admin access granted", null));
     }
 
+    // ping method removed (duplicate)
+
     @GetMapping("/stats")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Lấy thống kê Dashboard", description = "Lấy các chỉ số tổng quan, biểu đồ tăng trưởng và hoạt động gần đây.")
-    public ResponseEntity<ApiResponse<AdminDashboardResponse>> getStats() {
-        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", adminDashboardService.getStats()));
+    public ResponseEntity<ApiResponse<AdminDashboardResponse>> getStats(
+            @RequestParam(defaultValue = "week") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
+    ) {
+        System.out.println("📊 API Request: /admin/stats - Period: " + period + ", Start: " + startDate + ", End: " + endDate);
+        try {
+            AdminDashboardResponse stats = adminDashboardService.getStats(period, startDate, endDate);
+            System.out.println("✅ /admin/stats success");
+            return ResponseEntity.ok(ApiResponse.success("Lấy thống kê thành công", stats));
+        } catch (Exception e) {
+            System.err.println("❌ /admin/stats FAILED: " + e.getMessage());
+            e.printStackTrace();
+            throw e;
+        }
     }
 
     @GetMapping("/stats/revenue")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Lấy thống kê Doanh thu", description = "Lấy thống kê doanh thu theo kỳ (week, month, year).")
+    @Operation(summary = "Lấy thống kê Doanh thu", description = "Lấy thống kê doanh thu theo kỳ (week, month, year) hoặc tùy chọn (custom).")
     public ResponseEntity<ApiResponse<Map<String, Object>>> getRevenueStats(
-            @RequestParam(defaultValue = "week") String period
+            @RequestParam(defaultValue = "week") String period,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate
     ) {
-        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê doanh thu thành công", adminDashboardService.getRevenueStats(period)));
+        return ResponseEntity.ok(ApiResponse.success("Lấy thống kê doanh thu thành công", adminDashboardService.getRevenueStats(period, startDate, endDate)));
     }
 
     @GetMapping("/transactions")

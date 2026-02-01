@@ -80,45 +80,48 @@ const activityColors: Record<string, string> = {
 export default function DashboardClient() {
     const [stats, setStats] = useState<AdminDashboardResponse | null>(null);
     const [revenueStats, setRevenueStats] = useState<{ totalRevenue: number, chartData: any[] } | null>(null);
-    const [revenuePeriod, setRevenuePeriod] = useState<'week' | 'month' | 'year'>('week');
+    
+    const [revenuePeriod, setRevenuePeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week');
+    const [revenueDateRange, setRevenueDateRange] = useState({ start: '', end: '' });
+
+    const [growthPeriod, setGrowthPeriod] = useState<'week' | 'month' | 'year' | 'custom'>('week');
+    const [growthDateRange, setGrowthDateRange] = useState({ start: '', end: '' });
+
     const [loading, setLoading] = useState(true);
 
-    const fetchRevenue = async (period: 'week' | 'month' | 'year') => {
+    const fetchRevenue = async () => {
+        if (revenuePeriod === 'custom' && (!revenueDateRange.start || !revenueDateRange.end)) return;
         try {
-            const data = await import('@/services/admin.service').then(m => m.getRevenueStats(period));
+            const data = await import('@/services/admin.service').then(m => m.getRevenueStats(revenuePeriod, revenueDateRange.start, revenueDateRange.end));
             setRevenueStats(data);
         } catch (error) {
             console.error("Failed to fetch revenue stats:", error);
         }
     };
 
-    useEffect(() => {
-        const fetchInitialData = async () => {
-            try {
-                const [statsData, revenueData] = await Promise.all([
-                    getDashboardStats(),
-                    import('@/services/admin.service').then(m => m.getRevenueStats('week'))
-                ]);
-                
-                setStats(statsData);
-                setRevenueStats(revenueData);
-            } catch (error) {
-                console.error("Failed to fetch dashboard data:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+    const fetchStats = async () => {
+        if (growthPeriod === 'custom' && (!growthDateRange.start || !growthDateRange.end)) return;
+        try {
+            const data = await getDashboardStats(growthPeriod, growthDateRange.start, growthDateRange.end);
+            setStats(data);
+        } catch (error) {
+            console.error("Failed to fetch dashboard stats:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-        fetchInitialData();
+    useEffect(() => {
+        fetchStats();
         const interval = setInterval(() => {
-             getDashboardStats().then(setStats);
-        }, 30000); // Only refresh general stats automatically
+             if (growthPeriod !== 'custom') fetchStats();
+        }, 30000); 
         return () => clearInterval(interval);
-    }, []);
+    }, [growthPeriod, growthDateRange]);
 
     useEffect(() => {
-        fetchRevenue(revenuePeriod);
-    }, [revenuePeriod]);
+        fetchRevenue();
+    }, [revenuePeriod, revenueDateRange]);
 
     if (loading) {
         return (
@@ -140,7 +143,7 @@ export default function DashboardClient() {
                     value={revenueStats ? new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(revenueStats.totalRevenue) : '0 ₫'} 
                     icon={TrendingUp} // Or DollarSign if available, but TrendingUp is fine
                     color="green" 
-                    trend={`Trong ${revenuePeriod === 'week' ? '7 ngày' : revenuePeriod === 'month' ? '30 ngày' : 'năm nay'}`}
+                    trend={`Trong ${revenuePeriod === 'week' ? '7 ngày' : revenuePeriod === 'month' ? '30 ngày' : revenuePeriod === 'year' ? 'năm nay' : 'kỳ tùy chọn'}`}
                 />
                 <StatCard title="Tổng người dùng" value={stats.totalUsers} icon={Users} trend="+12% so với tháng trước" color="blue" />
                 <StatCard title="Tổng món ăn" value={stats.totalFoods} icon={Utensils} color="orange" />
@@ -157,20 +160,39 @@ export default function DashboardClient() {
                                 Biểu đồ Doanh thu
                             </h2>
                         </div>
-                        <div className="flex bg-slate-100 p-1 rounded-xl">
-                            {(['week', 'month', 'year'] as const).map((p) => (
-                                <button
-                                    key={p}
-                                    onClick={() => setRevenuePeriod(p)}
-                                    className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                                        revenuePeriod === p 
-                                        ? 'bg-white text-emerald-600 shadow-sm' 
-                                        : 'text-slate-500 hover:text-slate-800'
-                                    }`}
-                                >
-                                    {p === 'week' ? 'Tuần này' : p === 'month' ? 'Tháng này' : 'Năm nay'}
-                                </button>
-                            ))}
+                        <div className="flex items-center gap-3">
+                            {revenuePeriod === 'custom' && (
+                                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-right-4">
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer"
+                                        value={revenueDateRange.start}
+                                        onChange={(e) => setRevenueDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                    />
+                                    <span className="text-slate-300 font-bold">-</span>
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer"
+                                        value={revenueDateRange.end}
+                                        onChange={(e) => setRevenueDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                    />
+                                </div>
+                            )}
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                                {(['week', 'month', 'year', 'custom'] as const).map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setRevenuePeriod(p)}
+                                        className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                                            revenuePeriod === p 
+                                            ? 'bg-white text-emerald-600 shadow-sm' 
+                                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 active:scale-95 cursor-pointer'
+                                        }`}
+                                    >
+                                        {p === 'week' ? 'Tuần này' : p === 'month' ? 'Tháng này' : p === 'year' ? 'Năm nay' : 'Tùy chọn'}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
                     </div>
                     
@@ -254,8 +276,45 @@ export default function DashboardClient() {
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <h2 className="text-xl font-black text-slate-800 flex items-center gap-3">
                             <div className="w-2 h-8 bg-slate-800 rounded-full" />
-                            Tổng quan tăng trưởng (7 ngày)
+                            Tổng quan tăng trưởng
                         </h2>
+                        <div className="flex items-center gap-3">
+                            {growthPeriod === 'custom' && (
+                                <div className="flex items-center gap-2 bg-slate-50 p-1.5 rounded-xl border border-slate-100 animate-in fade-in slide-in-from-right-4">
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer"
+                                        value={growthDateRange.start}
+                                        onChange={(e) => setGrowthDateRange(prev => ({ ...prev, start: e.target.value }))}
+                                    />
+                                    <span className="text-slate-300 font-bold">-</span>
+                                    <input 
+                                        type="date" 
+                                        className="bg-transparent text-[11px] font-bold text-slate-600 outline-none w-24 cursor-pointer"
+                                        value={growthDateRange.end}
+                                        onChange={(e) => setGrowthDateRange(prev => ({ ...prev, end: e.target.value }))}
+                                    />
+                                </div>
+                            )}
+                            <div className="flex bg-slate-100 p-1 rounded-xl">
+                                {(['week', 'month', 'year', 'custom'] as const).map((p) => (
+                                    <button
+                                        key={p}
+                                        onClick={() => setGrowthPeriod(p)}
+                                        className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+                                            growthPeriod === p 
+                                            ? 'bg-white text-emerald-600 shadow-sm' 
+                                            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-200/50 active:scale-95 cursor-pointer'
+                                        }`}
+                                    >
+                                        {p === 'week' ? 'Tuần này' : p === 'month' ? 'Tháng này' : p === 'year' ? 'Năm nay' : 'Tùy chọn'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                         <div className="flex flex-wrap gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-3 h-3 rounded-full bg-emerald-500" />

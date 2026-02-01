@@ -139,6 +139,29 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
                     fullName: loginRes.user?.fullName || 'Admin',
                 }, loginRes.accessToken || '');
 
+
+                // 🔐 Verify Token & Cookie Propagation
+                // Try up to 3 times to hit a protected endpoint to ensure headers/cookies are set
+                let verified = false;
+                for (let i = 0; i < 3; i++) {
+                    try {
+                        await new Promise(r => setTimeout(r, 100)); // Short delay
+                        // Just try a lightweight protected call. Since we are admin, try /admin/ping.
+                        const { http } = require('@/lib/http');
+                        await http.get('/admin/ping');
+                        verified = true;
+                        break;
+                    } catch (e) {
+                        console.log(`Token verification attempt ${i + 1} failed, retrying...`);
+                    }
+                }
+
+                if (!verified) {
+                    toast.error('Gặp sự cố khi lưu phiên đăng nhập. Vui lòng thử lại.');
+                    setIsLoading(false);
+                    return;
+                }
+
                 router.push('/admin');
             } else {
 

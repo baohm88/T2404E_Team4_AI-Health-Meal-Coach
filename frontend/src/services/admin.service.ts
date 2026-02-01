@@ -138,8 +138,16 @@ export const deleteDish = async (id: number): Promise<void> => {
     await http.delete(`/admin/dishes/${id}`);
 };
 
-export const getDashboardStats = async (): Promise<AdminDashboardResponse> => {
-    const response = await http.get<any, ApiResponse<AdminDashboardResponse>>('/admin/stats');
+export const getDashboardStats = async (
+    period: 'week' | 'month' | 'year' | 'custom' = 'week',
+    startDate?: string,
+    endDate?: string
+): Promise<AdminDashboardResponse> => {
+    let url = `/admin/stats?period=${period}`;
+    if (period === 'custom' && startDate && endDate) {
+        url += `&startDate=${startDate}&endDate=${endDate}`;
+    }
+    const response = await http.get<any, ApiResponse<AdminDashboardResponse>>(url);
     return response.data;
 };
 
@@ -159,8 +167,16 @@ export const batchVerifyDishes = async (ids: number[], isVerified: boolean): Pro
 // REVENUE & TRANSACTIONS
 // ============================================================
 
-export const getRevenueStats = async (period: 'week' | 'month' | 'year' = 'week'): Promise<import('@/types/admin').RevenueStats> => {
-    const response = await http.get<any, ApiResponse<import('@/types/admin').RevenueStats>>(`/admin/stats/revenue?period=${period}`);
+export const getRevenueStats = async (
+    period: 'week' | 'month' | 'year' | 'custom' = 'week',
+    startDate?: string,
+    endDate?: string
+): Promise<import('@/types/admin').RevenueStats> => {
+    let url = `/admin/stats/revenue?period=${period}`;
+    if (period === 'custom' && startDate && endDate) {
+        url += `&startDate=${startDate}&endDate=${endDate}`;
+    }
+    const response = await http.get<any, ApiResponse<import('@/types/admin').RevenueStats>>(url);
     return response.data;
 };
 

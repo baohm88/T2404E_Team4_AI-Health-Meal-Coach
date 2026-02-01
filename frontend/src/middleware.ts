@@ -10,6 +10,7 @@ const TOKEN_COOKIE = 'access_token';
 /** Routes bắt buộc phải đăng nhập mới xem được */
 const PROTECTED_ROUTES = [
     '/dashboard',
+    '/admin',
 ];
 
 /** Routes dành cho Guest (Login/Register).
