@@ -7,13 +7,13 @@
 
 import { http } from '@/lib/http';
 import {
-    AdminDashboardResponse,
-    AdminUser,
-    CreateDishRequest,
-    DishLibrary,
-    MealTimeSlot,
-    PageResponse,
-    UpdateDishRequest
+  AdminDashboardResponse,
+  AdminUser,
+  CreateDishRequest,
+  DishLibrary,
+  MealTimeSlot,
+  PageResponse,
+  UpdateDishRequest
 } from '@/types/admin';
 import { ApiResponse } from '@/types/api';
 
@@ -167,13 +167,22 @@ export const getRevenueStats = async (period: 'week' | 'month' | 'year' = 'week'
 export const getTransactions = async (
     page: number = 0,
     size: number = 10,
-    sort: string = 'createdAt,desc'
+    sort: string = 'createdAt,desc',
+    keyword: string = '',
+    status?: string,
+    startDate?: string,
+    endDate?: string
 ): Promise<PageResponse<import('@/types/admin').Transaction>> => {
     const params = new URLSearchParams({
         page: page.toString(),
         size: size.toString(),
         sort: sort
     });
+    if (keyword) params.append('keyword', keyword);
+    if (status) params.append('status', status);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+
     const response = await http.get<any, ApiResponse<PageResponse<import('@/types/admin').Transaction>>>(`/admin/transactions?${params.toString()}`);
     return response.data;
 };

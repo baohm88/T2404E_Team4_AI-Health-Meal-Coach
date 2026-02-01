@@ -71,8 +71,12 @@ public class AdminController {
 
     @GetMapping("/transactions")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Lấy lịch sử giao dịch", description = "Lấy danh sách giao dịch có phân trang.")
+    @Operation(summary = "Lấy lịch sử giao dịch", description = "Lấy danh sách giao dịch có phân trang và bộ lọc.")
     public ResponseEntity<ApiResponse<Page<com.t2404e.aihealthcoach.dto.TransactionDTO>>> getTransactions(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) com.t2404e.aihealthcoach.enums.TransactionStatus status,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt,desc") String sort
@@ -80,7 +84,7 @@ public class AdminController {
         String[] sortParams = sort.split(",");
         Sort sortObj = Sort.by(Sort.Direction.fromString(sortParams[1]), sortParams[0]);
         Pageable pageable = PageRequest.of(page, size, sortObj);
-        return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử giao dịch thành công", transactionService.getAllTransactions(pageable)));
+        return ResponseEntity.ok(ApiResponse.success("Lấy lịch sử giao dịch thành công", transactionService.getAllTransactions(keyword, status, startDate, endDate, pageable)));
     }
 
     @GetMapping("/users")
