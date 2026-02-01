@@ -83,7 +83,6 @@ export const paymentService = {
             }) as unknown as ApiResponse<string>;
 
             if (response.success) {
-                console.log('✅ VNPay URL generated:', response.data);
                 return {
                     success: true,
                     url: response.data,
@@ -97,7 +96,6 @@ export const paymentService = {
             };
 
         } catch (error) {
-            console.error('Payment creation error:...', error);
             // Default fallback or detailed error
             return {
                 success: false,

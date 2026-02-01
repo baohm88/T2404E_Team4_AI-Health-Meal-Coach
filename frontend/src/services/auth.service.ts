@@ -172,7 +172,6 @@ export const authService = {
         try {
             const response = await http.post('/auth/verify-otp', { email, otp }) as unknown as ApiResponse<unknown>;
 
-            console.log('🔐 Verify OTP Response:', response);
 
             if (response.success) {
                 return { success: true };
@@ -183,7 +182,6 @@ export const authService = {
                 error: response.message || 'Xác thực OTP thất bại',
             };
         } catch (error) {
-            console.error('🔐 Verify OTP Error:', error);
 
             const axiosError = error as { response?: { data?: ApiResponse<unknown> } };
             const errorMessage = axiosError.response?.data?.message || 'Mã OTP không hợp lệ hoặc đã hết hạn';

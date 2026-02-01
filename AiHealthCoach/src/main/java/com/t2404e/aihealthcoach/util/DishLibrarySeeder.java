@@ -11,20 +11,25 @@ import com.t2404e.aihealthcoach.enums.MealTimeSlot;
 import com.t2404e.aihealthcoach.repository.DishLibraryRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class DishLibrarySeeder implements CommandLineRunner {
 
-        private final DishLibraryRepository repository;
+        private final DishLibraryRepository dishLibraryRepository;
 
         @Override
-        public void run(String... args) {
-                if (repository.count() > 0) {
-                        System.out.println("ℹ️ DishLibrary already seeded.");
-                        return;
+        public void run(String... args) throws Exception {
+                if (dishLibraryRepository.count() == 0) {
+                        seedVietnameseDishes();
+                } else {
+                        log.info("ℹ️ DishLibrary already seeded.");
                 }
+        }
 
+        private void seedVietnameseDishes() {
                 List<DishLibrary> dishes = new ArrayList<>();
 
                 // BREAKFAST (25 món)
@@ -187,8 +192,8 @@ public class DishLibrarySeeder implements CommandLineRunner {
                 addDish(dishes, "Trà sữa", 350, "cốc", MealTimeSlot.SNACK,
                                 "Trà sữa trân châu đường đen (hạn chế uống)");
 
-                repository.saveAll(dishes);
-                System.out.println("✅ DishLibrary seeded with 100 Vietnamese dishes.");
+                dishLibraryRepository.saveAll(dishes);
+                log.info("✅ DishLibrary seeded with 100 Vietnamese dishes.");
         }
 
         private void addDish(List<DishLibrary> list, String name, int calo, String unit, MealTimeSlot slot,

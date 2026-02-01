@@ -103,41 +103,32 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
         setIsLoading(true);
         setServerError(null);
         try {
-            console.log('🔐 [useLoginForm] Calling authService.login...');
             const loginRes = await authService.login(data);
-            console.log('🔐 [useLoginForm] Login response:', loginRes);
 
             if (!loginRes.success) {
-                console.error('❌ [useLoginForm] Login failed:', loginRes.error);
                 setServerError(loginRes.error || 'Đăng nhập thất bại');
                 return;
             }
 
-            console.log('✅ [useLoginForm] Login successful, token:', loginRes.accessToken);
-
             if (loginRes.accessToken) {
-                console.log('💾 [useLoginForm] Saving token to localStorage...');
                 saveToken(loginRes.accessToken);
 
                 // Verify token was saved
                 const savedToken = localStorage.getItem('accessToken');
-                console.log('🔍 [useLoginForm] Token in localStorage after save:', savedToken);
 
                 // 🔥 FIX RACE CONDITION: Chờ 100ms để Cookie kịp lưu trước khi gọi API tiếp theo
                 await new Promise(resolve => setTimeout(resolve, 100));
             } else {
-                console.warn('⚠️ [useLoginForm] No accessToken in response!');
+                // No accessToken in response!
             }
 
             toast.success('Đăng nhập thành công!');
-            console.log('🚀 [useLoginForm] Redirecting...');
 
             // Check Role & Redirect
             const { getUserRole, UserRole } = require('@/lib/utils/auth'); // Import dynamically to avoid cycle if any
             const role = getUserRole(loginRes.accessToken || '');
 
             if (role === UserRole.ADMIN) {
-                console.log('🛡️ User is ADMIN -> Redirecting to /admin');
 
                 // Update Auth Store
                 const { useAuthStore } = require('@/stores/useAuthStore');
@@ -150,7 +141,6 @@ export const useLoginForm = (): UseAuthFormReturn<LoginData> => {
 
                 router.push('/admin');
             } else {
-                console.log('👤 User is MEMBER -> Checking onboarding data');
 
                 // Update Auth Store
                 const { useAuthStore } = require('@/stores/useAuthStore');

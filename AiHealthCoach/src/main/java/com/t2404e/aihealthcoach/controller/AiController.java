@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/ai")
 @RequiredArgsConstructor
 @Tag(name = "AI Analysis", description = "Phân tích sức khỏe và đề xuất lộ trình bằng AI")
+@lombok.extern.slf4j.Slf4j
 public class AiController {
 
     private final AiHealthAnalysisService aiService;
@@ -51,11 +52,11 @@ public class AiController {
                 try {
                     profileService.saveOrUpdate(userId, request);
                 } catch (Exception e) {
-                    System.err.println("❌ Failed to auto-save health profile: " + e.getMessage());
+                    log.error("Failed to auto-save health profile: {}", e.getMessage()); // Use log.error
                 }
 
             } catch (Exception e) {
-                System.err.println("❌ Failed to auto-save health analysis: " + e.getMessage());
+                log.error("Failed to auto-save health analysis: {}", e.getMessage()); // Use log.error
             }
         }
 

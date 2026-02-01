@@ -28,6 +28,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/meals")
 @RequiredArgsConstructor
 @Tag(name = "Meal Analysis", description = "API phân tích bữa ăn qua hình ảnh và AI")
+@lombok.extern.slf4j.Slf4j
 public class MealAnalysisController {
 
     private final MealLogService mealLogService;
@@ -92,11 +93,11 @@ public class MealAnalysisController {
             @RequestBody MealAnalysisResponse checkInData,
             HttpServletRequest request) {
 
-        System.out.println("DEBUG: Handing check-in request");
+        log.debug("Handing check-in request");
 
         Long userId = RequestUtil.getUserId(request);
         if (userId == null) {
-            System.out.println("DEBUG: Check-in failed - User not authenticated");
+            log.debug("Check-in failed - User not authenticated");
             return ApiResponse.error("Phiên làm việc hết hạn. Vui lòng đăng nhập lại.");
         }
 
