@@ -32,20 +32,23 @@ public class MealPlanPromptBuilder {
         PHÂN TÍCH DINH DƯỠNG MỤC TIÊU:
         %s
 
+        PHẠM VI THỜI GIAN (QUAN TRỌNG):
+        - Lộ trình cho từ ngày %d đến ngày %d.
+        - Trong JSON, trường "day" PHẢI khớp chính xác với số ngày tuyệt đối này (từ %d đến %d).
+
         MỤC TIÊU CALO LỘ TRÌNH:
         - Mục tiêu Calo hằng ngày KHUYÊN DÙNG: %d kcal.
         - TỔNG CALO TRONG TUẦN (7 ngày) PHẢI sát với: %d kcal (+/- 0-3%%).
         - Bạn có thể linh hoạt: một số ngày Calo có thể cao hơn hoặc thấp hơn mục tiêu (%d kcal), miễn là TỔNG TUẦN cân bằng.
-        - Điều này giúp thực đơn tự nhiên và thực tế hơn.
 
-        THƯ VIỆN MÓN ĂN (BẮT BUỘC CHỌN TỪ ĐÂY):
+        THƯ VIỆN MÓN ĂN (BẮT BUỘC CHỌN TẤT CẢ TỪ ĐÂY):
         %s
 
         YÊU CẦU QUAN TRỌNG:
-        1. Linh hoạt hằng ngày: Không cần ép mỗi ngày phải đúng chóc %d kcal. Hãy chọn tổ hợp món ăn hợp lý.
-        2. Tổng tuần chuẩn xác: Đảm bảo tổng năng lượng của tất cả món ăn trong 7 ngày cộng lại sát với mức %d kcal (Sai số tối đa 3%%).
-        3. Tự nhiên & Thực tế: CHỈ chọn các món có sẵn trong thư viện. Sử dụng "số lượng" (1 bát, 1 đĩa, 150g...) một cách thực tế. KHÔNG dùng các con số lẻ bất thường (ví dụ: 1.23 bát) chỉ để khớp số Calo.
-        4. Mỗi ngày 4 bữa: Sáng, Trưa, Tối, Phụ.
+        1. Mục tiêu Calo hằng ngày: Phải đảm bảo Tổng Calo của 4 bữa cộng lại sát với mức %d kcal (Sai số tối đa 3%%).
+        2. Cơ chế Combo (BẮT BUỘC): Không được chọn duy nhất 1 món rau cho bữa Trưa/Tối. Phải kết hợp ít nhất 2-3 món (Ví dụ: Cơm trắng + Thịt kho + Canh rau) để đạt đủ năng lượng.
+        3. Tinh bột: Bữa Trưa và Tối BẮT BUỘC phải có 1 món tinh bột (Cơm, Bún, Phở...).
+        4. Tổng tuần chuẩn xác: Đảm bảo tổng năng lượng hằng tuần sát với mức %d kcal.
         5. Trả về đúng dishId.
 
         CHỈ TRẢ JSON.
@@ -53,6 +56,7 @@ public class MealPlanPromptBuilder {
         .formatted(
             buildProfileText(profile),
             buildAnalysisText(analysis),
+            startDay, endDay, startDay, endDay,
             targetDailyCalories,
             targetDailyCalories * 7,
             targetDailyCalories,
