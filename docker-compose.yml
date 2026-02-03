@@ -61,6 +61,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://ai-healthcoach.site/api}
     container_name: health_coach_frontend
     restart: unless-stopped
     ports:
