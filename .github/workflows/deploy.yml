@@ -36,7 +36,7 @@ jobs:
           CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY: ${{ vars.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET: ${{ vars.CLOUDINARY_API_SECRET }}
-          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
