@@ -92,7 +92,10 @@ public class SecurityConfig {
                 CorsConfiguration config = new CorsConfiguration();
 
                 // Frontend origin (Next.js)
-                config.setAllowedOrigins(List.of("http://localhost:3000"));
+                config.setAllowedOrigins(List.of(
+                        "http://localhost:3000",
+                        "https://ai-healthcoach.site"
+                ));
 
                 // Allowed HTTP methods
                 config.setAllowedMethods(List.of(
