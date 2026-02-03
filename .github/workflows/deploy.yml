@@ -1,0 +1,119 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - deploy
+  workflow_dispatch:  # Cho phép chạy manual
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          # GitHub
+          GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+          GITHUB_REPO: ${{ github.repository }}
+          # Environment variables
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
+          MYSQL_USER: ${{ secrets.MYSQL_USER }}
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ secrets.OPENAI_BASE_URL }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          JWT_EXPIRATION_MINUTES: ${{ secrets.JWT_EXPIRATION_MINUTES }}
+          MAIL_USERNAME: ${{ vars.MAIL_USERNAME }}
+          MAIL_PASSWORD: ${{ vars.MAIL_PASSWORD }}
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ vars.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ vars.CLOUDINARY_API_SECRET }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          envs: GITHUB_TOKEN,GITHUB_REPO,MYSQL_ROOT_PASSWORD,MYSQL_USER,MYSQL_PASSWORD,OPENAI_API_KEY,OPENAI_BASE_URL,JWT_SECRET,JWT_EXPIRATION_MINUTES,MAIL_USERNAME,MAIL_PASSWORD,CLOUDINARY_CLOUD_NAME,CLOUDINARY_API_KEY,CLOUDINARY_API_SECRET,NEXT_PUBLIC_API_URL
+          script: |
+            # Cài đặt git nếu chưa có
+            if ! command -v git &> /dev/null; then
+              echo "Installing git..."
+              sudo apt update
+              sudo apt install -y git
+            fi
+            
+            # Thiết lập biến
+            PROJECT_DIR="/home/${{ secrets.VPS_USERNAME }}/ai-health-coach"
+            REPO_URL="https://${GITHUB_TOKEN}@github.com/${GITHUB_REPO}.git"
+            
+            # Kiểm tra và clone hoặc pull code
+            if [ ! -d "$PROJECT_DIR" ]; then
+              echo "Project directory not found. Cloning repository..."
+              git clone -b deploy "$REPO_URL" "$PROJECT_DIR"
+            else
+              echo "Project directory exists. Pulling latest code..."
+              cd "$PROJECT_DIR"
+              git remote set-url origin "$REPO_URL"
+              git fetch origin deploy
+              git reset --hard origin/deploy
+              git clean -fd
+            fi
+            
+            # Di chuyển đến thư mục project
+            cd "$PROJECT_DIR" || exit 1
+            
+            # Tạo file .env từ environment variables
+            echo "Creating .env file..."
+            cat > .env << EOF
+            # Database
+            MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+            MYSQL_USER=${MYSQL_USER}
+            MYSQL_PASSWORD=${MYSQL_PASSWORD}
+            
+            # OpenAI/Groq API
+            OPENAI_API_KEY=${OPENAI_API_KEY}
+            OPENAI_BASE_URL=${OPENAI_BASE_URL}
+            
+            # JWT
+            JWT_SECRET=${JWT_SECRET}
+            JWT_EXPIRATION_MINUTES=${JWT_EXPIRATION_MINUTES}
+            
+            # Mail
+            MAIL_USERNAME=${MAIL_USERNAME}
+            MAIL_PASSWORD=${MAIL_PASSWORD}
+            
+            # Cloudinary
+            CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME}
+            CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY}
+            CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET}
+            
+            # Frontend
+            NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+            EOF
+            
+            # Stop các container đang chạy
+            echo "Stopping containers..."
+            docker-compose down
+            
+            # Build và start lại containers
+            echo "Building and starting containers..."
+            docker-compose up -d --build
+            
+            # Xóa các image cũ không dùng
+            echo "Cleaning up old images..."
+            docker image prune -f
+            
+            # Kiểm tra trạng thái containers
+            echo "Checking container status..."
+            docker-compose ps
+            
+            echo "Deployment completed successfully!"

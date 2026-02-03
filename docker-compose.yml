@@ -32,13 +32,24 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/health_coach_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+      # Sử dụng Spring profile production
+      SPRING_PROFILES_ACTIVE: prod
+      # Database (kết nối qua Docker network)
       SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-healthcoach}
       SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-healthcoach123}
+      # AI Configuration
       SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
       SPRING_AI_OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.groq.com/openai}
+      # JWT
       APP_JWT_SECRET: ${JWT_SECRET:-my-super-secret-jwt-token-with-at-least-32-characters-long-and-then-some-more}
       APP_JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-1440}
+      # Mail
+      MAIL_USERNAME: ${MAIL_USERNAME:-tqminh282@gmail.com}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      # Cloudinary
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
     depends_on:
       mysql:
         condition: service_healthy
@@ -55,7 +66,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://ai-healthcoach.site/api}
     depends_on:
       - backend
     networks:
