@@ -102,11 +102,11 @@ jobs:
             
             # Stop các container đang chạy
             echo "Stopping containers..."
-            docker-compose down
+            docker compose down
             
             # Build và start lại containers
             echo "Building and starting containers..."
-            docker-compose up -d --build
+            docker compose up -d --build
             
             # Xóa các image cũ không dùng
             echo "Cleaning up old images..."
@@ -114,6 +114,6 @@ jobs:
             
             # Kiểm tra trạng thái containers
             echo "Checking container status..."
-            docker-compose ps
+            docker compose ps
             
             echo "Deployment completed successfully!"
