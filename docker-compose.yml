@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:8.0
+    container_name: health_coach_db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: health_coach_db
+      MYSQL_USER: ${MYSQL_USER:-healthcoach}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-healthcoach123}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - health_coach_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Spring Boot Backend
+  backend:
+    build:
+      context: ./AiHealthCoach
+      dockerfile: Dockerfile
+    container_name: health_coach_backend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/health_coach_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-healthcoach}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-healthcoach123}
+      SPRING_AI_OPENAI_API_KEY: ${OPENAI_API_KEY}
+      SPRING_AI_OPENAI_BASE_URL: ${OPENAI_BASE_URL:-https://api.groq.com/openai}
+      APP_JWT_SECRET: ${JWT_SECRET:-my-super-secret-jwt-token-with-at-least-32-characters-long-and-then-some-more}
+      APP_JWT_EXPIRATION_MINUTES: ${JWT_EXPIRATION_MINUTES:-1440}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - health_coach_network
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: health_coach_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+    depends_on:
+      - backend
+    networks:
+      - health_coach_network
+
+networks:
+  health_coach_network:
+    driver: bridge
+
+volumes:
+  mysql_data:
