@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
  * WARNING: Remove this in production!
  */
 @RestController
-@RequestMapping("/test")
+@RequestMapping("/api/test")
 @RequiredArgsConstructor
 @Tag(name = "Testing", description = "Test endpoints for OTP (DEV ONLY - Remove in production)")
 public class OtpTestController {

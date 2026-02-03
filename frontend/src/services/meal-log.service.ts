@@ -21,7 +21,7 @@ class MealLogService {
         if (category) {
             formData.append('category', category);
         }
-        return http.post<ApiResponse<any>>('/api/meals/analyze', formData, {
+        return http.post<ApiResponse<any>>('/meals/analyze', formData, {
             headers: { 'Content-Type': 'multipart/form-data' }
         }) as any as Promise<ApiResponse<any>>;
     }
@@ -30,7 +30,7 @@ class MealLogService {
      * Phân tích văn bản/giọng nói và lưu log (Swap)
      */
     async analyzeMealText(text: string, plannedMealId?: number, category?: string) {
-        return http.post<ApiResponse<any>>('/api/meals/analyze-text', null, {
+        return http.post<ApiResponse<any>>('/meals/analyze-text', null, {
             params: { text, plannedMealId, category }
         }) as any as Promise<ApiResponse<any>>;
     }
@@ -39,7 +39,7 @@ class MealLogService {
      * Tìm kiếm món ăn trong thư viện
      */
     async searchDishes(keyword?: string, category?: string, page = 0, size = 10) {
-        return http.get<ApiResponse<any>>('/api/meals/search-dishes', {
+        return http.get<ApiResponse<any>>('/meals/search-dishes', {
             params: { keyword, category, page, size }
         }) as any as Promise<ApiResponse<any>>;
     }
@@ -48,21 +48,21 @@ class MealLogService {
      * Xác nhận ăn đúng theo kế hoạch (Xác nhận data từ AI hoặc thư viện)
      */
     async checkInByData(data: any) {
-        return http.post<ApiResponse<any>>('/api/meals/check-in', data) as any as Promise<ApiResponse<any>>;
+        return http.post<ApiResponse<any>>('/meals/check-in', data) as any as Promise<ApiResponse<any>>;
     }
 
     /**
      * Xác nhận ăn đúng theo kế hoạch (Check-in nhanh)
      */
     async checkInPlannedMeal(data: PlannedMealLogData) {
-        return http.post<ApiResponse<any>>('/api/meals/check-in', data) as any as Promise<ApiResponse<any>>;
+        return http.post<ApiResponse<any>>('/meals/check-in', data) as any as Promise<ApiResponse<any>>;
     }
 
     /**
      * Xác nhận ăn theo kế hoạch bằng ID log
      */
     async checkInPlannedMealById(logId: number) {
-        return http.post<ApiResponse<any>>(`/api/meals/${logId}/check-in`, {}) as any as Promise<ApiResponse<any>>;
+        return http.post<ApiResponse<any>>(`/meals/${logId}/check-in`, {}) as any as Promise<ApiResponse<any>>;
     }
 }
 

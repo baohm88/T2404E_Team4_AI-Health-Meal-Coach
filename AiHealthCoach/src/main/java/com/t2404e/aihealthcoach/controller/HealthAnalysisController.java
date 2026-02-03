@@ -16,7 +16,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping("/health-analysis")
+@RequestMapping("/api/health-analysis")
 @Tag(name = "Health Analysis History", description = "Lịch sử phân tích sức khỏe người dùng")
 public class HealthAnalysisController {
 

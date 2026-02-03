@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/health-profile")
+@RequestMapping("/api/health-profile")
 @Tag(name = "Health Profile", description = "Quản lý hồ sơ sức khỏe (chiều cao, cân nặng, mục tiêu)")
 public class HealthProfileController {
 
