@@ -20,7 +20,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/ai")
+@RequestMapping("/api/ai")
 @RequiredArgsConstructor
 @Tag(name = "AI Analysis", description = "Phân tích sức khỏe và đề xuất lộ trình bằng AI")
 @lombok.extern.slf4j.Slf4j

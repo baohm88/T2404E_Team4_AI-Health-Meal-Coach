@@ -62,9 +62,9 @@ public class SecurityConfig {
                                 // Authorization rules
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(SWAGGER_WHITELIST).permitAll()
-                                                .requestMatchers("/auth/**").permitAll()
-                                                .requestMatchers("/ai/**").permitAll()
-                                                .requestMatchers("/payment/**").permitAll() // Cho phép tạo link và
+                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/ai/**").permitAll()
+                                                .requestMatchers("/api/payment/**").permitAll() // Cho phép tạo link và
                                                                                             // callback
                                                 // Cho phép OPTIONS (Preflight request) đi qua mà không cần token
                                                 .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**")
@@ -92,7 +92,10 @@ public class SecurityConfig {
                 CorsConfiguration config = new CorsConfiguration();
 
                 // Frontend origin (Next.js)
-                config.setAllowedOrigins(List.of("http://localhost:3000"));
+                config.setAllowedOrigins(List.of(
+                        "http://localhost:3000",
+                        "https://ai-healthcoach.site"
+                ));
 
                 // Allowed HTTP methods
                 config.setAllowedMethods(List.of(

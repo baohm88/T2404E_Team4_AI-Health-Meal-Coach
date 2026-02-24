@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/admin/dishes")
+@RequestMapping("/api/admin/dishes")
 @RequiredArgsConstructor
 @Tag(name = "Admin - Dish Management", description = "Quản lý món ăn trong thư viện")
 public class DishManagementController {

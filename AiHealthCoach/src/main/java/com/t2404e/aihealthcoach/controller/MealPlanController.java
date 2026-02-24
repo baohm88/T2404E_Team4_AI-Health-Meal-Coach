@@ -20,7 +20,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/meal-plans")
+@RequestMapping("/api/meal-plans")
 @RequiredArgsConstructor
 @Tag(name = "Meal Plan", description = "Quản lý và tạo thực đơn ăn uống")
 public class MealPlanController {
