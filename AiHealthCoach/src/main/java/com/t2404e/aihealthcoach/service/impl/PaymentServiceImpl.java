@@ -63,7 +63,9 @@ public class PaymentServiceImpl implements PaymentService {
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
+
         vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
+        
 
         cld.add(Calendar.MINUTE, 15);
         String vnp_ExpireDate = formatter.format(cld.getTime());
@@ -96,6 +98,12 @@ public class PaymentServiceImpl implements PaymentService {
         String queryUrl = query.toString();
         String vnp_SecureHash = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
         queryUrl += "&vnp_SecureHash=" + vnp_SecureHash;
+
+        System.out.println("===== VNPay Params =====");
+        for (Map.Entry<String, String> entry : vnp_Params.entrySet()) {
+            System.out.println(entry.getKey() + " = " + entry.getValue());
+        }
+        System.out.println("========================");
 
         // --- NEW: Save Pending Transaction ---
         User user = userRepository.findById(userId)
