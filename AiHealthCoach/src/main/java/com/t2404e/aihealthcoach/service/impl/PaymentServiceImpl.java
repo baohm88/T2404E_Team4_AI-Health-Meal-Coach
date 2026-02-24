@@ -151,7 +151,7 @@ public class PaymentServiceImpl implements PaymentService {
                 hashData.append('=');
                 try {
                     // VNPay requires encoding values when hashing for return URL as well
-                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.US_ASCII.toString()));
+                    hashData.append(URLEncoder.encode(fieldValue, StandardCharsets.UTF_8.toString()));
                 } catch (Exception e) {
                     return false;
                 }
