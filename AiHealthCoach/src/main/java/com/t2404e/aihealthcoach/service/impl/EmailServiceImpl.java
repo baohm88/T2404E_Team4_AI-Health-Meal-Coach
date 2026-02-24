@@ -66,7 +66,7 @@ public class EmailServiceImpl implements EmailService {
                         <p>Chúng tôi rất vui khi được đồng hành cùng bạn trên hành trình chăm sóc sức khỏe và xây dựng lối sống lành mạnh.</p>
                         <p>Hãy truy cập ứng dụng để bắt đầu khám phá các tính năng tuyệt vời dành riêng cho bạn nhé!</p>
                         <br>
-                        <a href="http://localhost:3000" style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Truy cập ngay</a>
+                        <a href="https://ai-healthcoach.site" style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Truy cập ngay</a>
                         <br><br>
                         <p style="font-size: 12px; color: #888;">Trân trọng,<br>Đội ngũ AI Health Coach</p>
                     </div>

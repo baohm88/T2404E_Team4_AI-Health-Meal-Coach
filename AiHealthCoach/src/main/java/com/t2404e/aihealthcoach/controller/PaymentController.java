@@ -84,12 +84,12 @@ public class PaymentController {
             if (success) {
                 // Redirect to Success Page with Transaction ID
                 String txnId = vnp_TransactionNo != null ? vnp_TransactionNo : "unknown";
-                response.sendRedirect("http://localhost:3000/payment/success?transactionId=" + txnId);
+                response.sendRedirect("https://ai-healthcoach.site/payment/success?transactionId=" + txnId);
             } else {
-                response.sendRedirect("http://localhost:3000/pricing?payment=failed");
+                response.sendRedirect("https://ai-healthcoach.site/pricing?payment=failed");
             }
         } catch (Exception e) {
-            response.sendRedirect("http://localhost:3000/dashboard?payment=error&msg=" + e.getMessage());
+            response.sendRedirect("https://ai-healthcoach.site/dashboard?payment=error&msg=" + e.getMessage());
         }
     }
     @GetMapping("/status/{transactionNo}")
