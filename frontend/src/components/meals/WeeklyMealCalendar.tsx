@@ -60,6 +60,7 @@ interface WeeklyMealCalendarProps {
     };
     startDate: string;
     onExtendPlan?: () => void;
+    onMealChecked?: () => void;
 }
 
 const mealTypeIcons: Record<string, React.ReactNode> = {
@@ -248,7 +249,8 @@ CombinedMealCard.displayName = "CombinedMealCard";
 export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
     initialData,
     startDate,
-    onExtendPlan
+    onExtendPlan,
+    onMealChecked
 }) => {
     const [mealPlanState, setMealPlanState] = useState<DayPlan[]>(initialData.mealPlan);
 
@@ -381,6 +383,59 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
         };
     }, [currentWeekData, confirmedMeals]);
 
+    // Celebration Effect
+    const [hasCelebrated, setHasCelebrated] = useState(false);
+
+    React.useEffect(() => {
+        console.log("Celebration Debug:", {
+            isCompleted: completionStats.isCompleted,
+            hasCelebrated,
+            checked: completionStats.checkedMealsCount,
+            total: completionStats.totalMealsCount
+        });
+
+        if (completionStats.isCompleted && !hasCelebrated) {
+            console.log("TRIGGERING CELEBRATION!");
+            import("canvas-confetti").then((confetti) => {
+                const duration = 3000;
+                const end = Date.now() + duration;
+
+                (function frame() {
+                    confetti.default({
+                        particleCount: 5,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0 },
+                        colors: ['#34d399', '#10b981', '#fbbf24']
+                    });
+                    confetti.default({
+                        particleCount: 5,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1 },
+                        colors: ['#34d399', '#10b981', '#fbbf24']
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                })();
+            });
+            toast.success("Xuất sắc! Bạn đã hoàn thành mục tiêu hôm nay! 🎉", {
+                duration: 5000,
+                style: {
+                    background: '#ecfdf5',
+                    color: '#047857',
+                    fontWeight: 'bold',
+                    fontSize: '16px'
+                }
+            });
+            setHasCelebrated(true);
+        } else if (!completionStats.isCompleted) {
+            setHasCelebrated(false);
+        }
+    }, [completionStats.isCompleted, hasCelebrated]);
+
     const nextWeek = () => setCurrentWeek((prev) => Math.min(prev + 1, totalWeeks - 1));
     const prevWeek = () => setCurrentWeek((prev) => Math.max(prev - 1, 0));
 
@@ -392,6 +447,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
             if (res.success) {
                 setConfirmedMeals(prev => new Set(prev).add(mealId));
                 toast.success(`Đã check-in món ${mealName}!`);
+                if (onMealChecked) onMealChecked();
             } else {
                 toast.error(res.message || "Không thể xác nhận món ăn.");
             }
@@ -475,6 +531,7 @@ export const WeeklyMealCalendar: React.FC<WeeklyMealCalendarProps> = ({
 
             setConfirmedMeals(prev => new Set(prev).add(selectedMeal.id));
             toast.success("Đã cập nhật bữa ăn mới bằng AI!");
+            if (onMealChecked) onMealChecked();
         }
     };
 

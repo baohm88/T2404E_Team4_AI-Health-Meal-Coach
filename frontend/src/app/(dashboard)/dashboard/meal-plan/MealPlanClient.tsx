@@ -6,11 +6,21 @@ import { motion } from "framer-motion";
 import { AlertCircle, Loader2, RefreshCcw, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { PointsDisplay } from "@/components/gamification/PointsDisplay";
+import { StreakDisplay } from "@/components/gamification/StreakDisplay";
+import { StreakCalendarOverview } from "@/components/gamification/StreakCalendarOverview";
+import { PointsRewardsDrawer } from "@/components/gamification/PointsRewardsDrawer";
+import { pointsService, UserPoint } from "@/services/points.service";
+import { streakService, UserStreak } from "@/services/streak.service";
+import { StreakWidget } from "@/components/gamification/StreakWidget";
 
 export default function MealPlanClient() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [planData, setPlanData] = useState<MealPlanResponse | null>(null);
+    const [points, setPoints] = useState<UserPoint | null>(null);
+    const [streak, setStreak] = useState<UserStreak | null>(null);
+    const [isRewardsOpen, setIsRewardsOpen] = useState(false);
 
     async function fetchMealPlan() {
         try {
@@ -29,6 +39,19 @@ export default function MealPlanClient() {
             setError(err.response?.data?.message || "Đã có lỗi xảy ra khi tải dữ liệu.");
         } finally {
             setLoading(false);
+        }
+    }
+
+    async function fetchGamificationData() {
+        try {
+            const [p, s] = await Promise.all([
+                pointsService.getCurrentPoints(),
+                streakService.getCurrentStreak()
+            ]);
+            setPoints(p.data);
+            setStreak(s.data);
+        } catch (e) {
+            console.error("Failed to load gamification data", e);
         }
     }
 
@@ -77,6 +100,7 @@ export default function MealPlanClient() {
 
     useEffect(() => {
         fetchMealPlan();
+        fetchGamificationData();
     }, []);
 
     if (loading) {
@@ -166,6 +190,44 @@ export default function MealPlanClient() {
                     )}
                 </div>
             </div>
+            {/* Gamification Stats Bar - NEW WIDGET STYLE */}
+            <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+
+                {/* Left: The new Streak Widget */}
+                <StreakWidget
+                    streak={streak}
+                    loading={loading}
+                    onClick={() => setIsRewardsOpen(true)}
+                />
+
+                {/* Right: Quick actions or Points (Smaller) */}
+                <div className="bg-white rounded-[32px] p-6 shadow-sm border border-slate-200 h-full flex flex-col justify-center">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h3 className="text-xl font-bold text-slate-800">Kho Báu Của Bạn</h3>
+                            <p className="text-slate-500 text-sm">Tích điểm đổi quà hấp dẫn</p>
+                        </div>
+                        <PointsDisplay points={points} loading={loading} />
+                    </div>
+
+                    <button
+                        onClick={() => setIsRewardsOpen(true)}
+                        className="w-full py-3 bg-slate-50 text-slate-700 font-bold rounded-2xl hover:bg-slate-100 transition-colors flex items-center justify-center gap-2 group"
+                    >
+                        Xem chi tiết & đổi quà
+                        <span className="group-hover:translate-x-1 transition-transform">→</span>
+                    </button>
+                </div>
+            </div>
+
+            {/* Streak Calendar Overview */}
+            {
+                streak && (
+                    <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-8">
+                        <StreakCalendarOverview streak={streak} compact />
+                    </div>
+                )
+            }
 
             <div className="max-w-[1600px] mx-auto px-4 md:px-8 mb-4 flex items-center gap-2">
                 <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600">
@@ -174,32 +236,41 @@ export default function MealPlanClient() {
                 <h2 className="text-xl font-bold text-slate-800">Thực đơn chi tiết từng tuần</h2>
             </div>
 
-            {planData && planData.mealPlan.length > 0 ? (
-                <WeeklyMealCalendar
-                    initialData={planData}
-                    startDate={planData?.startDate || "Chưa xác định"}
-                    onExtendPlan={handleExtend}
-                />
-            ) : (
-                <div className="max-w-7xl mx-auto px-4">
-                    <div className="bg-white/60 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-[32px] py-32 text-center space-y-6">
-                        <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto text-slate-400">
-                            <Sparkles className="w-10 h-10" />
+            {
+                planData && planData.mealPlan.length > 0 ? (
+                    <WeeklyMealCalendar
+                        initialData={planData}
+                        startDate={planData?.startDate || "Chưa xác định"}
+                        onExtendPlan={handleExtend}
+                        onMealChecked={fetchGamificationData}
+                    />
+                ) : (
+                    <div className="max-w-7xl mx-auto px-4">
+                        <div className="bg-white/60 backdrop-blur-sm border-2 border-dashed border-slate-200 rounded-[32px] py-32 text-center space-y-6">
+                            <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto text-slate-400">
+                                <Sparkles className="w-10 h-10" />
+                            </div>
+                            <div className="space-y-2">
+                                <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chưa có dữ liệu lộ trình</h3>
+                                <p className="text-slate-500 font-medium">Click nút bên dưới để AI tổng hợp thực đơn thông minh cho bạn</p>
+                            </div>
+                            <button
+                                onClick={handleGenerate}
+                                className="inline-flex items-center gap-3 px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-600 transition-all shadow-2xl shadow-emerald-500/20 active:scale-95"
+                            >
+                                <Sparkles className="w-6 h-6 fill-white/20" />
+                                KHỞI TẠO LỘ TRÌNH AI
+                            </button>
                         </div>
-                        <div className="space-y-2">
-                            <h3 className="text-2xl font-black text-slate-800 tracking-tight">Chưa có dữ liệu lộ trình</h3>
-                            <p className="text-slate-500 font-medium">Click nút bên dưới để AI tổng hợp thực đơn thông minh cho bạn</p>
-                        </div>
-                        <button
-                            onClick={handleGenerate}
-                            className="inline-flex items-center gap-3 px-10 py-4 bg-emerald-500 text-white rounded-2xl font-black text-lg hover:bg-emerald-600 transition-all shadow-2xl shadow-emerald-500/20 active:scale-95"
-                        >
-                            <Sparkles className="w-6 h-6 fill-white/20" />
-                            KHỞI TẠO LỘ TRÌNH AI
-                        </button>
                     </div>
-                </div>
-            )}
+                )
+            }
+            <PointsRewardsDrawer
+                isOpen={isRewardsOpen}
+                onClose={() => setIsRewardsOpen(false)}
+                points={points}
+                streak={streak}
+            />
         </main>
     );
 }

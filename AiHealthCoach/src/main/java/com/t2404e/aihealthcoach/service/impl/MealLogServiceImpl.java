@@ -13,6 +13,9 @@ import com.t2404e.aihealthcoach.repository.UserMealLogRepository;
 import com.t2404e.aihealthcoach.service.AiMealVisionService;
 import com.t2404e.aihealthcoach.service.CloudinaryService;
 import com.t2404e.aihealthcoach.service.MealLogService;
+import com.t2404e.aihealthcoach.service.PointService;
+import com.t2404e.aihealthcoach.service.StreakService;
+import com.t2404e.aihealthcoach.enums.PointActionType;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +29,8 @@ public class MealLogServiceImpl implements MealLogService {
     private final UserMealLogRepository logRepository;
     private final PlannedMealRepository plannedMealRepository;
     private final com.t2404e.aihealthcoach.repository.DishLibraryRepository dishLibraryRepo;
+    private final PointService pointService;
+    private final StreakService streakService;
 
     @Override
     public MealAnalysisResponse analyzeAndLog(MultipartFile file, Long userId, Long plannedMealId, String categoryParam)
@@ -115,6 +120,17 @@ public class MealLogServiceImpl implements MealLogService {
         logRepository.save(logEntry);
         log.info("Meal log updated/saved with ID: {}", logEntry.getId());
 
+        // Gamification: Award points and update streak
+        if (Boolean.TRUE.equals(logEntry.getIsPlanCompliant())) {
+            try {
+                pointService.awardPoints(userId, PointActionType.MEAL_LOG_COMPLIANT, "Logged a compliant meal",
+                        logEntry.getId());
+                streakService.updateStreak(userId);
+            } catch (Exception e) {
+                log.error("Error updating points/streak: {}", e.getMessage());
+            }
+        }
+
         analysis.setType(logEntry.getCategory()); // Trả về category đã map cho UI
         return analysis;
     }
@@ -190,6 +206,18 @@ public class MealLogServiceImpl implements MealLogService {
         logEntry.setImageUrl(""); // Không có ảnh cho text input
 
         logRepository.save(logEntry);
+
+        // Gamification
+        if (Boolean.TRUE.equals(logEntry.getIsPlanCompliant())) {
+            try {
+                pointService.awardPoints(userId, PointActionType.MEAL_LOG_COMPLIANT, "Logged a compliant meal (text)",
+                        logEntry.getId());
+                streakService.updateStreak(userId);
+            } catch (Exception e) {
+                log.error("Error updating points/streak: {}", e.getMessage());
+            }
+        }
+
         analysis.setType(logEntry.getCategory());
         return analysis;
     }
@@ -248,22 +276,46 @@ public class MealLogServiceImpl implements MealLogService {
 
         UserMealLog saved = logRepository.save(logEntry);
         log.info("Check-in saved successfully. Log ID: {}", saved.getId());
+
+        // Gamification
+        try {
+            pointService.awardPoints(userId, PointActionType.MEAL_LOG_COMPLIANT, "Checked in a planned meal",
+                    saved.getId());
+            streakService.updateStreak(userId);
+        } catch (Exception e) {
+            log.error("Error updating points/streak: {}", e.getMessage());
+        }
+
         return saved;
     }
 
     @Override
     @org.springframework.transaction.annotation.Transactional
     public UserMealLog checkInLog(Long logId, Long userId) {
-        UserMealLog log = logRepository.findById(logId)
+        UserMealLog mealLog = logRepository.findById(logId)
                 .orElseThrow(() -> new IllegalArgumentException("Không tìm thấy nhật ký bữa ăn: " + logId));
 
-        if (!log.getUserId().equals(userId)) {
+        if (!mealLog.getUserId().equals(userId)) {
             throw new org.springframework.security.access.AccessDeniedException(
                     "Bạn không có quyền cập nhật nhật ký này");
         }
 
-        log.setCheckedIn(true);
-        return logRepository.save(log);
+        mealLog.setCheckedIn(true);
+        UserMealLog saved = logRepository.save(mealLog);
+
+        // Gamification
+        try {
+            // Only award if it was planned/compliant
+            if (Boolean.TRUE.equals(saved.getIsPlanCompliant())) {
+                pointService.awardPoints(userId, PointActionType.MEAL_LOG_COMPLIANT, "Checked in existing log",
+                        saved.getId());
+                streakService.updateStreak(userId);
+            }
+        } catch (Exception e) {
+            log.error("Error updating points/streak: {}", e.getMessage());
+        }
+
+        return saved;
     }
 
     @Override

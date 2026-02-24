@@ -1,0 +1,77 @@
+/* Flame Animation */
+@keyframes flameFlicker {
+    0%, 100% { transform: scale(1) rotate(-2deg); }
+    25% { transform: scale(1.05) rotate(2deg); }
+    50% { transform: scale(0.98) rotate(-1deg); }
+    75% { transform: scale(1.02) rotate(1deg); }
+}
+
+.flame-icon {
+    display: inline-block;
+    animation: flameFlicker 3s infinite ease-in-out;
+    filter: drop-shadow(0 0 5px rgba(255, 107, 53, 0.5));
+}
+
+/* Points Pop-up Animation */
+@keyframes pointsEarned {
+    0% { 
+        opacity: 0; 
+        transform: translateY(0) scale(0.5); 
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1.2);
+    }
+    100% { 
+        opacity: 0; 
+        transform: translateY(-50px) scale(1.0); 
+    }
+}
+
+.points-popup {
+    position: absolute;
+    color: #ffd700;
+    font-weight: bold;
+    font-size: 1.2rem;
+    pointer-events: none;
+    animation: pointsEarned 1.5s ease-out forwards;
+    z-index: 50;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Progress Bar Shimmer */
+.progress-bar-shimmer {
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar-shimmer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.3) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    transform: translateX(-100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    100% { transform: translateX(100%); }
+}
+
+/* Coin Spin */
+@keyframes coinSpin {
+    0% { transform: rotateY(0deg); }
+    100% { transform: rotateY(360deg); }
+}
+
+.coin-icon:hover {
+    animation: coinSpin 1s ease-in-out;
+}
