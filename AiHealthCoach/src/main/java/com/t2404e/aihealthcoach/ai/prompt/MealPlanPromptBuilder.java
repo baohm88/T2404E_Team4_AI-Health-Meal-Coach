@@ -1,11 +1,11 @@
 package com.t2404e.aihealthcoach.ai.prompt;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import com.t2404e.aihealthcoach.entity.DishLibrary;
 import com.t2404e.aihealthcoach.entity.HealthAnalysis;
 import com.t2404e.aihealthcoach.entity.HealthProfile;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class MealPlanPromptBuilder {
 
@@ -45,11 +45,11 @@ public class MealPlanPromptBuilder {
         %s
 
         YÊU CẦU QUAN TRỌNG:
-        1. Mục tiêu Calo hằng ngày: Phải đảm bảo Tổng Calo của 4 bữa cộng lại sát với mức %d kcal (Sai số tối đa 3%%).
-        2. Cơ chế Combo (BẮT BUỘC): Không được chọn duy nhất 1 món rau cho bữa Trưa/Tối. Phải kết hợp ít nhất 2-3 món (Ví dụ: Cơm trắng + Thịt kho + Canh rau) để đạt đủ năng lượng.
-        3. Tinh bột: Bữa Trưa và Tối BẮT BUỘC phải có 1 món tinh bột (Cơm, Bún, Phở...).
-        4. Tổng tuần chuẩn xác: Đảm bảo tổng năng lượng hằng tuần sát với mức %d kcal.
-        5. Trả về đúng dishId.
+        1. Mục tiêu Calo hằng ngày: Phải đảm bảo Tổng Calo của khối lượng thức ăn 1 ngày (cộng 4 bữa: Sáng, Trưa, Tối, Phụ) KHÔNG ĐƯỢC VƯỢT QUÁ %d kcal! (Nếu vượt phải giảm món lại).
+        2. Tinh gọn món cho Lộ trình Low-Calorie: Nếu Target < 1500 kcal, MẠNH DẠN BỎ qua cơ chế Combo 3 món, chỉ chọn 1 món Tinh Bột + 1 món mặn MỖI BỮA, hoặc các món tích hợp (Phở, Bún) để tối ưu Calo!
+        3. Tinh bột: Bữa Trưa nên có 1 món carb (nếu mức Calo cho phép). Có thể bỏ tinh bột bữa Tối nếu mức Calo trong ngày đã đầy.
+        4. Tổng tuần chuẩn xác: Đảm bảo tổng năng lượng hằng tuần cộng dồn không vượt quá %d kcal.
+        5. Trả về đúng dishId tồn tại trong danh sách.
 
         CHỈ TRẢ JSON.
         """

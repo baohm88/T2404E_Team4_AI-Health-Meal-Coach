@@ -32,10 +32,9 @@ public class MealPlanPrompt {
       QUY TẮC BẮT BUỘC:
       - CHỈ TRẢ VỀ CHUỖI JSON PHẲNG. KHÔNG TRẢ TEXT NGOÀI.
       - KHÔNG TRẢ VỀ mealName VÀ calories (Hệ thống sẽ tự lấy từ database).
-      - CƠ CHẾ COMBO: Một bữa ăn (đặc biệt là Trưa và Tối) PHẢI kết hợp nhiều món (ví dụ: Cơm + Cá + Canh) để đạt đủ Calo mục tiêu.
-      - CẤU TRÚC BỮA CHÍNH: Trưa và Tối thường phải gồm: 1 món tinh bột (dishId loại Trưa/Tối) + 1 món đạm + 1 món rau.
-      - TỔNG CALO NGÀY: Tổng Calo của tất cả các món trong ngày PHẢI sát với mục tiêu được giao (+/- 3%).
-      - MỖI NGÀY PHẢI CÓ ĐỦ CÁC CATEGORY: "Sáng", "Trưa", "Tối", "Phụ".
+      - MỖI NGÀY PHẢI CÓ ĐỦ CÁC CATEGORY: "Sáng", "Trưa", "Tối", "Phụ". Tối đa 1 món Phụ.
+      - SỐ LƯỢNG MÓN BỮA CHÍNH: Tùy thuộc vào Mục Tiêu Calo hằng ngày. Nếu Calo thấp (<= 1500), CHỈ CHỌN 1-2 món/bữa (VD: 1 Cơm + 1 Canh) HOẶC 1 món tổng hợp (VD: Phở/Bún) để DỨT KHOÁT KHÔNG VƯỢT MỨC CALO. Chỉ thêm Combo 3+ món (Cơm+Đạm+Rau) khi Calo mục tiêu cao (> 1800)!
+      - TỔNG CALO NGÀY: RẤT QUAN TRỌNG! Tổng Calo (kcal) của TẤT CẢ các món cộng lại trong 1 ngày KHÔNG ĐƯỢC VƯỢT QUÁ MỤC TIÊU CHO PHÉP (sai số tối đa 50-100 kcal). Hãy cộng nhẩm lượng kcal trong "THƯ VIỆN MÓN ĂN" trước khi xuất kết quả!
       - quantity: Mô tả định lượng ngắn gọn (Ví dụ: "1 bát nhỏ", "200g").
       - dishId PHẢI lấy từ danh sách "THƯ VIỆN MÓN ĂN" được cung cấp.
       - QUY TẮC NGÀY (QUAN TRỌNG): Sinh thực đơn cho ĐÚNG VÀ ĐỦ các ngày được yêu cầu (ví dụ: ngày 8 đến ngày 14). Trường "day" trong JSON PHẢI khớp với số ngày tuyệt đối này.
